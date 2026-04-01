@@ -1,6 +1,12 @@
 import { Search } from "lucide-react";
+import { LandingSearchInput } from "@/components/landing-search-input";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
 import type { SearchTab } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +36,28 @@ export function SearchForm({
   const isHero = size === "hero";
   const isLanding = variant === "landing";
 
+  if (isLanding) {
+    return (
+      <form action={action} method="GET" className="w-full">
+        {tab ? <input type="hidden" name="tab" value={tab} /> : null}
+        {language ? (
+          <input type="hidden" name="language" value={language} />
+        ) : null}
+        {timeRange ? (
+          <input type="hidden" name="timeRange" value={timeRange} />
+        ) : null}
+        {safeSearch !== undefined ? (
+          <input type="hidden" name="safeSearch" value={safeSearch} />
+        ) : null}
+
+        <LandingSearchInput
+          defaultValue={defaultQuery}
+          placeholder={placeholder}
+        />
+      </form>
+    );
+  }
+
   return (
     <form action={action} method="GET" className="w-full">
       {tab ? <input type="hidden" name="tab" value={tab} /> : null}
@@ -46,50 +74,46 @@ export function SearchForm({
       <div
         className={cn(
           "flex w-full flex-col gap-3 sm:flex-row",
-          isHero && !isLanding ? "items-stretch" : "items-center",
+          isHero ? "items-stretch" : "items-center",
         )}
       >
-        <div className="relative flex-1">
+        <div className="flex-1">
           <label htmlFor="search-query" className="sr-only">
             Search query
           </label>
-          <Search
+          <InputGroup
             className={cn(
-              "pointer-events-none absolute top-1/2 -translate-y-1/2",
-              isLanding
-                ? "left-7 z-10 size-6 text-foreground/55"
-                : "left-5 size-4 text-[#b9b1a1]",
-            )}
-          />
-          <Input
-            id="search-query"
-            name="q"
-            type="search"
-            defaultValue={defaultQuery}
-            placeholder={placeholder}
-            className={cn(
-              "w-full backdrop-blur",
-              isLanding
-                ? "h-16 rounded-full border-[1.5px] border-foreground/35 bg-background pr-8 pl-18 text-base shadow-none sm:text-lg"
-                : "border-[#e3d8c7] bg-[#faf5ea] pr-5 pl-12 text-[17px] shadow-[0_1px_2px_rgba(28,31,38,0.06),0_10px_20px_rgba(28,31,38,0.04)] placeholder:text-[#8f8a80]",
-              isHero && !isLanding ? "h-16 rounded-full sm:text-lg" : "",
-              !isHero && !isLanding ? "h-12 rounded-full" : "",
-            )}
-          />
-        </div>
-
-        {isLanding ? null : (
-          <Button
-            type="submit"
-            size={isHero ? "lg" : "default"}
-            className={cn(
-              "rounded-full bg-[#2d4f79] px-7 text-white shadow-none hover:bg-[#244469]",
-              isHero ? "h-16 text-base" : "h-12",
+              "w-full",
+              isHero ? "h-[50px] rounded-full" : "",
+              !isHero ? "h-12 rounded-full" : "",
             )}
           >
-            Search
-          </Button>
-        )}
+            <InputGroupAddon align="inline-start" className="pl-4">
+              <InputGroupText>
+                <Search className="size-4" />
+              </InputGroupText>
+            </InputGroupAddon>
+            <InputGroupInput
+              id="search-query"
+              name="q"
+              type="search"
+              defaultValue={defaultQuery}
+              placeholder={placeholder}
+              className="w-full pr-5 text-[17px]"
+            />
+          </InputGroup>
+        </div>
+
+        <Button
+          type="submit"
+          size={isHero ? "lg" : "default"}
+          className={cn(
+            "rounded-full px-7 shadow-none",
+            isHero ? "h-16 text-base" : "h-12",
+          )}
+        >
+          Search
+        </Button>
       </div>
     </form>
   );

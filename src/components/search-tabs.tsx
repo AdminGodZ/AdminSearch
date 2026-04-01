@@ -38,7 +38,7 @@ export function SearchTabs({ tab }: SearchTabsProps) {
       onValueChange={(value) => setTab(value as SearchTab)}
       className="w-full lg:w-auto"
     >
-      <TabsList className="h-auto rounded-full border border-[#e3d8c7] bg-background p-1 shadow-[0_1px_2px_rgba(28,31,38,0.05),0_8px_16px_rgba(28,31,38,0.03)]">
+      <TabsList className="h-auto rounded-full p-1">
         {tabs.map((item) => {
           const Icon = item.icon;
 
@@ -46,7 +46,7 @@ export function SearchTabs({ tab }: SearchTabsProps) {
             <TabsTrigger
               key={item.value}
               value={item.value}
-              className="rounded-full px-4 py-2 text-[15px] text-muted-foreground data-active:bg-[#252d3d] data-active:text-white"
+              className="rounded-full px-4 py-2 text-[15px]"
             >
               <Icon className="size-4" />
               {item.label}

@@ -11,7 +11,7 @@ export function ImageGrid({ results }: ImageGridProps) {
       {results.map((result) => (
         <Card
           key={result.id}
-          className="overflow-hidden rounded-[28px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.05),0_18px_40px_rgba(28,31,38,0.05)]"
+          className="overflow-hidden rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]"
         >
           <a
             href={result.url}
@@ -42,11 +42,11 @@ export function ImageGrid({ results }: ImageGridProps) {
               href={result.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="line-clamp-2 text-sm leading-6 font-medium text-[#222a38] transition-colors hover:text-primary"
+              className="line-clamp-2 text-sm leading-6 font-medium text-[var(--text-strong)] transition-colors hover:text-primary"
             >
               {result.title}
             </a>
-            <p className="truncate text-xs tracking-[0.18em] text-[#697083] uppercase">
+            <p className="truncate text-xs tracking-[0.18em] text-[var(--text-soft)] uppercase">
               {result.source ?? result.displayUrl ?? result.url}
             </p>
           </CardContent>

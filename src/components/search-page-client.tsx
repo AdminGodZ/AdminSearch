@@ -74,7 +74,7 @@ function LoadingResults({ tab }: { tab: SearchTab }) {
         {imageSkeletonKeys.map((key) => (
           <Card
             key={key}
-            className="rounded-[28px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.05),0_18px_40px_rgba(28,31,38,0.05)]"
+            className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]"
           >
             <CardContent className="space-y-3 p-5">
               <Skeleton className="aspect-[4/3] w-full rounded-[22px]" />
@@ -92,7 +92,7 @@ function LoadingResults({ tab }: { tab: SearchTab }) {
       {resultSkeletonKeys.map((key) => (
         <Card
           key={key}
-          className="rounded-[28px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.05),0_18px_40px_rgba(28,31,38,0.05)]"
+          className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]"
         >
           <CardContent className="space-y-4 p-7 sm:p-8">
             <Skeleton className="h-3 w-1/4 rounded-full" />
@@ -207,7 +207,7 @@ export function SearchPageClient() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm font-medium tracking-[0.34em] text-[#596174] uppercase transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-2 text-sm font-medium tracking-[0.34em] text-[var(--text-soft)] uppercase transition-colors hover:text-foreground"
         >
           <Compass className="size-4" />
           AdminSearch
@@ -215,14 +215,14 @@ export function SearchPageClient() {
 
         <Badge
           variant="outline"
-          className="rounded-full border-[#ddd2bf] bg-background px-4 py-1 text-[11px] tracking-[0.24em] text-[#596174] uppercase"
+          className="rounded-full border-[var(--surface-chip-border)] bg-background px-4 py-1 text-[11px] tracking-[0.24em] text-[var(--text-soft)] uppercase"
         >
           URL-driven search state
         </Badge>
       </div>
 
       <div className="space-y-7">
-        <Card className="rounded-[30px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.05),0_26px_60px_rgba(28,31,38,0.07)]">
+        <Card className="rounded-[30px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shell-shadow)]">
           <CardContent className="space-y-6 p-6 sm:p-7 lg:p-8">
             <SearchForm
               action="/search"
@@ -247,16 +247,16 @@ export function SearchPageClient() {
         {currentQuery ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs tracking-[0.3em] text-[#697083] uppercase">
+              <p className="text-xs tracking-[0.3em] text-[var(--text-soft)] uppercase">
                 Query
               </p>
-              <h1 className="mt-1 text-4xl font-semibold tracking-tight text-balance text-[#222a38]">
+              <h1 className="mt-1 text-4xl font-semibold tracking-tight text-balance text-[var(--text-strong)]">
                 {currentQuery}
               </h1>
             </div>
 
             {activeData ? (
-              <p className="text-sm text-[#61697a]">
+              <p className="text-sm text-[var(--text-soft-alt)]">
                 Showing {activeData.results.length} {currentTab} results on page{" "}
                 {currentPage}
               </p>
@@ -279,13 +279,13 @@ export function SearchPageClient() {
         ) : null}
 
         {!currentQuery ? (
-          <Card className="rounded-[28px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.04)]">
+          <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
             <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-2">
-                <p className="text-xs tracking-[0.26em] text-[#697083] uppercase">
+                <p className="text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
                   Ready when you are
                 </p>
-                <p className="max-w-xl text-sm leading-7 text-[#5d6474]">
+                <p className="max-w-xl text-sm leading-7 text-[var(--text-body)]">
                   Start with a query, then switch between web and image search
                   without leaving this page.
                 </p>
@@ -302,16 +302,19 @@ export function SearchPageClient() {
         ) : null}
 
         {activeData?.answers.length ? (
-          <Card className="rounded-[28px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.04)]">
+          <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-[#222a38]">
+              <CardTitle className="flex items-center gap-2 text-lg text-[var(--text-strong)]">
                 <Sparkles className="size-4" />
                 Instant answers
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {activeData.answers.map((answer) => (
-                <p key={answer} className="text-sm leading-7 text-[#5d6474]">
+                <p
+                  key={answer}
+                  className="text-sm leading-7 text-[var(--text-body)]"
+                >
                   {answer}
                 </p>
               ))}
@@ -320,9 +323,9 @@ export function SearchPageClient() {
         ) : null}
 
         {activeData?.suggestions.length ? (
-          <Card className="rounded-[28px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.04)]">
+          <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
             <CardContent className="flex flex-wrap items-center gap-2 p-6">
-              <span className="mr-2 text-xs tracking-[0.26em] text-[#697083] uppercase">
+              <span className="mr-2 text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
                 Try next
               </span>
               {activeData.suggestions.map((suggestion) => (
@@ -330,7 +333,7 @@ export function SearchPageClient() {
                   key={suggestion}
                   asChild
                   variant="outline"
-                  className="rounded-full border-[#ddd2bf] bg-background"
+                  className="rounded-full border-[var(--surface-chip-border)] bg-background"
                 >
                   <Link
                     href={buildHref(pathname, searchParams, {
@@ -351,10 +354,10 @@ export function SearchPageClient() {
         ) : null}
 
         {currentQuery && activeData && !hasResults ? (
-          <Card className="rounded-[28px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.04)]">
+          <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
             <CardContent className="space-y-3 p-6">
               <p className="font-medium">No results found.</p>
-              <p className="text-sm leading-7 text-[#5d6474]">
+              <p className="text-sm leading-7 text-[var(--text-body)]">
                 Try a broader query, switch to another tab, or reduce your
                 filters.
               </p>
@@ -364,13 +367,13 @@ export function SearchPageClient() {
 
         {activeData && (currentPage > 1 || activeData.hasMore) ? (
           <>
-            <Separator className="my-2 bg-[#e8dfd1]" />
+            <Separator className="my-2 bg-[var(--surface-separator)]" />
             <div className="flex flex-wrap items-center justify-between gap-3">
               {currentPage > 1 ? (
                 <Button
                   asChild
                   variant="outline"
-                  className="rounded-full border-[#ddd2bf] bg-background"
+                  className="rounded-full border-[var(--surface-chip-border)] bg-background"
                 >
                   <Link
                     href={buildHref(pathname, searchParams, {
@@ -385,7 +388,7 @@ export function SearchPageClient() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-full border-[#ddd2bf] bg-background"
+                  className="rounded-full border-[var(--surface-chip-border)] bg-background"
                   disabled
                 >
                   <ArrowLeft className="size-4" />
@@ -393,14 +396,14 @@ export function SearchPageClient() {
                 </Button>
               )}
 
-              <p className="text-xs tracking-[0.24em] text-[#697083] uppercase">
+              <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
                 Page {currentPage}
               </p>
 
               {activeData.hasMore ? (
                 <Button
                   asChild
-                  className="rounded-full bg-[#2d4f79] text-white hover:bg-[#244469]"
+                  className="rounded-full bg-[var(--brand-button)] text-white hover:bg-[var(--brand-button-hover)] dark:text-[var(--primary-foreground)]"
                 >
                   <Link
                     href={buildHref(pathname, searchParams, {
@@ -414,7 +417,7 @@ export function SearchPageClient() {
               ) : (
                 <Button
                   type="button"
-                  className="rounded-full bg-[#2d4f79] text-white hover:bg-[#244469]"
+                  className="rounded-full bg-[var(--brand-button)] text-white hover:bg-[var(--brand-button-hover)] dark:text-[var(--primary-foreground)]"
                   disabled
                 >
                   Next

@@ -50,7 +50,7 @@ function SelectChip({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-12 min-w-48 rounded-full border-[#e3d8c7] bg-background px-4 text-[15px] shadow-[0_1px_2px_rgba(28,31,38,0.06),0_10px_20px_rgba(28,31,38,0.04)]">
+      <SelectTrigger className="h-12 min-w-48 rounded-full px-4 text-[15px]">
         <SelectValue placeholder="Filter" />
       </SelectTrigger>
       <SelectContent>

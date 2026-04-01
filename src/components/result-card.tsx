@@ -9,21 +9,21 @@ type ResultCardProps = {
 
 export function ResultCard({ result }: ResultCardProps) {
   return (
-    <Card className="rounded-[28px] border-[#e5ddcf] bg-[#fdfaf4] shadow-[0_1px_2px_rgba(28,31,38,0.05),0_18px_40px_rgba(28,31,38,0.05)]">
+    <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
       <CardContent className="space-y-5 p-7 sm:p-8">
         <div className="flex flex-wrap items-center gap-2 text-xs tracking-[0.18em] text-muted-foreground uppercase">
           {result.source ? <span>{result.source}</span> : null}
           {result.engine ? (
             <Badge
               variant="outline"
-              className="rounded-full border-[#ddd2bf] bg-background/85 tracking-normal normal-case"
+              className="rounded-full border-[var(--surface-chip-border)] bg-background/85 tracking-normal normal-case"
             >
               {result.engine}
             </Badge>
           ) : null}
         </div>
 
-        <div className="text-[2rem] leading-tight font-semibold tracking-tight text-[#222a38] sm:text-[2.1rem]">
+        <div className="text-[2rem] leading-tight font-semibold tracking-tight text-[var(--text-strong)] sm:text-[2.1rem]">
           <a
             href={result.url}
             target="_blank"
@@ -35,12 +35,12 @@ export function ResultCard({ result }: ResultCardProps) {
           </a>
         </div>
         {result.snippet ? (
-          <p className="text-[1.05rem] leading-8 text-[#5d6474]">
+          <p className="text-[1.05rem] leading-8 text-[var(--text-body)]">
             {result.snippet}
           </p>
         ) : null}
 
-        <p className="truncate text-sm text-[#6a7080]">
+        <p className="truncate text-sm text-[var(--text-soft-alt)]">
           {result.displayUrl ?? result.url}
         </p>
       </CardContent>

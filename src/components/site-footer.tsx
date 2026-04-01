@@ -1,25 +1,13 @@
-import Link from "next/link";
-
-const footerLinks = [
-  { href: "/", label: "AdminSearch" },
-  { href: "/search?q=adminsearch+user+manual&tab=all", label: "User Manual" },
-  { href: "/search?q=adminsearch+process+map&tab=all", label: "Process Map" },
-  { href: "/search?q=adminsearch+faq&tab=all", label: "FAQ" },
-];
-
 export function SiteFooter() {
   return (
-    <footer className="bg-[#f2f2f2]">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-4 px-6 py-6 text-sm text-foreground/85">
-        {footerLinks.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className="transition-colors hover:text-primary"
-          >
-            {item.label}
-          </Link>
-        ))}
+    <footer className="bg-[var(--footer-bg)]">
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-center px-6 py-6 text-center">
+        <p className="text-sm font-medium text-foreground/80">
+          © 2026 AdminSearch
+        </p>
+        <p className="mt-1 text-xs text-foreground/55">
+          Self-hosted metasearch powered by SearXNG.
+        </p>
       </div>
     </footer>
   );

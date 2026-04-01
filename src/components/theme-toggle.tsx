@@ -1,65 +1,37 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-
-type ThemeMode = "light" | "dark";
-
-function applyTheme(nextTheme: ThemeMode) {
-  const root = document.documentElement;
-
-  if (nextTheme === "dark") {
-    root.classList.add("dark");
-  } else {
-    root.classList.remove("dark");
-  }
-}
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeMode>("light");
   const [mounted, setMounted] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("adminsearch-theme");
-    const preferredDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-    const nextTheme: ThemeMode =
-      saved === "dark" || saved === "light"
-        ? saved
-        : preferredDark
-          ? "dark"
-          : "light";
-
-    setTheme(nextTheme);
-    applyTheme(nextTheme);
     setMounted(true);
   }, []);
 
   function toggleTheme() {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    applyTheme(nextTheme);
-    window.localStorage.setItem("adminsearch-theme", nextTheme);
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }
 
+  const isDark = mounted && resolvedTheme === "dark";
+
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
       onClick={toggleTheme}
-      className="h-11 rounded-full bg-background/80 px-3 shadow-none"
+      className={cn(
+        "flex h-11 w-auto min-w-0 items-center justify-center gap-2 rounded-full border border-transparent bg-[var(--control-bg)] pl-4 pr-3 text-sm font-normal whitespace-nowrap text-foreground transition-colors outline-none hover:bg-[var(--control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0",
+      )}
     >
-      <span className="flex size-7 items-center justify-center rounded-full bg-muted">
-        {mounted && theme === "dark" ? (
-          <Sun className="size-4" />
-        ) : (
-          <Moon className="size-4" />
-        )}
+      <span className="flex items-center justify-center">
+        {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
       </span>
-      <span>{mounted && theme === "dark" ? "Light" : "Dark"}</span>
-    </Button>
+      <span>{isDark ? "Light" : "Dark"}</span>
+    </button>
   );
 }
