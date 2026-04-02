@@ -1,17 +1,154 @@
 # AdminSearch
 
-AdminSearch is a public Next.js search frontend backed by a private SearXNG
-instance. The browser only talks to `GET /api/search`; Next.js handles
-validation, rate limiting, and normalization before it calls SearXNG.
+AdminSearch is a self-hosted Next.js search frontend backed by a private
+SearXNG instance. The browser never talks to SearXNG directly. All search and
+autocomplete traffic goes through Next.js route handlers, which validate
+requests, rate-limit them, normalize the response shape, and then call the
+private SearXNG backend.
+
+## Current standing
+
+The app currently includes:
+
+- a branded landing page at `/`
+- a Google-like results page at `/search`
+- tabs for `All`, `Images`, `Videos`, and `News`
+- autocomplete suggestions in the shared search input
+- instant answers and SearXNG infobox rendering
+- exact app-level pagination at `20` results per page
+- dark/light mode with `next-themes`
+- shared header and footer
+
+Video search currently supports:
+
+- thumbnail previews in results
+- hover-to-preview playback when the result exposes an embeddable preview URL
+- fallback to static thumbnails when no usable preview URL exists
 
 ## Stack
 
-- Next.js 16 App Router with TypeScript
+- Next.js 16 App Router
+- React 19
+- TypeScript
 - Tailwind CSS 4
-- Biome for formatting and linting
-- SearXNG as the private metasearch backend
-- Valkey for request rate limiting
-- Caddy for the production reverse proxy
+- shadcn/ui
+- Biome
+- Lucide React
+- `next-themes`
+- `framer-motion`
+- SearXNG
+- Valkey
+- Caddy
+
+## Search architecture
+
+Request flow:
+
+1. Browser requests `/api/search` or `/api/autocomplete`
+2. Next.js validates and normalizes input
+3. Next.js rate-limits by client IP
+4. Next.js calls private SearXNG over the internal/local network
+5. SearXNG fans out to the configured search engines
+6. Next.js returns a normalized frontend-friendly response
+
+Only these public app endpoints are used by the UI:
+
+- `GET /api/search`
+- `GET /api/autocomplete`
+- `GET /api/health`
+
+## Supported tabs
+
+- `all`
+- `images`
+- `videos`
+- `news`
+
+Query params accepted by `/api/search`:
+
+- `q`: required
+- `tab`: `all | images | videos | news`
+- `page`: positive integer
+- `language`: optional language code
+- `timeRange`: `day | month | year`
+- `safeSearch`: `0 | 1 | 2`
+
+## Current SearXNG engine set
+
+General search:
+
+- `duckduckgo`
+- `ddg definitions`
+- `brave`
+- `google`
+- `bing`
+- `startpage`
+
+Image search:
+
+- `duckduckgo images`
+- `brave.images`
+- `google images`
+- `bing images`
+- `startpage images`
+
+Video search:
+
+- `youtube`
+- `google videos`
+
+Commented alternates kept in config:
+
+- `bing videos`
+- `brave.videos`
+- `dailymotion`
+- `duckduckgo videos`
+- `odysee`
+
+News search:
+
+- `google news`
+- `startpage news`
+- `wikinews`
+- `bing news`
+- `brave.news`
+- `duckduckgo news`
+- `reuters`
+- `yahoo news`
+
+## Autocomplete
+
+Autocomplete is enabled in SearXNG with:
+
+- active backend: `google`
+
+Commented alternates kept in config:
+
+- `brave`
+- `duckduckgo`
+- `bing`
+
+The frontend uses a shared search input component on both `/` and `/search`:
+
+- keyboard navigation with up/down arrows
+- enter to pick a suggestion
+- escape to close
+- merged input + suggestion surface styling
+
+## Instant answers
+
+AdminSearch currently supports:
+
+- SearXNG built-in answer plugins
+- DuckDuckGo definition-style instant answers via `ddg definitions`
+
+Enabled SearXNG plugins:
+
+- calculator
+- hash
+- self info
+- unit converter
+- time zone
 
 ## Local development
 
@@ -21,13 +158,13 @@ validation, rate limiting, and normalization before it calls SearXNG.
 npm install
 ```
 
-2. Copy the environment template:
+2. Copy envs:
 
 ```bash
 cp .env.example .env.local
 ```
 
-3. Start the backend services:
+3. Start backend services:
 
 ```bash
 docker compose up -d searxng-core valkey
@@ -39,57 +176,61 @@ docker compose up -d searxng-core valkey
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`. SearXNG stays private on
-`http://127.0.0.1:8080`, and Valkey stays private on `127.0.0.1:6379`.
+App URLs:
+
+- frontend: `http://localhost:3000`
+- private SearXNG: `http://127.0.0.1:8080`
+- private Valkey: `127.0.0.1:6379`
 
 ## Production stack
 
-Set your production values in `.env`, especially:
-
-- `APP_DOMAIN`
-- `NEXT_PUBLIC_APP_URL`
-- `SEARXNG_SECRET`
-
-Then start the full stack:
-
-```bash
-docker compose --profile prod up -d --build
-```
-
-This runs:
+Production services:
 
 - `nextjs`
 - `searxng-core`
 - `valkey`
 - `caddy`
 
+Run:
+
+```bash
+docker compose --profile prod up -d --build
+```
+
+Important envs:
+
+- `NEXT_PUBLIC_APP_URL`
+- `APP_DOMAIN`
+- `SEARXNG_SECRET`
+- `SEARXNG_DNS_1`
+- `SEARXNG_DNS_2`
+
+## DNS
+
+The SearXNG container uses explicit DNS resolvers because container-side DNS
+resolution was failing earlier and caused empty search results.
+
+Current defaults in `.env.example`:
+
+- `SEARXNG_DNS_1=45.90.28.0`
+- `SEARXNG_DNS_2=45.90.30.0`
+
 ## Useful commands
 
 ```bash
-npm run format
+npm run dev
 npm run lint
+npm run format
 npm run build
+docker compose up -d searxng-core valkey
+docker compose up -d --force-recreate searxng-core
 ```
-
-## Search API
-
-The frontend uses a single internal endpoint:
-
-```txt
-GET /api/search?q=nextjs&tab=all&page=1&safeSearch=0
-```
-
-Supported query params:
-
-- `q`: required
-- `tab`: `all | images`
-- `page`: positive integer
-- `language`: optional language code
-- `timeRange`: `day | month | year`
-- `safeSearch`: `0 | 1 | 2`
 
 ## Notes
 
 - SearXNG JSON output is enabled in `searxng/core-config/settings.yml`
-- The MVP renders image thumbnails directly from remote hosts
-- Rate limiting falls back to in-memory storage if Valkey is unavailable
+- image and video thumbnails are loaded directly from remote sources
+- video hover previews only work when the upstream result exposes an embeddable
+  preview URL
+- rate limiting falls back to in-memory storage if Valkey is unavailable
+- `/search` is dynamic and query-driven; it is not a static search shell
