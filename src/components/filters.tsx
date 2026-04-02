@@ -5,6 +5,7 @@ import { startTransition } from "react";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -50,15 +51,21 @@ function SelectChip({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-12 min-w-48 rounded-full px-4 text-[15px]">
+      <SelectTrigger className="h-10 min-w-0 rounded-none border-transparent bg-transparent px-0 pb-3 text-[15px] text-[var(--text-soft-alt)] shadow-none hover:bg-transparent hover:text-foreground focus-visible:border-transparent focus-visible:bg-transparent focus-visible:text-foreground focus-visible:ring-0 data-[state=open]:bg-transparent data-[state=open]:text-foreground">
         <SelectValue placeholder="Filter" />
       </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
+      <SelectContent position="popper" align="end" className="p-1">
+        <SelectGroup className="p-0">
+          {options.map((option) => (
+            <SelectItem
+              key={option.value}
+              value={option.value}
+              className="focus:bg-[var(--control-active)] focus:text-foreground"
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   );
@@ -78,7 +85,7 @@ export function Filters({ language, timeRange, safeSearch }: FiltersProps) {
   }
 
   return (
-    <div className="flex flex-col items-start gap-3 lg:items-end">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
       <SelectChip
         value={language ?? "auto"}
         onChange={(value) =>

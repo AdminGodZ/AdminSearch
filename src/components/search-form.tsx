@@ -1,12 +1,5 @@
-import { Search } from "lucide-react";
 import { LandingSearchInput } from "@/components/landing-search-input";
 import { Button } from "@/components/ui/button";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
-} from "@/components/ui/input-group";
 import type { SearchTab } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +13,7 @@ type SearchFormProps = {
   size?: "hero" | "compact";
   variant?: "default" | "landing";
   placeholder?: string;
+  inputClassName?: string;
 };
 
 export function SearchForm({
@@ -32,6 +26,7 @@ export function SearchForm({
   size = "compact",
   variant = "default",
   placeholder = "Search the web or switch to images…",
+  inputClassName,
 }: SearchFormProps) {
   const isHero = size === "hero";
   const isLanding = variant === "landing";
@@ -53,6 +48,7 @@ export function SearchForm({
         <LandingSearchInput
           defaultValue={defaultQuery}
           placeholder={placeholder}
+          className={inputClassName}
         />
       </form>
     );
@@ -78,30 +74,11 @@ export function SearchForm({
         )}
       >
         <div className="flex-1">
-          <label htmlFor="search-query" className="sr-only">
-            Search query
-          </label>
-          <InputGroup
-            className={cn(
-              "w-full",
-              isHero ? "h-[50px] rounded-full" : "",
-              !isHero ? "h-12 rounded-full" : "",
-            )}
-          >
-            <InputGroupAddon align="inline-start" className="pl-4">
-              <InputGroupText>
-                <Search className="size-4" />
-              </InputGroupText>
-            </InputGroupAddon>
-            <InputGroupInput
-              id="search-query"
-              name="q"
-              type="search"
-              defaultValue={defaultQuery}
-              placeholder={placeholder}
-              className="w-full pr-5 text-[17px]"
-            />
-          </InputGroup>
+          <LandingSearchInput
+            defaultValue={defaultQuery}
+            placeholder={placeholder}
+            className={cn(!isHero ? "h-12 text-[17px]" : "")}
+          />
         </div>
 
         <Button
@@ -109,7 +86,9 @@ export function SearchForm({
           size={isHero ? "lg" : "default"}
           className={cn(
             "rounded-full px-7 shadow-none",
-            isHero ? "h-16 text-base" : "h-12",
+            isHero
+              ? "h-16 text-base"
+              : "h-12 bg-[var(--brand-button)] text-white hover:bg-[var(--brand-button-hover)] dark:text-[var(--primary-foreground)]",
           )}
         >
           Search

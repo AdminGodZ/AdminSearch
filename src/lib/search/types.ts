@@ -21,6 +21,15 @@ export type SearchResult = {
   engine?: string;
 };
 
+export type SearchInfobox = {
+  id: string;
+  title: string;
+  content?: string;
+  url?: string;
+  source?: string;
+  engine?: string;
+};
+
 export type SearchResponse = {
   query: string;
   tab: SearchTab;
@@ -28,7 +37,7 @@ export type SearchResponse = {
   results: SearchResult[];
   suggestions: string[];
   answers: string[];
-  infoboxes: unknown[];
+  infoboxes: SearchInfobox[];
   hasMore: boolean;
 };
 

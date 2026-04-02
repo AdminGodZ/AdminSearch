@@ -1,49 +1,153 @@
-import { ExternalLink } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { SiteFavicon } from "@/components/site-favicon";
 import type { SearchResult } from "@/lib/search/types";
 
 type ResultCardProps = {
   result: SearchResult;
 };
 
+function getResultMeta(result: SearchResult) {
+  const fallback = {
+    host: result.source ?? result.displayUrl ?? result.url,
+    path: "",
+    faviconUrl: undefined as string | undefined,
+  };
+
+  try {
+    const parsed = new URL(result.url);
+    return {
+      host: parsed.hostname.replace(/^www\./, ""),
+      path: parsed.pathname === "/" ? "" : parsed.pathname,
+      faviconUrl: `${parsed.origin}/favicon.ico`,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+const platformNames = new Map<string, string>([
+  ["about", "Google"],
+  ["chatgpt", "ChatGPT"],
+  ["github", "GitHub"],
+  ["google", "Google"],
+  ["reddit", "Reddit"],
+  ["stackexchange", "Stack Exchange"],
+  ["stackoverflow", "Stack Overflow"],
+  ["wikipedia", "Wikipedia"],
+  ["x", "X"],
+  ["youtube", "YouTube"],
+]);
+
+function toTitleCase(value: string) {
+  return value
+    .split(/[-_]/u)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getPlatformLabel(host: string) {
+  const segments = host.split(".").filter(Boolean);
+
+  for (const segment of segments) {
+    const normalized = segment.toLowerCase();
+    const mapped = platformNames.get(normalized);
+
+    if (mapped) {
+      return mapped;
+    }
+  }
+
+  const commonTlds = new Set([
+    "com",
+    "org",
+    "net",
+    "io",
+    "co",
+    "dev",
+    "app",
+    "ai",
+    "gg",
+    "tv",
+  ]);
+
+  const fallbackSegment =
+    segments.length >= 2 && commonTlds.has(segments.at(-1) ?? "")
+      ? segments.at(-2)
+      : segments[0];
+
+  return fallbackSegment ? toTitleCase(fallbackSegment) : host;
+}
+
+function formatEngineName(engine: string) {
+  return engine.charAt(0).toUpperCase() + engine.slice(1);
+}
+
+function getPrimaryLabel(result: SearchResult, host: string) {
+  const source = result.source?.trim();
+  const platformLabel = getPlatformLabel(host);
+
+  if (source && source !== host && source.length <= 40) {
+    const normalizedSource = source.toLowerCase();
+    const normalizedPlatform = platformLabel.toLowerCase();
+
+    if (
+      normalizedSource === normalizedPlatform ||
+      normalizedSource.includes(normalizedPlatform) ||
+      normalizedPlatform.includes(normalizedSource)
+    ) {
+      return platformLabel;
+    }
+  }
+
+  return platformLabel;
+}
+
 export function ResultCard({ result }: ResultCardProps) {
+  const meta = getResultMeta(result);
+  const primaryLabel = getPrimaryLabel(result, meta.host);
+
   return (
-    <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
-      <CardContent className="space-y-5 p-7 sm:p-8">
-        <div className="flex flex-wrap items-center gap-2 text-xs tracking-[0.18em] text-muted-foreground uppercase">
-          {result.source ? <span>{result.source}</span> : null}
-          {result.engine ? (
-            <Badge
-              variant="outline"
-              className="rounded-full border-[var(--surface-chip-border)] bg-background/85 tracking-normal normal-case"
-            >
-              {result.engine}
-            </Badge>
-          ) : null}
-        </div>
+    <article className="max-w-4xl space-y-1">
+      <div className="flex items-start gap-3">
+        <SiteFavicon hostname={meta.host} src={meta.faviconUrl} />
 
-        <div className="text-[2rem] leading-tight font-semibold tracking-tight text-[var(--text-strong)] sm:text-[2.1rem]">
-          <a
-            href={result.url}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex items-start gap-2 transition-colors hover:text-primary"
-          >
-            <span>{result.title}</span>
-            <ExternalLink className="mt-1.5 size-4 shrink-0" />
-          </a>
-        </div>
-        {result.snippet ? (
-          <p className="text-[1.05rem] leading-8 text-[var(--text-body)]">
-            {result.snippet}
+        <div className="min-w-0 space-y-0.5">
+          <p className="truncate text-sm leading-5 text-[var(--text-strong)]">
+            {primaryLabel}
           </p>
-        ) : null}
+          <p className="truncate text-sm leading-5 text-[var(--text-soft-alt)]">
+            {`https://${meta.host}/`}
+            {meta.path ? (
+              <span className="text-[var(--text-soft)]">
+                {" › "} {meta.path}
+              </span>
+            ) : null}
+          </p>
+        </div>
+      </div>
 
-        <p className="truncate text-sm text-[var(--text-soft-alt)]">
-          {result.displayUrl ?? result.url}
+      <h2 className="text-[20px] leading-tight font-normal tracking-tight">
+        <a
+          href={result.url}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-primary transition-colors hover:underline"
+        >
+          {result.title}
+        </a>
+      </h2>
+
+      {result.snippet ? (
+        <p className="text-[14px] leading-6 text-[var(--text-body)]">
+          {result.snippet}
         </p>
-      </CardContent>
-    </Card>
+      ) : null}
+
+      {result.engine ? (
+        <p className="text-[13px] leading-5 text-[var(--text-soft-alt)]">
+          - {formatEngineName(result.engine)}
+        </p>
+      ) : null}
+    </article>
   );
 }

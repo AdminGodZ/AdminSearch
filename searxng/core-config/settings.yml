@@ -2,19 +2,43 @@ use_default_settings:
   engines:
     keep_only:
       - duckduckgo
-      - qwant
+      - ddg definitions
+      - brave
+      - google
+      - bing
       - startpage
-      - wikipedia
       - duckduckgo images
-      - qwant images
-      - startpage images
+      - brave.images
+      - google images
       - bing images
-      - openverse
+      - startpage images
 
 search:
+  autocomplete: google
+  autocomplete_min: 2
+  # Alternate supported autocomplete backends:
+  # autocomplete: brave
+  # autocomplete: duckduckgo
+  # autocomplete: bing
   formats:
     - html
     - json
+
+plugins:
+  searx.plugins.calculator.SXNGPlugin:
+    active: true
+
+  searx.plugins.hash_plugin.SXNGPlugin:
+    active: true
+
+  searx.plugins.self_info.SXNGPlugin:
+    active: true
+
+  searx.plugins.unit_converter.SXNGPlugin:
+    active: true
+
+  searx.plugins.time_zone.SXNGPlugin:
+    active: true
 
 server:
   secret_key: "change-this-in-production"
@@ -25,19 +49,23 @@ server:
 engines:
   - name: duckduckgo
     disabled: false
-  - name: qwant
+  - name: ddg definitions
+    disabled: false
+  - name: brave
+    disabled: false
+  - name: google
+    disabled: false
+  - name: bing
     disabled: false
   - name: startpage
     disabled: false
-  - name: wikipedia
-    disabled: false
   - name: duckduckgo images
     disabled: false
-  - name: qwant images
+  - name: brave.images
     disabled: false
-  - name: startpage images
+  - name: google images
     disabled: false
   - name: bing images
     disabled: false
-  - name: openverse
+  - name: startpage images
     disabled: false

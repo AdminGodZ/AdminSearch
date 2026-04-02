@@ -1,4 +1,5 @@
 import type {
+  SearchInfobox,
   SearchRequest,
   SearchResponse,
   SearchResult,
@@ -90,6 +91,132 @@ function extractSuggestions(rawSuggestions: unknown[] | undefined) {
   );
 }
 
+function extractString(value: unknown) {
+  return typeof value === "string" && value.trim() !== "" ? value : undefined;
+}
+
+function readInfoboxUrl(record: SearxRawResult) {
+  const directUrl = extractString(record.url);
+
+  if (directUrl) {
+    return directUrl;
+  }
+
+  const urls = record.urls;
+
+  if (!Array.isArray(urls)) {
+    return undefined;
+  }
+
+  for (const entry of urls) {
+    if (!entry || typeof entry !== "object") {
+      continue;
+    }
+
+    const nestedUrl = extractString((entry as SearxRawResult).url);
+
+    if (nestedUrl) {
+      return nestedUrl;
+    }
+  }
+
+  return undefined;
+}
+
+function readInfoboxSource(record: SearxRawResult, url?: string) {
+  const urls = record.urls;
+
+  if (Array.isArray(urls)) {
+    for (const entry of urls) {
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+
+      const title = extractString((entry as SearxRawResult).title);
+
+      if (title) {
+        return title;
+      }
+    }
+  }
+
+  return url ? readHostname(url) : undefined;
+}
+
+function readInfoboxContent(record: SearxRawResult) {
+  const directContent = extractString(record.content);
+
+  if (directContent) {
+    return directContent;
+  }
+
+  const attributes = record.attributes;
+
+  if (Array.isArray(attributes)) {
+    const attributeValues = attributes
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") {
+          return undefined;
+        }
+
+        const value = (entry as SearxRawResult).value;
+
+        if (Array.isArray(value)) {
+          return value
+            .filter((part): part is string => typeof part === "string")
+            .join(" ")
+            .trim();
+        }
+
+        return extractString(value);
+      })
+      .filter((value): value is string => Boolean(value));
+
+    if (attributeValues.length) {
+      return attributeValues.slice(0, 3).join(" • ");
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeInfobox(
+  infobox: unknown,
+  index: number,
+): SearchInfobox | null {
+  if (!infobox || typeof infobox !== "object") {
+    return null;
+  }
+
+  const record = infobox as SearxRawResult;
+  const url = readInfoboxUrl(record);
+  const title =
+    extractString(record.title) ??
+    extractString(record.infobox) ??
+    extractString(record.id) ??
+    url ??
+    `Instant answer ${index + 1}`;
+
+  return {
+    id: `infobox-${index}-${encodeURIComponent(title)}`,
+    title,
+    content: readInfoboxContent(record),
+    url,
+    source: readInfoboxSource(record, url),
+    engine: extractString(record.engine),
+  };
+}
+
+function extractInfoboxes(rawInfoboxes: unknown[] | undefined) {
+  if (!Array.isArray(rawInfoboxes)) {
+    return [];
+  }
+
+  return rawInfoboxes
+    .map((infobox, index) => normalizeInfobox(infobox, index))
+    .filter((infobox): infobox is SearchInfobox => infobox !== null);
+}
+
 export function transformSearxResponse(
   payload: SearxResponse,
   request: SearchRequest,
@@ -118,7 +245,7 @@ export function transformSearxResponse(
     results,
     suggestions: extractSuggestions(payload.suggestions),
     answers: extractAnswers(payload.answers),
-    infoboxes: Array.isArray(payload.infoboxes) ? payload.infoboxes : [],
+    infoboxes: extractInfoboxes(payload.infoboxes),
     hasMore,
   };
 }

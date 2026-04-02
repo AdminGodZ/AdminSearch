@@ -4,6 +4,9 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
+    dns:
+      - ${SEARXNG_DNS_1:-45.90.28.0}
+      - ${SEARXNG_DNS_2:-45.90.30.0}
     environment:
       SEARXNG_PORT: 8080
       SEARXNG_BIND_ADDRESS: 0.0.0.0

@@ -1,6 +1,5 @@
 "use client";
 
-import { ImageIcon, Search as SearchIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,8 +11,8 @@ type SearchTabsProps = {
 };
 
 const tabs = [
-  { value: "all", label: "All", icon: SearchIcon },
-  { value: "images", label: "Images", icon: ImageIcon },
+  { value: "all", label: "All" },
+  { value: "images", label: "Images" },
 ] as const;
 
 export function SearchTabs({ tab }: SearchTabsProps) {
@@ -38,21 +37,19 @@ export function SearchTabs({ tab }: SearchTabsProps) {
       onValueChange={(value) => setTab(value as SearchTab)}
       className="w-full lg:w-auto"
     >
-      <TabsList className="h-auto rounded-full p-1">
-        {tabs.map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <TabsTrigger
-              key={item.value}
-              value={item.value}
-              className="rounded-full px-4 py-2 text-[15px]"
-            >
-              <Icon className="size-4" />
-              {item.label}
-            </TabsTrigger>
-          );
-        })}
+      <TabsList
+        variant="line"
+        className="h-auto w-full justify-start gap-8 rounded-none bg-transparent p-0"
+      >
+        {tabs.map((item) => (
+          <TabsTrigger
+            key={item.value}
+            value={item.value}
+            className="-mb-px h-10 cursor-pointer flex-none rounded-none border-0 border-b-2 border-b-transparent px-0 pb-3 text-[15px] font-medium text-[var(--text-soft-alt)] shadow-none outline-none ring-0 transition-colors hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-none data-[state=active]:border-b-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none after:hidden"
+          >
+            {item.label}
+          </TabsTrigger>
+        ))}
       </TabsList>
     </Tabs>
   );

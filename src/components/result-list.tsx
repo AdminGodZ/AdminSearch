@@ -13,7 +13,7 @@ export function ResultList({ tab, results }: ResultListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {results.map((result) => (
         <ResultCard key={result.id} result={result} />
       ))}

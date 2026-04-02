@@ -16,9 +16,12 @@ type Language = "en" | "de";
 const STORAGE_KEY = "adminsearch-language";
 
 export function LanguageSelect() {
+  const [mounted, setMounted] = useState(false);
   const [language, setLanguage] = useState<Language>("en");
 
   useEffect(() => {
+    setMounted(true);
+
     const saved = window.localStorage.getItem(STORAGE_KEY);
 
     if (saved === "en" || saved === "de") {
@@ -37,24 +40,35 @@ export function LanguageSelect() {
     document.documentElement.lang = next;
   }
 
+  if (!mounted) {
+    return (
+      <div className="flex h-10 min-w-0 items-center justify-center rounded-full border border-transparent bg-[var(--header-control-bg)] pl-4 pr-3 text-sm font-normal text-foreground shadow-none">
+        English
+      </div>
+    );
+  }
+
   return (
     <Select value={language} onValueChange={onValueChange}>
-      <SelectTrigger className="h-11 w-auto min-w-0 justify-center gap-2 rounded-full border-transparent bg-[var(--control-bg)] pl-4 pr-3 text-sm font-normal shadow-none [transition-property:border-color,box-shadow,color] hover:bg-[var(--control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0 *:data-[slot=select-value]:flex-none data-[state=open]:bg-[var(--control-active)]">
+      <SelectTrigger
+        size="header"
+        className="w-auto min-w-0 cursor-pointer justify-center gap-2 rounded-full border-transparent bg-[var(--header-control-bg)] pl-4 pr-3 text-sm font-normal shadow-none [transition-property:border-color,box-shadow,color] hover:bg-[var(--header-control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--header-control-active)] focus-visible:ring-0 *:data-[slot=select-value]:flex-none data-[state=open]:bg-[var(--header-control-active)]"
+      >
         <SelectValue aria-label={language}>
           {language === "de" ? "German" : "English"}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent position="popper" align="end" className="min-w-28 p-1">
+      <SelectContent position="popper" align="center" className="min-w-28 p-1">
         <SelectGroup className="p-0">
           <SelectItem
             value="en"
-            className="focus:bg-[var(--control-active)] focus:text-foreground"
+            className="focus:bg-[#f4f4f5] focus:text-foreground dark:focus:bg-[#27272a]"
           >
             English
           </SelectItem>
           <SelectItem
             value="de"
-            className="focus:bg-[var(--control-active)] focus:text-foreground"
+            className="focus:bg-[#f4f4f5] focus:text-foreground dark:focus:bg-[#27272a]"
           >
             German
           </SelectItem>

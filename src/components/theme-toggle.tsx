@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
@@ -21,17 +21,17 @@ export function ThemeToggle() {
   const isDark = mounted && resolvedTheme === "dark";
 
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="header"
       onClick={toggleTheme}
-      className={cn(
-        "flex h-11 w-auto min-w-0 items-center justify-center gap-2 rounded-full border border-transparent bg-[var(--control-bg)] pl-4 pr-3 text-sm font-normal whitespace-nowrap text-foreground transition-colors outline-none hover:bg-[var(--control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0",
-      )}
+      className="w-auto min-w-0 cursor-pointer justify-center rounded-full border-transparent bg-[var(--header-control-bg)] whitespace-nowrap text-foreground shadow-none transition-colors hover:bg-[var(--header-control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--header-control-active)] focus-visible:ring-0 active:translate-y-0"
     >
       <span className="flex items-center justify-center">
         {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
       </span>
       <span>{isDark ? "Light" : "Dark"}</span>
-    </button>
+    </Button>
   );
 }

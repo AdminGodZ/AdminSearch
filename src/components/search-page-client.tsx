@@ -1,27 +1,22 @@
 "use client";
 
-import {
-  AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
-  Compass,
-  Sparkles,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
 import { Filters } from "@/components/filters";
+import { Header } from "@/components/header";
 import { ResultList } from "@/components/result-list";
 import { SearchForm } from "@/components/search-form";
 import { SearchTabs } from "@/components/search-tabs";
-import { Badge } from "@/components/ui/badge";
+import { ThemeLogo } from "@/components/theme-logo";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SearchResponse, SearchTab } from "@/lib/search/types";
-import { buildHref } from "@/lib/utils";
+import { buildHref, cn } from "@/lib/utils";
 
 type SearchState =
   | { status: "idle" }
@@ -45,6 +40,8 @@ const resultSkeletonKeys = [
   "result-skeleton-4",
   "result-skeleton-5",
 ];
+
+const MAX_VISIBLE_SUGGESTIONS = 8;
 
 function normalizeTab(value: string | null): SearchTab {
   return value === "images" ? "images" : "all";
@@ -201,232 +198,294 @@ export function SearchPageClient() {
 
   const hasResults = Boolean(activeData?.results.length);
   const showLoadingFallback = state.status === "loading" && !activeData;
+  const resultsSectionClass =
+    currentTab === "images" ? "max-w-[1280px]" : "max-w-[980px]";
 
   return (
-    <main className="mx-auto min-h-screen max-w-[1180px] px-5 py-8 sm:px-8 lg:px-10">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm font-medium tracking-[0.34em] text-[var(--text-soft)] uppercase transition-colors hover:text-foreground"
-        >
-          <Compass className="size-4" />
-          AdminSearch
-        </Link>
+    <main className="w-full flex-1 px-5 py-8 sm:px-8 lg:px-10">
+      <div className="space-y-8">
+        <section className="-mx-5 border-b border-border/70 px-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+          <div className="mx-auto max-w-[1600px]">
+            <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[132px_725px_minmax(0,1fr)] lg:items-center lg:gap-x-5 lg:gap-y-0">
+              <Link
+                href="/"
+                className="relative block h-12 w-28 select-none sm:h-14 sm:w-32"
+              >
+                <ThemeLogo
+                  className="object-contain object-left"
+                  sizes="128px"
+                  priority
+                />
+              </Link>
 
-        <Badge
-          variant="outline"
-          className="rounded-full border-[var(--surface-chip-border)] bg-background px-4 py-1 text-[11px] tracking-[0.24em] text-[var(--text-soft)] uppercase"
-        >
-          URL-driven search state
-        </Badge>
-      </div>
+              <div className="min-w-0 w-full max-w-full">
+                <SearchForm
+                  action="/search"
+                  defaultQuery={currentQuery}
+                  tab={currentTab}
+                  language={currentLanguage}
+                  timeRange={currentTimeRange}
+                  safeSearch={currentSafeSearch}
+                  variant="landing"
+                  placeholder="Search AdminSearch"
+                  inputClassName="h-[52px] rounded-full text-[16px]"
+                />
+              </div>
 
-      <div className="space-y-7">
-        <Card className="rounded-[30px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shell-shadow)]">
-          <CardContent className="space-y-6 p-6 sm:p-7 lg:p-8">
-            <SearchForm
-              action="/search"
-              defaultQuery={currentQuery}
-              tab={currentTab}
-              language={currentLanguage}
-              timeRange={currentTimeRange}
-              safeSearch={currentSafeSearch}
-            />
-
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <SearchTabs tab={currentTab} />
-              <Filters
-                language={currentLanguage}
-                timeRange={currentTimeRange}
-                safeSearch={currentSafeSearch}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {currentQuery ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs tracking-[0.3em] text-[var(--text-soft)] uppercase">
-                Query
-              </p>
-              <h1 className="mt-1 text-4xl font-semibold tracking-tight text-balance text-[var(--text-strong)]">
-                {currentQuery}
-              </h1>
+              <Header className="hidden lg:flex lg:w-full" />
             </div>
 
-            {activeData ? (
-              <p className="text-sm text-[var(--text-soft-alt)]">
-                Showing {activeData.results.length} {currentTab} results on page{" "}
-                {currentPage}
-              </p>
-            ) : null}
+            <div className="mt-5 grid gap-3 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-x-5 lg:gap-y-0">
+              <div className="hidden lg:block" />
+              <div className="flex min-h-11 flex-wrap items-end gap-x-10 gap-y-2">
+                <SearchTabs tab={currentTab} />
+                <Filters
+                  language={currentLanguage}
+                  timeRange={currentTimeRange}
+                  safeSearch={currentSafeSearch}
+                />
+              </div>
+            </div>
           </div>
-        ) : null}
+        </section>
 
-        {state.status === "error" ? (
-          <Card className="rounded-[28px] border-destructive/20 bg-destructive/5 shadow-[0_1px_2px_rgba(28,31,38,0.04)]">
-            <CardContent className="flex items-start gap-3 p-6">
-              <AlertTriangle className="mt-0.5 size-4 text-destructive" />
-              <div className="space-y-1">
-                <p className="font-medium text-destructive">Search error</p>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  {state.message}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {!currentQuery ? (
-          <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
-            <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-2">
-                <p className="text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
-                  Ready when you are
-                </p>
-                <p className="max-w-xl text-sm leading-7 text-[var(--text-body)]">
-                  Start with a query, then switch between web and image search
-                  without leaving this page.
-                </p>
-              </div>
-              <Button asChild className="rounded-full">
-                <Link href="/search?q=site%3Agithub.com+searxng+api&tab=all">
-                  Try an example
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : showLoadingFallback ? (
-          <LoadingResults tab={currentTab} />
-        ) : null}
-
-        {activeData?.answers.length ? (
-          <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-[var(--text-strong)]">
-                <Sparkles className="size-4" />
-                Instant answers
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {activeData.answers.map((answer) => (
+        <div className="mx-auto max-w-[1600px]">
+          <div className="grid gap-7 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-x-5 lg:gap-y-7">
+            <div className="hidden lg:block" />
+            <div className="space-y-7">
+              {activeData ? (
                 <p
-                  key={answer}
-                  className="text-sm leading-7 text-[var(--text-body)]"
+                  className={cn(
+                    "text-sm text-[var(--text-soft-alt)]",
+                    resultsSectionClass,
+                  )}
                 >
-                  {answer}
+                  Showing {activeData.results.length} {currentTab} results on
+                  page {currentPage}
                 </p>
-              ))}
-            </CardContent>
-          </Card>
-        ) : null}
+              ) : null}
 
-        {activeData?.suggestions.length ? (
-          <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
-            <CardContent className="flex flex-wrap items-center gap-2 p-6">
-              <span className="mr-2 text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
-                Try next
-              </span>
-              {activeData.suggestions.map((suggestion) => (
-                <Button
-                  key={suggestion}
-                  asChild
-                  variant="outline"
-                  className="rounded-full border-[var(--surface-chip-border)] bg-background"
+              {state.status === "error" ? (
+                <Card
+                  className={cn(
+                    "rounded-[28px] border-destructive/20 bg-destructive/5 shadow-[0_1px_2px_rgba(28,31,38,0.04)]",
+                    resultsSectionClass,
+                  )}
                 >
-                  <Link
-                    href={buildHref(pathname, searchParams, {
-                      q: suggestion,
-                      page: null,
-                    })}
+                  <CardContent className="flex items-start gap-3 p-6">
+                    <AlertTriangle className="mt-0.5 size-4 text-destructive" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-destructive">
+                        Search error
+                      </p>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {state.message}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {!currentQuery ? (
+                <Card className="max-w-[980px] rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
+                  <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-2">
+                      <p className="text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
+                        Ready when you are
+                      </p>
+                      <p className="max-w-xl text-sm leading-7 text-[var(--text-body)]">
+                        Start with a query, then switch between web and image
+                        search without leaving this page.
+                      </p>
+                    </div>
+                    <Button asChild className="rounded-full">
+                      <Link href="/search?q=site%3Agithub.com+searxng+api&tab=all">
+                        Try an example
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : showLoadingFallback ? (
+                <LoadingResults tab={currentTab} />
+              ) : null}
+
+              {activeData &&
+              (activeData.answers.length || activeData.infoboxes.length) ? (
+                <section className={cn("space-y-4", resultsSectionClass)}>
+                  <div className="flex items-center gap-2 text-lg font-semibold text-[var(--text-strong)]">
+                    <Sparkles className="size-4" />
+                    <h2>Instant answers</h2>
+                  </div>
+
+                  <div className="space-y-3">
+                    {activeData.answers.map((answer) => (
+                      <div
+                        key={answer}
+                        className="rounded-[24px] border border-[#ebebeb] bg-background p-5 shadow-none dark:border-border dark:bg-popover"
+                      >
+                        <p className="text-sm leading-7 text-[var(--text-body)]">
+                          {answer}
+                        </p>
+                      </div>
+                    ))}
+
+                    {activeData.infoboxes.map((infobox) => (
+                      <div
+                        key={infobox.id}
+                        className="space-y-3 rounded-[24px] border border-[#ebebeb] bg-background p-5 shadow-none dark:border-border dark:bg-popover"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium text-[var(--text-strong)]">
+                            {infobox.title}
+                          </p>
+                          {infobox.engine ? (
+                            <span className="text-xs text-[var(--text-soft-alt)]">
+                              - {infobox.engine}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {infobox.content ? (
+                          <p className="text-sm leading-7 text-[var(--text-body)]">
+                            {infobox.content}
+                          </p>
+                        ) : null}
+
+                        {infobox.url ? (
+                          <a
+                            href={infobox.url}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className="inline-flex text-sm text-primary hover:underline"
+                          >
+                            {infobox.source ?? infobox.url}
+                          </a>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {activeData?.suggestions.length ? (
+                <div className={cn("space-y-3", resultsSectionClass)}>
+                  <span className="block text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
+                    Try next
+                  </span>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    {activeData.suggestions
+                      .slice(0, MAX_VISIBLE_SUGGESTIONS)
+                      .map((suggestion) => (
+                        <Link
+                          key={suggestion}
+                          href={buildHref(pathname, searchParams, {
+                            q: suggestion,
+                            page: null,
+                          })}
+                          className="max-w-full truncate text-sm text-[var(--text-body)] transition-colors hover:text-foreground hover:underline"
+                        >
+                          {suggestion}
+                        </Link>
+                      ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {activeData && hasResults ? (
+                <div className={resultsSectionClass}>
+                  <ResultList tab={currentTab} results={activeData.results} />
+                </div>
+              ) : null}
+
+              {currentQuery && activeData && !hasResults ? (
+                <Card
+                  className={cn(
+                    "rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]",
+                    resultsSectionClass,
+                  )}
+                >
+                  <CardContent className="space-y-3 p-6">
+                    <p className="font-medium">No results found.</p>
+                    <p className="text-sm leading-7 text-[var(--text-body)]">
+                      Try a broader query, switch to another tab, or reduce your
+                      filters.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {activeData && (currentPage > 1 || activeData.hasMore) ? (
+                <>
+                  <div className={resultsSectionClass}>
+                    <Separator className="my-2 bg-[var(--surface-separator)]" />
+                  </div>
+                  <div
+                    className={cn(
+                      "flex flex-wrap items-center justify-between gap-3",
+                      resultsSectionClass,
+                    )}
                   >
-                    {suggestion}
-                  </Link>
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-        ) : null}
+                    {currentPage > 1 ? (
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="rounded-full border-[var(--surface-chip-border)] bg-background"
+                      >
+                        <Link
+                          href={buildHref(pathname, searchParams, {
+                            page: currentPage - 1,
+                          })}
+                        >
+                          <ArrowLeft className="size-4" />
+                          Previous
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-full border-[var(--surface-chip-border)] bg-background"
+                        disabled
+                      >
+                        <ArrowLeft className="size-4" />
+                        Previous
+                      </Button>
+                    )}
 
-        {activeData && hasResults ? (
-          <ResultList tab={currentTab} results={activeData.results} />
-        ) : null}
+                    <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
+                      Page {currentPage}
+                    </p>
 
-        {currentQuery && activeData && !hasResults ? (
-          <Card className="rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]">
-            <CardContent className="space-y-3 p-6">
-              <p className="font-medium">No results found.</p>
-              <p className="text-sm leading-7 text-[var(--text-body)]">
-                Try a broader query, switch to another tab, or reduce your
-                filters.
-              </p>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {activeData && (currentPage > 1 || activeData.hasMore) ? (
-          <>
-            <Separator className="my-2 bg-[var(--surface-separator)]" />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              {currentPage > 1 ? (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="rounded-full border-[var(--surface-chip-border)] bg-background"
-                >
-                  <Link
-                    href={buildHref(pathname, searchParams, {
-                      page: currentPage - 1,
-                    })}
-                  >
-                    <ArrowLeft className="size-4" />
-                    Previous
-                  </Link>
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-full border-[var(--surface-chip-border)] bg-background"
-                  disabled
-                >
-                  <ArrowLeft className="size-4" />
-                  Previous
-                </Button>
-              )}
-
-              <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
-                Page {currentPage}
-              </p>
-
-              {activeData.hasMore ? (
-                <Button
-                  asChild
-                  className="rounded-full bg-[var(--brand-button)] text-white hover:bg-[var(--brand-button-hover)] dark:text-[var(--primary-foreground)]"
-                >
-                  <Link
-                    href={buildHref(pathname, searchParams, {
-                      page: currentPage + 1,
-                    })}
-                  >
-                    Next
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  className="rounded-full bg-[var(--brand-button)] text-white hover:bg-[var(--brand-button-hover)] dark:text-[var(--primary-foreground)]"
-                  disabled
-                >
-                  Next
-                  <ArrowRight className="size-4" />
-                </Button>
-              )}
+                    {activeData.hasMore ? (
+                      <Button
+                        asChild
+                        className="rounded-full bg-[var(--brand-button)] text-white hover:bg-[var(--brand-button-hover)] dark:text-[var(--primary-foreground)]"
+                      >
+                        <Link
+                          href={buildHref(pathname, searchParams, {
+                            page: currentPage + 1,
+                          })}
+                        >
+                          Next
+                          <ArrowRight className="size-4" />
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        className="rounded-full bg-[var(--brand-button)] text-white hover:bg-[var(--brand-button-hover)] dark:text-[var(--primary-foreground)]"
+                        disabled
+                      >
+                        Next
+                        <ArrowRight className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                </>
+              ) : null}
             </div>
-          </>
-        ) : null}
+          </div>
+        </div>
       </div>
     </main>
   );
