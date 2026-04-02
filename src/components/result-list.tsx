@@ -1,5 +1,6 @@
 import { ImageGrid } from "@/components/image-grid";
 import { ResultCard } from "@/components/result-card";
+import { VideoResultCard } from "@/components/video-result-card";
 import type { SearchResult, SearchTab } from "@/lib/search/types";
 
 type ResultListProps = {
@@ -10,6 +11,16 @@ type ResultListProps = {
 export function ResultList({ tab, results }: ResultListProps) {
   if (tab === "images") {
     return <ImageGrid results={results} />;
+  }
+
+  if (tab === "videos") {
+    return (
+      <div className="space-y-8">
+        {results.map((result) => (
+          <VideoResultCard key={result.id} result={result} />
+        ))}
+      </div>
+    );
   }
 
   return (

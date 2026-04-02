@@ -18,13 +18,16 @@ export function LandingSearchInput({
   className,
 }: LandingSearchInputProps) {
   const inputId = useId();
+  const suggestionsId = `${inputId}-suggestions`;
   const formRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [value, setValue] = useState(defaultValue);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   useEffect(() => {
     setHasMounted(true);
@@ -34,6 +37,7 @@ export function LandingSearchInput({
     setValue(defaultValue);
     setIsOpen(false);
     setSuggestions([]);
+    setHighlightedIndex(-1);
   }, [defaultValue]);
 
   useEffect(() => {
@@ -80,10 +84,12 @@ export function LandingSearchInput({
 
         setSuggestions(nextSuggestions);
         setIsOpen(isFocused && nextSuggestions.length > 0);
+        setHighlightedIndex(-1);
       } catch {
         if (!controller.signal.aborted) {
           setSuggestions([]);
           setIsOpen(false);
+          setHighlightedIndex(-1);
         }
       }
     }, 220);
@@ -98,6 +104,7 @@ export function LandingSearchInput({
     function handlePointerDown(event: MouseEvent) {
       if (!formRef.current?.contains(event.target as Node)) {
         setIsOpen(false);
+        setHighlightedIndex(-1);
       }
     }
 
@@ -109,6 +116,7 @@ export function LandingSearchInput({
     setValue(suggestion);
     setIsOpen(false);
     setSuggestions([]);
+    setHighlightedIndex(-1);
     if (inputRef.current) {
       inputRef.current.value = suggestion;
       window.requestAnimationFrame(() => {
@@ -119,6 +127,16 @@ export function LandingSearchInput({
 
   const showValueActions = hasMounted && value.length > 0;
   const isMergedOpen = isOpen && suggestions.length > 0;
+
+  useEffect(() => {
+    if (!isMergedOpen || highlightedIndex < 0) {
+      return;
+    }
+
+    suggestionRefs.current[highlightedIndex]?.scrollIntoView({
+      block: "nearest",
+    });
+  }, [highlightedIndex, isMergedOpen]);
 
   return (
     <div ref={formRef} className="relative w-full">
@@ -132,7 +150,10 @@ export function LandingSearchInput({
         name="q"
         type="text"
         value={value}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => {
+          setValue(event.target.value);
+          setHighlightedIndex(-1);
+        }}
         onFocus={() => {
           setIsFocused(true);
           setIsOpen(suggestions.length > 0);
@@ -140,19 +161,61 @@ export function LandingSearchInput({
         onBlur={() => {
           setIsFocused(false);
         }}
+        onKeyDown={(event) => {
+          if (!suggestions.length) {
+            return;
+          }
+
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setIsOpen(true);
+            setHighlightedIndex((prev) =>
+              prev < suggestions.length - 1 ? prev + 1 : 0,
+            );
+            return;
+          }
+
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setIsOpen(true);
+            setHighlightedIndex((prev) =>
+              prev > 0 ? prev - 1 : suggestions.length - 1,
+            );
+            return;
+          }
+
+          if (event.key === "Escape") {
+            setIsOpen(false);
+            setHighlightedIndex(-1);
+            return;
+          }
+
+          if (event.key === "Enter" && highlightedIndex >= 0) {
+            event.preventDefault();
+            applySuggestion(suggestions[highlightedIndex]);
+          }
+        }}
         placeholder={placeholder}
         className={cn(
           "h-[50px] border-transparent bg-[var(--control-bg)] pr-12 pl-12 text-foreground shadow-none [transition-property:border-color,box-shadow,color] focus:bg-[var(--control-active)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0 dark:text-white dark:placeholder:text-white/60",
+          className,
           isMergedOpen &&
             "rounded-b-none rounded-t-[1.75rem] border-b border-b-[#ebebeb] bg-[var(--control-active)] dark:border-b-border dark:bg-[var(--control-active)]",
-          className,
         )}
         autoComplete="off"
         spellCheck={false}
+        aria-autocomplete="list"
+        aria-expanded={isMergedOpen}
+        aria-controls={isMergedOpen ? suggestionsId : undefined}
+        aria-activedescendant={
+          highlightedIndex >= 0
+            ? `${suggestionsId}-item-${highlightedIndex}`
+            : undefined
+        }
       />
       {showValueActions ? (
         <>
-          <span className="pointer-events-none absolute top-1/2 right-12 z-10 h-8 w-px -translate-y-1/2 bg-black/8 dark:bg-white/10" />
+          <span className="pointer-events-none absolute top-1/2 right-[55px] z-10 h-8 w-px -translate-y-1/2 bg-black/8 dark:bg-white/10" />
           <button
             type="button"
             onClick={() => {
@@ -160,7 +223,7 @@ export function LandingSearchInput({
               setSuggestions([]);
               setIsOpen(false);
             }}
-            className="absolute top-1/2 right-2 z-10 inline-flex size-9 cursor-pointer items-center justify-center -translate-y-1/2 rounded-full text-muted-foreground transition-colors hover:bg-black/6 hover:text-foreground dark:hover:bg-white/8"
+            className="absolute top-1/2 right-3 z-10 inline-flex size-9 cursor-pointer items-center justify-center -translate-y-1/2 rounded-full text-muted-foreground transition-colors hover:bg-black/6 hover:text-foreground dark:hover:bg-white/8"
             aria-label="Clear search"
           >
             <X className="size-5" />
@@ -171,12 +234,23 @@ export function LandingSearchInput({
       {isMergedOpen ? (
         <div className="absolute top-[calc(100%-1px)] left-0 z-30 w-full overflow-hidden rounded-b-[1.75rem] bg-[var(--control-active)] shadow-none dark:bg-[var(--control-active)]">
           <div className="h-px w-full bg-[#dddddd] dark:bg-[#30343d]" />
-          <ul className="p-2">
-            {suggestions.map((suggestion) => (
-              <li key={suggestion}>
+          <div id={suggestionsId} role="listbox" className="p-2">
+            {suggestions.map((suggestion, index) => (
+              <div key={suggestion}>
                 <button
+                  ref={(element) => {
+                    suggestionRefs.current[index] = element;
+                  }}
+                  id={`${suggestionsId}-item-${index}`}
                   type="button"
-                  className="flex w-full items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#31343b]"
+                  role="option"
+                  aria-selected={highlightedIndex === index}
+                  className={cn(
+                    "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#31343b]",
+                    highlightedIndex === index &&
+                      "bg-[#f8f8f8] dark:bg-[#31343b]",
+                  )}
+                  onMouseEnter={() => setHighlightedIndex(index)}
                   onMouseDown={(event) => {
                     event.preventDefault();
                     applySuggestion(suggestion);
@@ -184,9 +258,9 @@ export function LandingSearchInput({
                 >
                   {suggestion}
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       ) : null}
     </div>

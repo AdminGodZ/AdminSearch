@@ -41,7 +41,13 @@ export async function GET(request: Request) {
   try {
     const searchRequest = parseSearchRequest(new URL(request.url).searchParams);
     const upstreamResponse = await fetchSearxResponse(searchRequest);
-    const payload = transformSearxResponse(upstreamResponse, searchRequest);
+    const payload = transformSearxResponse(
+      upstreamResponse.payload,
+      searchRequest,
+      {
+        hasMore: upstreamResponse.hasMore,
+      },
+    );
 
     return NextResponse.json(payload, {
       headers: rateLimitHeaders,

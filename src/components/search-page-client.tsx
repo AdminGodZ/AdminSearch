@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
@@ -44,7 +44,16 @@ const resultSkeletonKeys = [
 const MAX_VISIBLE_SUGGESTIONS = 8;
 
 function normalizeTab(value: string | null): SearchTab {
-  return value === "images" ? "images" : "all";
+  switch (value) {
+    case "images":
+      return "images";
+    case "videos":
+      return "videos";
+    case "news":
+      return "news";
+    default:
+      return "all";
+  }
 }
 
 function normalizeSafeSearch(value: string | null): 0 | 1 | 2 {
@@ -200,6 +209,14 @@ export function SearchPageClient() {
   const showLoadingFallback = state.status === "loading" && !activeData;
   const resultsSectionClass =
     currentTab === "images" ? "max-w-[1280px]" : "max-w-[980px]";
+  const resultsLabel =
+    currentTab === "images"
+      ? "image results"
+      : currentTab === "videos"
+        ? "video results"
+        : currentTab === "news"
+          ? "news results"
+          : "results";
 
   return (
     <main className="w-full flex-1 px-5 py-8 sm:px-8 lg:px-10">
@@ -260,8 +277,8 @@ export function SearchPageClient() {
                     resultsSectionClass,
                   )}
                 >
-                  Showing {activeData.results.length} {currentTab} results on
-                  page {currentPage}
+                  Showing {activeData.results.length} {resultsLabel} on page{" "}
+                  {currentPage}
                 </p>
               ) : null}
 
@@ -294,8 +311,8 @@ export function SearchPageClient() {
                         Ready when you are
                       </p>
                       <p className="max-w-xl text-sm leading-7 text-[var(--text-body)]">
-                        Start with a query, then switch between web and image
-                        search without leaving this page.
+                        Start with a query, then switch between web, images,
+                        videos, and news without leaving this page.
                       </p>
                     </div>
                     <Button asChild className="rounded-full">
@@ -312,11 +329,6 @@ export function SearchPageClient() {
               {activeData &&
               (activeData.answers.length || activeData.infoboxes.length) ? (
                 <section className={cn("space-y-4", resultsSectionClass)}>
-                  <div className="flex items-center gap-2 text-lg font-semibold text-[var(--text-strong)]">
-                    <Sparkles className="size-4" />
-                    <h2>Instant answers</h2>
-                  </div>
-
                   <div className="space-y-3">
                     {activeData.answers.map((answer) => (
                       <div

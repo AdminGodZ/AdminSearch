@@ -12,6 +12,22 @@ use_default_settings:
       - google images
       - bing images
       - startpage images
+      - youtube
+      - google videos
+      - google news
+      # Video alternates:
+      # - bing videos
+      # - brave.videos
+      # - dailymotion
+      # - duckduckgo videos
+      # - odysee
+      - startpage news
+      - wikinews
+      - bing news
+      - brave.news
+      - duckduckgo news
+      - reuters
+      - yahoo news
 
 search:
   autocomplete: google
@@ -68,4 +84,35 @@ engines:
   - name: bing images
     disabled: false
   - name: startpage images
+    disabled: false
+  - name: youtube
+    disabled: false
+  - name: google videos
+    disabled: false
+  - name: google news
+    disabled: false
+  # Video alternates:
+  # - name: bing videos
+  #   disabled: false
+  # - name: brave.videos
+  #   disabled: false
+  # - name: dailymotion
+  #   disabled: false
+  # - name: duckduckgo videos
+  #   disabled: false
+  # - name: odysee
+  #   disabled: false
+  - name: startpage news
+    disabled: false
+  - name: wikinews
+    disabled: false
+  - name: bing news
+    disabled: false
+  - name: brave.news
+    disabled: false
+  - name: duckduckgo news
+    disabled: false
+  - name: reuters
+    disabled: false
+  - name: yahoo news
     disabled: false

@@ -13,6 +13,8 @@ type SearchTabsProps = {
 const tabs = [
   { value: "all", label: "All" },
   { value: "images", label: "Images" },
+  { value: "videos", label: "Videos" },
+  { value: "news", label: "News" },
 ] as const;
 
 export function SearchTabs({ tab }: SearchTabsProps) {

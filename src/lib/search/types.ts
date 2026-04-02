@@ -1,4 +1,4 @@
-export type SearchTab = "all" | "images";
+export type SearchTab = "all" | "images" | "videos" | "news";
 
 export type SearchRequest = {
   q: string;
@@ -11,12 +11,16 @@ export type SearchRequest = {
 
 export type SearchResult = {
   id: string;
-  kind: "web" | "image";
+  kind: "web" | "image" | "video";
   title: string;
   url: string;
   displayUrl?: string;
   snippet?: string;
   thumbnailUrl?: string;
+  previewUrl?: string;
+  author?: string;
+  duration?: string;
+  publishedAt?: string;
   source?: string;
   engine?: string;
 };

@@ -1,3 +1,4 @@
+import { APP_RESULTS_PER_PAGE } from "@/lib/search/searx-client";
 import type {
   SearchInfobox,
   SearchRequest,
@@ -37,6 +38,14 @@ function readThumbnail(result: SearxRawResult) {
   ]);
 }
 
+function readPreviewUrl(result: SearxRawResult) {
+  return readString(result, ["iframe_src"]);
+}
+
+function readPublishedAt(result: SearxRawResult) {
+  return readString(result, ["publishedDate", "pubdate"]);
+}
+
 function normalizeResult(
   result: SearxRawResult,
   index: number,
@@ -55,19 +64,27 @@ function normalizeResult(
     (tab === "images" ? "Untitled image" : "Untitled result");
 
   const thumbnailUrl = readThumbnail(result);
+  const previewUrl = readPreviewUrl(result);
   const displayUrl =
     readString(result, ["pretty_url", "parsed_url"]) ?? hostname ?? url;
   const snippet = readString(result, ["content", "snippet", "description"]);
   const engine = readString(result, ["engine"]);
+  const author = readString(result, ["author"]);
+  const duration = readString(result, ["length"]);
+  const publishedAt = readPublishedAt(result);
 
   return {
     id: `${tab}-${index}-${encodeURIComponent(url)}`,
-    kind: tab === "images" ? "image" : "web",
+    kind: tab === "images" ? "image" : tab === "videos" ? "video" : "web",
     title,
     url,
     displayUrl,
     snippet,
     thumbnailUrl,
+    previewUrl,
+    author,
+    duration,
+    publishedAt,
     source: hostname,
     engine,
   };
@@ -220,6 +237,7 @@ function extractInfoboxes(rawInfoboxes: unknown[] | undefined) {
 export function transformSearxResponse(
   payload: SearxResponse,
   request: SearchRequest,
+  options?: { hasMore?: boolean },
 ): SearchResponse {
   const results = Array.isArray(payload.results)
     ? payload.results
@@ -232,11 +250,11 @@ export function transformSearxResponse(
       ? payload.number_of_results
       : undefined;
 
-  const pageSizeHeuristic = request.tab === "images" ? 24 : 10;
   const hasMore =
-    numberOfResults !== undefined
+    options?.hasMore ??
+    (numberOfResults !== undefined
       ? request.page * Math.max(results.length, 1) < numberOfResults
-      : results.length >= pageSizeHeuristic;
+      : results.length >= APP_RESULTS_PER_PAGE);
 
   return {
     query: request.q,

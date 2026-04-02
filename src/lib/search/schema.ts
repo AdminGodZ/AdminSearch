@@ -9,7 +9,7 @@ const positiveInteger = z
 
 export const searchRequestSchema = z.object({
   q: z.string().trim().min(1, "q is required"),
-  tab: z.enum(["all", "images"]).default("all"),
+  tab: z.enum(["all", "images", "videos", "news"]).default("all"),
   page: z
     .preprocess((value) => {
       if (value === undefined) {
