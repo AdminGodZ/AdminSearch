@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col bg-background">
       <div className="flex w-full justify-end pt-6 pl-6 pr-6 sm:pl-8 sm:pr-6 lg:pl-10 lg:pr-6">
-        <Header className="w-auto" />
+        <Header className="w-auto" inverted />
       </div>
 
       <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-6 sm:px-8 lg:px-10">
@@ -18,7 +18,7 @@ export default function Home() {
               <ThemeLogo className="object-contain" sizes="176px" priority />
             </div>
 
-            <h1 className="mt-4 select-none text-4xl leading-none font-semibold tracking-tight text-foreground sm:text-5xl">
+            <h1 className="mt-4 select-none text-4xl leading-none font-semibold tracking-tight text-foreground dark:text-white sm:text-5xl">
               <SpecialText speed={22} delay={0.1} className="leading-none">
                 AdminSearch
               </SpecialText>

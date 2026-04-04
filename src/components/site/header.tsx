@@ -8,18 +8,29 @@ import { cn } from "@/lib/utils";
 
 type HeaderProps = ComponentProps<"header">;
 
-export function Header({ className, ...props }: HeaderProps) {
+export function Header({
+  className,
+  ...props
+}: HeaderProps & { inverted?: boolean }) {
+  const { inverted = false, ...headerProps } = props;
+  const invertedClassName = inverted
+    ? "dark:text-white dark:[&_svg]:text-white"
+    : undefined;
+
   return (
-    <header className={cn("flex w-full items-center", className)} {...props}>
+    <header
+      className={cn("flex w-full items-center", className)}
+      {...headerProps}
+    >
       <div className="flex w-full items-center justify-end gap-2 sm:gap-3">
-        <LanguageSelect />
-        <ThemeToggle />
+        <LanguageSelect className={invertedClassName} />
+        <ThemeToggle className={invertedClassName} />
         <Button
           type="button"
           variant="chrome"
           size="header"
           aria-label="Settings"
-          className="w-10 min-w-0 cursor-pointer px-0"
+          className={cn("w-10 min-w-0 cursor-pointer px-0", invertedClassName)}
         >
           <Settings className="size-4.5" />
         </Button>

@@ -156,7 +156,7 @@ export function Filters({ language, timeRange, safeSearch }: FiltersProps) {
                 className={cn(
                   "flex w-full cursor-pointer items-center justify-between rounded-[1rem] px-4 py-3 text-left text-[15px] transition-colors",
                   activeGroup === group.key
-                    ? "bg-[#f4f4f5] text-foreground dark:bg-[#27272a]"
+                    ? "bg-[#f4f4f5] text-foreground dark:bg-[#3c4043]"
                     : "text-[var(--text-body)] hover:bg-[#f4f4f5] dark:hover:bg-[#27272a]",
                 )}
                 onMouseEnter={() => setActiveGroup(group.key)}
@@ -185,7 +185,7 @@ export function Filters({ language, timeRange, safeSearch }: FiltersProps) {
                   className={cn(
                     "flex w-full cursor-pointer items-center justify-between rounded-[1rem] px-4 py-3 text-left text-[15px] transition-colors",
                     selected
-                      ? "bg-[#f4f4f5] text-foreground dark:bg-[#27272a]"
+                      ? "bg-[#f4f4f5] text-foreground dark:bg-[#3c4043]"
                       : "text-[var(--text-body)] hover:bg-[#f4f4f5] dark:hover:bg-[#27272a]",
                   )}
                   onClick={() => applyOption(activeConfig.key, option.value)}

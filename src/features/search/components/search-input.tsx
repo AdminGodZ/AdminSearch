@@ -19,7 +19,7 @@ const inputSizeClasses = {
 } as const;
 
 const suggestionItemClassName =
-  "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#31343b]";
+  "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#3c4043]";
 const AUTOCOMPLETE_DEBOUNCE_MS = 0;
 
 export function SearchInput({
@@ -210,7 +210,7 @@ export function SearchInput({
         }}
         placeholder={placeholder}
         className={cn(
-          "rounded-full border-transparent bg-[var(--control-bg)] pr-12 pl-12 text-foreground shadow-none [transition-property:border-color,box-shadow,color] focus:bg-[var(--control-active)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0 dark:text-white dark:placeholder:text-white/60",
+          "rounded-full border-transparent bg-[var(--control-bg)] pr-12 pl-12 text-foreground shadow-none [transition-property:border-color,box-shadow,color,background-color] hover:bg-[var(--control-hover)] focus:bg-[var(--control-active)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0 dark:text-white dark:placeholder:text-white/60",
           inputSizeClasses[size],
           className,
           isMergedOpen &&
@@ -247,7 +247,7 @@ export function SearchInput({
 
       {isMergedOpen ? (
         <div className="absolute top-[calc(100%-1px)] left-0 z-30 w-full overflow-hidden rounded-b-[1.75rem] bg-[var(--control-active)] shadow-none dark:bg-[var(--control-active)]">
-          <div className="h-px w-full bg-[#dddddd] dark:bg-[#30343d]" />
+          <div className="h-px w-full bg-[#dddddd] dark:bg-[#3c4043]" />
           <div id={suggestionsId} role="listbox" className="p-2">
             {suggestions.map((suggestion, index) => (
               <div key={suggestion}>
@@ -262,7 +262,7 @@ export function SearchInput({
                   className={cn(
                     suggestionItemClassName,
                     highlightedIndex === index &&
-                      "bg-[#f8f8f8] dark:bg-[#31343b]",
+                      "bg-[#f8f8f8] dark:bg-[#3c4043]",
                   )}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   onMouseDown={(event) => {

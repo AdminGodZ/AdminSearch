@@ -11,12 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type Language = "en" | "de";
+type LanguageSelectProps = {
+  className?: string;
+};
 
 const STORAGE_KEY = "adminsearch-language";
 
-export function LanguageSelect() {
+export function LanguageSelect({ className }: LanguageSelectProps) {
   const [mounted, setMounted] = useState(false);
   const [language, setLanguage] = useState<Language>("en");
 
@@ -43,7 +47,12 @@ export function LanguageSelect() {
 
   if (!mounted) {
     return (
-      <div className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-full border border-transparent bg-[var(--header-control-bg)] pl-4 pr-3 text-sm font-normal text-foreground shadow-none">
+      <div
+        className={cn(
+          "flex h-10 min-w-0 items-center justify-center gap-2 rounded-full border border-transparent bg-[var(--header-control-bg)] pl-4 pr-3 text-sm font-normal text-foreground shadow-none",
+          className,
+        )}
+      >
         <span>English</span>
         <ChevronDownIcon
           aria-hidden="true"
@@ -58,7 +67,10 @@ export function LanguageSelect() {
       <SelectTrigger
         variant="chrome"
         size="header"
-        className="w-auto min-w-0 cursor-pointer justify-center gap-2 pl-4 pr-3 text-sm font-normal *:data-[slot=select-value]:flex-none"
+        className={cn(
+          "w-auto min-w-0 cursor-pointer justify-center gap-2 pl-4 pr-3 text-sm font-normal *:data-[slot=select-value]:flex-none",
+          className,
+        )}
       >
         <SelectValue aria-label={language}>
           {language === "de" ? "German" : "English"}
@@ -66,18 +78,8 @@ export function LanguageSelect() {
       </SelectTrigger>
       <SelectContent position="popper" align="center" className="min-w-28 p-1">
         <SelectGroup className="p-0">
-          <SelectItem
-            value="en"
-            className="focus:bg-[#f4f4f5] focus:text-foreground dark:focus:bg-[#27272a]"
-          >
-            English
-          </SelectItem>
-          <SelectItem
-            value="de"
-            className="focus:bg-[#f4f4f5] focus:text-foreground dark:focus:bg-[#27272a]"
-          >
-            German
-          </SelectItem>
+          <SelectItem value="en">English</SelectItem>
+          <SelectItem value="de">German</SelectItem>
         </SelectGroup>
       </SelectContent>
     </Select>

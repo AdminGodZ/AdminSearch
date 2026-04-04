@@ -4,8 +4,13 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  className?: string;
+};
+
+export function ThemeToggle({ className }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
 
   function toggleTheme() {
@@ -18,7 +23,10 @@ export function ThemeToggle() {
       variant="chrome"
       size="header"
       onClick={toggleTheme}
-      className="w-auto min-w-0 cursor-pointer justify-center whitespace-nowrap"
+      className={cn(
+        "w-auto min-w-0 cursor-pointer justify-center whitespace-nowrap",
+        className,
+      )}
     >
       <span className="flex items-center justify-center dark:hidden">
         <Sun className="size-4" />
