@@ -11,7 +11,8 @@ export function ImageGrid({ results }: ImageGridProps) {
       {results.map((result) => (
         <Card
           key={result.id}
-          className="overflow-hidden rounded-[28px] border-[var(--surface-panel-border)] bg-[var(--surface-panel)] shadow-[var(--surface-shadow)]"
+          variant="panel"
+          className="overflow-hidden rounded-[28px]"
         >
           <a
             href={result.url}

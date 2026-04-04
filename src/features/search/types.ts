@@ -32,12 +32,38 @@ export type SearchInfobox = {
   url?: string;
   source?: string;
   engine?: string;
+  imageUrl?: string;
+  attributes: SearchInfoboxAttribute[];
+  urls: SearchInfoboxUrl[];
+  relatedTopics: SearchInfoboxRelatedTopic[];
+};
+
+export type SearchInfoboxAttribute = {
+  label: string;
+  value?: string;
+  image?: {
+    src: string;
+    alt?: string;
+  };
+};
+
+export type SearchInfoboxUrl = {
+  title: string;
+  url: string;
+  official?: boolean;
+};
+
+export type SearchInfoboxRelatedTopic = {
+  name: string;
+  suggestions: string[];
 };
 
 export type SearchResponse = {
   query: string;
   tab: SearchTab;
   page: number;
+  totalResults?: number;
+  requestDurationMs?: number;
   results: SearchResult[];
   suggestions: string[];
   answers: string[];

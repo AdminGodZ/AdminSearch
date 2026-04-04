@@ -1,6 +1,9 @@
 import { APP_RESULTS_PER_PAGE } from "@/features/search/server/searx-client";
 import type {
   SearchInfobox,
+  SearchInfoboxAttribute,
+  SearchInfoboxRelatedTopic,
+  SearchInfoboxUrl,
   SearchRequest,
   SearchResponse,
   SearchResult,
@@ -197,6 +200,136 @@ function readInfoboxContent(record: SearxRawResult) {
   return undefined;
 }
 
+function readInfoboxImage(record: SearxRawResult) {
+  return readString(record, ["img_src", "thumbnail_src", "thumbnail", "img"]);
+}
+
+function normalizeInfoboxAttribute(
+  attribute: unknown,
+): SearchInfoboxAttribute | null {
+  if (!attribute || typeof attribute !== "object") {
+    return null;
+  }
+
+  const record = attribute as SearxRawResult;
+  const label = extractString(record.label);
+
+  if (!label) {
+    return null;
+  }
+
+  const rawValue = record.value;
+  const value = Array.isArray(rawValue)
+    ? rawValue
+        .filter((part): part is string => typeof part === "string")
+        .join(" ")
+        .trim() || undefined
+    : extractString(rawValue);
+
+  let image: SearchInfoboxAttribute["image"];
+  const rawImage = record.image;
+
+  if (rawImage && typeof rawImage === "object") {
+    const imageRecord = rawImage as SearxRawResult;
+    const src = extractString(imageRecord.src);
+
+    if (src) {
+      image = {
+        src,
+        alt: extractString(imageRecord.alt),
+      };
+    }
+  }
+
+  return {
+    label,
+    value,
+    image,
+  };
+}
+
+function extractInfoboxAttributes(rawAttributes: unknown) {
+  if (!Array.isArray(rawAttributes)) {
+    return [];
+  }
+
+  return rawAttributes
+    .map((attribute) => normalizeInfoboxAttribute(attribute))
+    .filter(
+      (attribute): attribute is SearchInfoboxAttribute => attribute !== null,
+    );
+}
+
+function normalizeInfoboxUrl(urlEntry: unknown): SearchInfoboxUrl | null {
+  if (!urlEntry || typeof urlEntry !== "object") {
+    return null;
+  }
+
+  const record = urlEntry as SearxRawResult;
+  const url = extractString(record.url);
+  const title = extractString(record.title);
+
+  if (!url || !title) {
+    return null;
+  }
+
+  return {
+    title,
+    url,
+    official: record.official === true,
+  };
+}
+
+function extractInfoboxUrls(rawUrls: unknown) {
+  if (!Array.isArray(rawUrls)) {
+    return [];
+  }
+
+  return rawUrls
+    .map((urlEntry) => normalizeInfoboxUrl(urlEntry))
+    .filter((urlEntry): urlEntry is SearchInfoboxUrl => urlEntry !== null);
+}
+
+function normalizeInfoboxRelatedTopic(
+  relatedTopic: unknown,
+): SearchInfoboxRelatedTopic | null {
+  if (!relatedTopic || typeof relatedTopic !== "object") {
+    return null;
+  }
+
+  const record = relatedTopic as SearxRawResult;
+  const name = extractString(record.name);
+  const rawSuggestions = record.suggestions;
+
+  if (!name || !Array.isArray(rawSuggestions)) {
+    return null;
+  }
+
+  const suggestions = rawSuggestions.filter(
+    (suggestion): suggestion is string =>
+      typeof suggestion === "string" && suggestion.trim() !== "",
+  );
+
+  if (!suggestions.length) {
+    return null;
+  }
+
+  return {
+    name,
+    suggestions,
+  };
+}
+
+function extractInfoboxRelatedTopics(rawRelatedTopics: unknown) {
+  if (!Array.isArray(rawRelatedTopics)) {
+    return [];
+  }
+
+  return rawRelatedTopics
+    .map((topic) => normalizeInfoboxRelatedTopic(topic))
+    .filter((topic): topic is SearchInfoboxRelatedTopic => topic !== null);
+}
+
 function normalizeInfobox(
   infobox: unknown,
   index: number,
@@ -221,6 +354,10 @@ function normalizeInfobox(
     url,
     source: readInfoboxSource(record, url),
     engine: extractString(record.engine),
+    imageUrl: readInfoboxImage(record),
+    attributes: extractInfoboxAttributes(record.attributes),
+    urls: extractInfoboxUrls(record.urls),
+    relatedTopics: extractInfoboxRelatedTopics(record.relatedTopics),
   };
 }
 
@@ -260,6 +397,7 @@ export function transformSearxResponse(
     query: request.q,
     tab: request.tab,
     page: request.page,
+    totalResults: numberOfResults,
     results,
     suggestions: extractSuggestions(payload.suggestions),
     answers: extractAnswers(payload.answers),

@@ -6,17 +6,28 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-type LandingSearchInputProps = {
+type SearchInputProps = {
   defaultValue: string;
   placeholder: string;
+  size?: "hero" | "compact";
   className?: string;
 };
 
-export function LandingSearchInput({
+const inputSizeClasses = {
+  hero: "h-[55px] text-[18px] sm:text-[19px]",
+  compact: "h-[52px] text-[16px]",
+} as const;
+
+const suggestionItemClassName =
+  "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#31343b]";
+const AUTOCOMPLETE_DEBOUNCE_MS = 0;
+
+export function SearchInput({
   defaultValue,
   placeholder,
+  size = "compact",
   className,
-}: LandingSearchInputProps) {
+}: SearchInputProps) {
   const inputId = useId();
   const suggestionsId = `${inputId}-suggestions`;
   const formRef = useRef<HTMLDivElement>(null);
@@ -41,58 +52,60 @@ export function LandingSearchInput({
   }, [defaultValue]);
 
   useEffect(() => {
-    if (value.trim().length < 2) {
+    if (value.trim().length < 1) {
       setSuggestions([]);
       setIsOpen(false);
       return;
     }
 
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/autocomplete?q=${encodeURIComponent(value.trim())}`,
-          {
-            signal: controller.signal,
-            cache: "no-store",
-          },
-        );
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await fetch(
+            `/api/autocomplete?q=${encodeURIComponent(value.trim())}`,
+            {
+              signal: controller.signal,
+              cache: "no-store",
+            },
+          );
 
-        if (!response.ok) {
-          setSuggestions([]);
-          setIsOpen(false);
-          return;
-        }
+          if (!response.ok) {
+            setSuggestions([]);
+            setIsOpen(false);
+            return;
+          }
 
-        const payload: unknown = await response.json();
+          const payload: unknown = await response.json();
 
-        if (
-          !payload ||
-          typeof payload !== "object" ||
-          !("suggestions" in payload) ||
-          !Array.isArray(payload.suggestions)
-        ) {
-          setSuggestions([]);
-          setIsOpen(false);
-          return;
-        }
+          if (
+            !payload ||
+            typeof payload !== "object" ||
+            !("suggestions" in payload) ||
+            !Array.isArray(payload.suggestions)
+          ) {
+            setSuggestions([]);
+            setIsOpen(false);
+            return;
+          }
 
-        const nextSuggestions = payload.suggestions.filter(
-          (item): item is string =>
-            typeof item === "string" && item.trim() !== "",
-        );
+          const nextSuggestions = payload.suggestions.filter(
+            (item): item is string =>
+              typeof item === "string" && item.trim() !== "",
+          );
 
-        setSuggestions(nextSuggestions);
-        setIsOpen(isFocused && nextSuggestions.length > 0);
-        setHighlightedIndex(-1);
-      } catch {
-        if (!controller.signal.aborted) {
-          setSuggestions([]);
-          setIsOpen(false);
+          setSuggestions(nextSuggestions);
+          setIsOpen(isFocused && nextSuggestions.length > 0);
           setHighlightedIndex(-1);
+        } catch {
+          if (!controller.signal.aborted) {
+            setSuggestions([]);
+            setIsOpen(false);
+            setHighlightedIndex(-1);
+          }
         }
-      }
-    }, 220);
+      })();
+    }, AUTOCOMPLETE_DEBOUNCE_MS);
 
     return () => {
       controller.abort();
@@ -197,7 +210,8 @@ export function LandingSearchInput({
         }}
         placeholder={placeholder}
         className={cn(
-          "h-[50px] border-transparent bg-[var(--control-bg)] pr-12 pl-12 text-foreground shadow-none [transition-property:border-color,box-shadow,color] focus:bg-[var(--control-active)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0 dark:text-white dark:placeholder:text-white/60",
+          "rounded-full border-transparent bg-[var(--control-bg)] pr-12 pl-12 text-foreground shadow-none [transition-property:border-color,box-shadow,color] focus:bg-[var(--control-active)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0 dark:text-white dark:placeholder:text-white/60",
+          inputSizeClasses[size],
           className,
           isMergedOpen &&
             "rounded-b-none rounded-t-[1.75rem] border-b border-b-[#ebebeb] bg-[var(--control-active)] dark:border-b-border dark:bg-[var(--control-active)]",
@@ -246,7 +260,7 @@ export function LandingSearchInput({
                   role="option"
                   aria-selected={highlightedIndex === index}
                   className={cn(
-                    "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#31343b]",
+                    suggestionItemClassName,
                     highlightedIndex === index &&
                       "bg-[#f8f8f8] dark:bg-[#31343b]",
                   )}

@@ -16,10 +16,10 @@ export function Header({ className, ...props }: HeaderProps) {
         <ThemeToggle />
         <Button
           type="button"
-          variant="outline"
+          variant="chrome"
           size="header"
           aria-label="Settings"
-          className="w-10 min-w-0 cursor-pointer rounded-full border-transparent bg-[var(--header-control-bg)] px-0 text-foreground shadow-none transition-colors hover:bg-[var(--header-control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--header-control-active)] focus-visible:ring-0 active:translate-y-0"
+          className="w-10 min-w-0 cursor-pointer px-0"
         >
           <Settings className="size-4.5" />
         </Button>

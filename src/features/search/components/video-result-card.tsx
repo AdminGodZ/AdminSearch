@@ -17,10 +17,12 @@ function getResultMeta(result: SearchResult) {
 
   try {
     const parsed = new URL(result.url);
+    const authority = parsed.hostname;
+
     return {
-      host: parsed.hostname.replace(/^www\./, ""),
+      host: authority.replace(/^www\./, ""),
       path: parsed.pathname === "/" ? "" : parsed.pathname,
-      faviconUrl: `${parsed.origin}/favicon.ico`,
+      faviconUrl: `/api/favicon?authority=${encodeURIComponent(authority)}`,
     };
   } catch {
     return fallback;

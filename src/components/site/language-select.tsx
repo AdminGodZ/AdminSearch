@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
@@ -42,8 +43,12 @@ export function LanguageSelect() {
 
   if (!mounted) {
     return (
-      <div className="flex h-10 min-w-0 items-center justify-center rounded-full border border-transparent bg-[var(--header-control-bg)] pl-4 pr-3 text-sm font-normal text-foreground shadow-none">
-        English
+      <div className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-full border border-transparent bg-[var(--header-control-bg)] pl-4 pr-3 text-sm font-normal text-foreground shadow-none">
+        <span>English</span>
+        <ChevronDownIcon
+          aria-hidden="true"
+          className="size-4 text-muted-foreground"
+        />
       </div>
     );
   }
@@ -51,8 +56,9 @@ export function LanguageSelect() {
   return (
     <Select value={language} onValueChange={onValueChange}>
       <SelectTrigger
+        variant="chrome"
         size="header"
-        className="w-auto min-w-0 cursor-pointer justify-center gap-2 rounded-full border-transparent bg-[var(--header-control-bg)] pl-4 pr-3 text-sm font-normal shadow-none [transition-property:border-color,box-shadow,color] hover:bg-[var(--header-control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--header-control-active)] focus-visible:ring-0 *:data-[slot=select-value]:flex-none data-[state=open]:bg-[var(--header-control-active)]"
+        className="w-auto min-w-0 cursor-pointer justify-center gap-2 pl-4 pr-3 text-sm font-normal *:data-[slot=select-value]:flex-none"
       >
         <SelectValue aria-label={language}>
           {language === "de" ? "German" : "English"}

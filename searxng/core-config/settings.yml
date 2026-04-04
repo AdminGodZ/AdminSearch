@@ -32,6 +32,7 @@ use_default_settings:
 search:
   autocomplete: google
   autocomplete_min: 2
+  favicon_resolver: google
   # Alternate supported autocomplete backends:
   # autocomplete: brave
   # autocomplete: duckduckgo

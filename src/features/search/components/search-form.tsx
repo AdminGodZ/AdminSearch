@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LandingSearchInput } from "@/features/search/components/landing-search-input";
+import { SearchInput } from "@/features/search/components/search-input";
 import type { SearchTab } from "@/features/search/types";
 import { cn } from "@/lib/utils";
 
@@ -30,32 +30,8 @@ export function SearchForm({
 }: SearchFormProps) {
   const isHero = size === "hero";
   const isLanding = variant === "landing";
-
-  if (isLanding) {
-    return (
-      <form action={action} method="GET" className="w-full">
-        {tab ? <input type="hidden" name="tab" value={tab} /> : null}
-        {language ? (
-          <input type="hidden" name="language" value={language} />
-        ) : null}
-        {timeRange ? (
-          <input type="hidden" name="timeRange" value={timeRange} />
-        ) : null}
-        {safeSearch !== undefined ? (
-          <input type="hidden" name="safeSearch" value={safeSearch} />
-        ) : null}
-
-        <LandingSearchInput
-          defaultValue={defaultQuery}
-          placeholder={placeholder}
-          className={inputClassName}
-        />
-      </form>
-    );
-  }
-
-  return (
-    <form action={action} method="GET" className="w-full">
+  const hiddenFields = (
+    <>
       {tab ? <input type="hidden" name="tab" value={tab} /> : null}
       {language ? (
         <input type="hidden" name="language" value={language} />
@@ -66,6 +42,26 @@ export function SearchForm({
       {safeSearch !== undefined ? (
         <input type="hidden" name="safeSearch" value={safeSearch} />
       ) : null}
+    </>
+  );
+
+  if (isLanding) {
+    return (
+      <form action={action} method="GET" className="w-full">
+        {hiddenFields}
+        <SearchInput
+          defaultValue={defaultQuery}
+          placeholder={placeholder}
+          size={size}
+          className={inputClassName}
+        />
+      </form>
+    );
+  }
+
+  return (
+    <form action={action} method="GET" className="w-full">
+      {hiddenFields}
 
       <div
         className={cn(
@@ -74,21 +70,21 @@ export function SearchForm({
         )}
       >
         <div className="flex-1">
-          <LandingSearchInput
+          <SearchInput
             defaultValue={defaultQuery}
             placeholder={placeholder}
-            className={cn(!isHero ? "h-12 text-[17px]" : "")}
+            size={size}
+            className={inputClassName}
           />
         </div>
 
         <Button
           type="submit"
           size={isHero ? "lg" : "default"}
+          variant="brand"
           className={cn(
             "rounded-full px-7 shadow-none",
-            isHero
-              ? "h-16 text-base"
-              : "h-12 bg-[var(--brand-button)] text-white hover:bg-[var(--brand-button-hover)] dark:text-[var(--primary-foreground)]",
+            isHero ? "h-16 text-base" : "h-12",
           )}
         >
           Search

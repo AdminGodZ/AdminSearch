@@ -7,8 +7,8 @@ import { SearchForm } from "@/features/search/components/search-form";
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col bg-background">
-      <div className="w-full px-6 pt-6 sm:px-8 lg:px-10">
-        <Header />
+      <div className="flex w-full justify-end pt-6 pl-6 pr-6 sm:pl-8 sm:pr-6 lg:pl-10 lg:pr-6">
+        <Header className="w-auto" />
       </div>
 
       <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-6 sm:px-8 lg:px-10">

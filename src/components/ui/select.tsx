@@ -1,5 +1,6 @@
 "use client";
 
+import { cva } from "class-variance-authority";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { Select as SelectPrimitive } from "radix-ui";
 import type * as React from "react";
@@ -30,22 +31,45 @@ function SelectValue({
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
+const selectTriggerVariants = cva(
+  "flex w-fit items-center justify-between gap-1.5 rounded-4xl px-3 py-2 text-sm whitespace-nowrap transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-muted-foreground *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      size: {
+        default: "h-9",
+        sm: "h-8",
+        header: "h-10",
+      },
+      variant: {
+        default:
+          "border border-input bg-input/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        chrome:
+          "border-transparent bg-[var(--header-control-bg)] shadow-none [transition-property:border-color,box-shadow,color] hover:bg-[var(--header-control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--header-control-active)] focus-visible:ring-0 data-[state=open]:bg-[var(--header-control-active)]",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+      variant: "default",
+    },
+  },
+);
+
 function SelectTrigger({
   className,
   size = "default",
+  variant = "default",
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
   size?: "sm" | "default" | "header";
+  variant?: "default" | "chrome";
 }) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
-      className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-4xl border border-input bg-input/30 px-3 py-2 text-sm whitespace-nowrap transition-colors outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 data-[size=header]:h-10 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className,
-      )}
+      data-variant={variant}
+      className={cn(selectTriggerVariants({ size, variant }), className)}
       {...props}
     >
       {children}

@@ -40,6 +40,39 @@ Video search currently supports:
 - Valkey
 - Caddy
 
+## Codebase structure
+
+The frontend now uses a feature-first layout:
+
+- `src/app`: route entrypoints only (`page.tsx`, `layout.tsx`, `route.ts`)
+- `src/components/ui`: shadcn/ui primitives and app-wide baseline variants
+- `src/components/site`: shared site chrome and branding
+- `src/components/providers`: app-level providers used by the root layout
+- `src/features/search`: search-specific UI, types, URL state helpers, and server logic
+- `src/server`: shared server-only infrastructure
+- `src/lib`: cross-feature utilities only
+
+Search-specific implementation lives under `src/features/search`, while the App
+Router files under `src/app` stay intentionally thin.
+
+## UI and styling conventions
+
+The styling model is intentionally layered:
+
+- shadcn/ui primitives live in `src/components/ui`
+- app-wide baseline refinements are added there as reusable variants
+- feature-specific styling stays with the feature component that uses it
+- page-specific refinements stay local to that page or feature caller
+
+For example, the shared search bar on `/` and `/search` uses the same
+feature-level `SearchInput` component, which is built on top of the shadcn
+`Input` primitive instead of pushing search-specific behavior into the global
+input component.
+
+Tailwind CSS is the default styling mechanism for component-level work. Global
+CSS is intentionally limited to theme tokens and base rules in
+`src/app/globals.css`.
+
 ## Search architecture
 
 Request flow:
@@ -134,6 +167,8 @@ The frontend uses a shared search input component on both `/` and `/search`:
 - enter to pick a suggestion
 - escape to close
 - merged input + suggestion surface styling
+- shared baseline styling with per-variant sizing (`hero` on `/`, `compact` on
+  `/search`)
 
 ## Instant answers
 
@@ -234,3 +269,5 @@ docker compose up -d --force-recreate searxng-core
   preview URL
 - rate limiting falls back to in-memory storage if Valkey is unavailable
 - `/search` is dynamic and query-driven; it is not a static search shell
+- shared UI primitives are refined in `src/components/ui`, while search-specific
+  behavior stays in `src/features/search`

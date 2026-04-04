@@ -23,6 +23,7 @@ function getClientIp(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const startedAt = performance.now();
   const rateLimit = await checkRateLimit(getClientIp(request));
   const rateLimitHeaders = createRateLimitHeaders(rateLimit);
 
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
         hasMore: upstreamResponse.hasMore,
       },
     );
+    payload.requestDurationMs = performance.now() - startedAt;
 
     return NextResponse.json(payload, {
       headers: rateLimitHeaders,
