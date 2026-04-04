@@ -1,8 +1,8 @@
 import { Settings } from "lucide-react";
 import type { ComponentProps } from "react";
 
-import { LanguageSelect } from "@/components/language-select";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSelect } from "@/components/site/language-select";
+import { ThemeToggle } from "@/components/site/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

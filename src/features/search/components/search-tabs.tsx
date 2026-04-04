@@ -3,8 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { SearchTab } from "@/lib/search/types";
-import { buildHref } from "@/lib/utils";
+import { buildHref } from "@/features/search/lib/url-state";
+import type { SearchTab } from "@/features/search/types";
 
 type SearchTabsProps = {
   tab: SearchTab;

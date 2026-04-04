@@ -1,6 +1,6 @@
-import { LandingSearchInput } from "@/components/landing-search-input";
 import { Button } from "@/components/ui/button";
-import type { SearchTab } from "@/lib/search/types";
+import { LandingSearchInput } from "@/features/search/components/landing-search-input";
+import type { SearchTab } from "@/features/search/types";
 import { cn } from "@/lib/utils";
 
 type SearchFormProps = {

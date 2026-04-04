@@ -1,7 +1,7 @@
-import { ImageGrid } from "@/components/image-grid";
-import { ResultCard } from "@/components/result-card";
-import { VideoResultCard } from "@/components/video-result-card";
-import type { SearchResult, SearchTab } from "@/lib/search/types";
+import { ImageGrid } from "@/features/search/components/image-grid";
+import { ResultCard } from "@/features/search/components/result-card";
+import { VideoResultCard } from "@/features/search/components/video-result-card";
+import type { SearchResult, SearchTab } from "@/features/search/types";
 
 type ResultListProps = {
   tab: SearchTab;

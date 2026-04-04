@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { SearchRequest } from "@/lib/search/types";
+import type { SearchRequest } from "@/features/search/types";
 
 const positiveInteger = z
   .number()

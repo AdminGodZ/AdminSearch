@@ -1,4 +1,4 @@
-import { APP_RESULTS_PER_PAGE } from "@/lib/search/searx-client";
+import { APP_RESULTS_PER_PAGE } from "@/features/search/server/searx-client";
 import type {
   SearchInfobox,
   SearchRequest,
@@ -6,7 +6,7 @@ import type {
   SearchResult,
   SearxRawResult,
   SearxResponse,
-} from "@/lib/search/types";
+} from "@/features/search/types";
 
 function readString(record: SearxRawResult, keys: string[]) {
   for (const key of keys) {

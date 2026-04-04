@@ -5,18 +5,19 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
-import { Filters } from "@/components/filters";
-import { Header } from "@/components/header";
-import { ResultList } from "@/components/result-list";
-import { SearchForm } from "@/components/search-form";
-import { SearchTabs } from "@/components/search-tabs";
-import { ThemeLogo } from "@/components/theme-logo";
+import { Header } from "@/components/site/header";
+import { ThemeLogo } from "@/components/site/theme-logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SearchResponse, SearchTab } from "@/lib/search/types";
-import { buildHref, cn } from "@/lib/utils";
+import { Filters } from "@/features/search/components/filters";
+import { ResultList } from "@/features/search/components/result-list";
+import { SearchForm } from "@/features/search/components/search-form";
+import { SearchTabs } from "@/features/search/components/search-tabs";
+import { buildHref } from "@/features/search/lib/url-state";
+import type { SearchResponse, SearchTab } from "@/features/search/types";
+import { cn } from "@/lib/utils";
 
 type SearchState =
   | { status: "idle" }

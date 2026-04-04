@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { checkRateLimit, createRateLimitHeaders } from "@/lib/rate-limit";
-import { parseSearchRequest } from "@/lib/search/schema";
+import { parseSearchRequest } from "@/features/search/server/schema";
 import {
   fetchSearxResponse,
   SearchUpstreamError,
-} from "@/lib/search/searx-client";
-import { transformSearxResponse } from "@/lib/search/transform";
+} from "@/features/search/server/searx-client";
+import { transformSearxResponse } from "@/features/search/server/transform";
+import { checkRateLimit, createRateLimitHeaders } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

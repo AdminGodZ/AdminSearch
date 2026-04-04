@@ -1,8 +1,8 @@
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
-import { SearchForm } from "@/components/search-form";
-import { SpecialText } from "@/components/special-text";
-import { ThemeLogo } from "@/components/theme-logo";
+import { Footer } from "@/components/site/footer";
+import { Header } from "@/components/site/header";
+import { SpecialText } from "@/components/site/special-text";
+import { ThemeLogo } from "@/components/site/theme-logo";
+import { SearchForm } from "@/features/search/components/search-form";
 
 export default function Home() {
   return (

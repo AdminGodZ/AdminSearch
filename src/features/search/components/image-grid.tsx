@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import type { SearchResult } from "@/lib/search/types";
+import type { SearchResult } from "@/features/search/types";
 
 type ImageGridProps = {
   results: SearchResult[];

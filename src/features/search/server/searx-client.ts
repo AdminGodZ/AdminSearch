@@ -2,7 +2,7 @@ import type {
   SearchRequest,
   SearxRawResult,
   SearxResponse,
-} from "@/lib/search/types";
+} from "@/features/search/types";
 
 const DEFAULT_SEARXNG_URL = "http://127.0.0.1:8080";
 const REQUEST_TIMEOUT_MS = 8_000;

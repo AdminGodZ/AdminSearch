@@ -4,7 +4,8 @@ import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 
-import { buildHref, cn } from "@/lib/utils";
+import { buildHref } from "@/features/search/lib/url-state";
+import { cn } from "@/lib/utils";
 
 type FiltersProps = {
   language?: string;

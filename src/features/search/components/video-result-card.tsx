@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SiteFavicon } from "@/components/site-favicon";
-import type { SearchResult } from "@/lib/search/types";
+import { SiteFavicon } from "@/features/search/components/site-favicon";
+import type { SearchResult } from "@/features/search/types";
 
 type VideoResultCardProps = {
   result: SearchResult;
