@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
@@ -43,12 +43,71 @@ const resultSkeletonKeys = [
 
 const MAX_VISIBLE_SUGGESTIONS = 8;
 const panelCardClassName = "rounded-[28px]";
-const paginationButtonClassName =
-  "rounded-full border-[var(--surface-chip-border)] bg-background";
 const sidebarCardClassName =
   "rounded-[28px] border border-[var(--surface-panel-border)] bg-[var(--surface-panel)] ring-0 shadow-none";
 const searchHeaderColumns = "lg:grid-cols-[132px_725px_minmax(0,1fr)]";
 const searchContentColumns = "lg:grid-cols-[206px_minmax(0,1fr)]";
+
+async function fetchSearchPageData(
+  paramsString: string,
+  page: number,
+  signal: AbortSignal,
+) {
+  const params = new URLSearchParams(paramsString);
+
+  if (page > 1) {
+    params.set("page", String(page));
+  } else {
+    params.delete("page");
+  }
+
+  const response = await fetch(`/api/search?${params.toString()}`, {
+    signal,
+    cache: "no-store",
+  });
+
+  const payload: unknown = await response.json();
+
+  if (!response.ok) {
+    const message =
+      payload &&
+      typeof payload === "object" &&
+      "message" in payload &&
+      typeof payload.message === "string"
+        ? payload.message
+        : "Search request failed.";
+
+    throw new Error(message);
+  }
+
+  return payload as SearchResponse;
+}
+
+function mergeSearchResponses(current: SearchResponse, next: SearchResponse) {
+  const seen = new Set(
+    current.results.map((result) => result.id || result.url),
+  );
+  const mergedResults = [...current.results];
+
+  for (const result of next.results) {
+    const key = result.id || result.url;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    mergedResults.push(result);
+  }
+
+  return {
+    ...current,
+    page: next.page,
+    totalResults: next.totalResults ?? current.totalResults,
+    results: mergedResults,
+    hasMore: next.hasMore,
+  } satisfies SearchResponse;
+}
 
 function normalizeTab(value: string | null): SearchTab {
   switch (value) {
@@ -285,13 +344,19 @@ export function SearchPageClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [state, setState] = useState<SearchState>({ status: "idle" });
+  const [loadedPage, setLoadedPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const queryString = searchParams.toString();
-  const deferredQueryString = useDeferredValue(queryString);
+  const queryStringWithoutPage = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("page");
+    return params.toString();
+  }, [searchParams]);
+  const deferredQueryString = useDeferredValue(queryStringWithoutPage);
 
   const currentQuery = searchParams.get("q")?.trim() ?? "";
   const currentTab = normalizeTab(searchParams.get("tab"));
-  const currentPage = normalizePage(searchParams.get("page"));
+  const requestedPage = normalizePage(searchParams.get("page"));
   const currentLanguage = searchParams.get("language")?.trim() || undefined;
   const currentTimeRange = useMemo(() => {
     const value = searchParams.get("timeRange");
@@ -307,6 +372,7 @@ export function SearchPageClient() {
 
     if (!deferredQuery) {
       setState({ status: "idle" });
+      setLoadedPage(1);
       return;
     }
 
@@ -324,30 +390,32 @@ export function SearchPageClient() {
 
     void (async () => {
       try {
-        const response = await fetch(
-          `/api/search?${deferredParams.toString()}`,
-          {
-            signal: controller.signal,
-            cache: "no-store",
-          },
-        );
-        const payload: unknown = await response.json();
+        let aggregated: SearchResponse | null = null;
 
-        if (!response.ok) {
-          const message =
-            payload &&
-            typeof payload === "object" &&
-            "message" in payload &&
-            typeof payload.message === "string"
-              ? payload.message
-              : "Search request failed.";
+        for (let page = 1; page <= requestedPage; page += 1) {
+          const payload = await fetchSearchPageData(
+            deferredParams.toString(),
+            page,
+            controller.signal,
+          );
 
-          throw new Error(message);
+          aggregated = aggregated
+            ? mergeSearchResponses(aggregated, payload)
+            : payload;
+
+          if (!payload.hasMore) {
+            break;
+          }
         }
 
+        if (!aggregated) {
+          throw new Error("Search request failed.");
+        }
+
+        setLoadedPage(aggregated.page);
         setState({
           status: "success",
-          data: payload as SearchResponse,
+          data: aggregated,
         });
       } catch (error: unknown) {
         if (controller.signal.aborted) {
@@ -369,7 +437,7 @@ export function SearchPageClient() {
     })();
 
     return () => controller.abort();
-  }, [deferredQueryString]);
+  }, [deferredQueryString, requestedPage]);
 
   const activeData =
     state.status === "success"
@@ -377,6 +445,7 @@ export function SearchPageClient() {
       : state.status === "loading" || state.status === "error"
         ? state.previous
         : undefined;
+  const activePage = activeData?.page ?? loadedPage;
 
   const hasResults = Boolean(activeData?.results.length);
   const hasSidebarContent = Boolean(
@@ -397,6 +466,59 @@ export function SearchPageClient() {
         : currentTab === "news"
           ? "news results"
           : "results";
+
+  async function handleLoadMore() {
+    if (!activeData || !activeData.hasMore || isLoadingMore) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const nextPage = activePage + 1;
+
+    setIsLoadingMore(true);
+
+    try {
+      const nextPayload = await fetchSearchPageData(
+        queryStringWithoutPage,
+        nextPage,
+        controller.signal,
+      );
+
+      setLoadedPage(nextPayload.page);
+      setState((previous) => {
+        const current =
+          previous.status === "success"
+            ? previous.data
+            : previous.status === "loading" || previous.status === "error"
+              ? previous.previous
+              : activeData;
+
+        if (!current) {
+          return previous;
+        }
+
+        return {
+          status: "success",
+          data: mergeSearchResponses(current, nextPayload),
+        };
+      });
+    } catch (error: unknown) {
+      setState((previous) => ({
+        status: "error",
+        message:
+          error instanceof Error ? error.message : "Search request failed.",
+        previous:
+          previous.status === "success"
+            ? previous.data
+            : previous.status === "loading" || previous.status === "error"
+              ? previous.previous
+              : activeData,
+      }));
+    } finally {
+      setIsLoadingMore(false);
+      controller.abort();
+    }
+  }
 
   return (
     <main className="w-full flex-1 px-5 py-8 sm:px-8 lg:px-10">
@@ -610,75 +732,40 @@ export function SearchPageClient() {
                     </Card>
                   ) : null}
 
-                  {activeData && (currentPage > 1 || activeData.hasMore) ? (
+                  {activeData?.hasMore ? (
                     <>
                       <div className={resultsSectionClass}>
                         <Separator className="my-2 bg-[var(--surface-separator)]" />
                       </div>
-                      <div
+                      <Card
                         className={cn(
-                          "flex flex-wrap items-center justify-between gap-3",
+                          sidebarCardClassName,
+                          "overflow-hidden",
                           resultsSectionClass,
                         )}
                       >
-                        {currentPage > 1 ? (
-                          <Button
-                            asChild
-                            variant="outline"
-                            className={paginationButtonClassName}
-                          >
-                            <Link
-                              href={buildHref(pathname, searchParams, {
-                                page: currentPage - 1,
-                              })}
-                            >
-                              <ArrowLeft className="size-4" />
-                              Previous
-                            </Link>
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={paginationButtonClassName}
-                            disabled
-                          >
-                            <ArrowLeft className="size-4" />
-                            Previous
-                          </Button>
-                        )}
-
-                        <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
-                          Page {currentPage}
-                        </p>
-
-                        {activeData.hasMore ? (
-                          <Button
-                            asChild
-                            variant="brand"
-                            className="rounded-full"
-                          >
-                            <Link
-                              href={buildHref(pathname, searchParams, {
-                                page: currentPage + 1,
-                              })}
-                            >
-                              Next
-                              <ArrowRight className="size-4" />
-                            </Link>
-                          </Button>
-                        ) : (
+                        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                          <div className="space-y-1">
+                            <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
+                              More results
+                            </p>
+                            <p className="text-sm leading-6 text-[var(--text-body)]">
+                              Load 20 more {resultsLabel} without leaving this
+                              page.
+                            </p>
+                          </div>
                           <Button
                             type="button"
                             variant="brand"
                             className="rounded-full"
-                            disabled
+                            onClick={handleLoadMore}
+                            disabled={isLoadingMore}
                           >
-                            Next
+                            {isLoadingMore ? "Loading more..." : "Load 20 more"}
                             <ArrowRight className="size-4" />
                           </Button>
-                        )}
-                      </div>
+                        </CardContent>
+                      </Card>
                     </>
                   ) : null}
                 </div>
