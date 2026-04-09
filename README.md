@@ -1,6 +1,5 @@
-# AdminSearch
-
 <p align="center">
+  <h1>AdminSearch</h1>
   <img src="./public/AdminSearch_main.png" alt="AdminSearch preview" width="920" />
 </p>
 
