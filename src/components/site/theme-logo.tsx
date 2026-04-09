@@ -16,7 +16,7 @@ export function ThemeLogo({
   return (
     <>
       <Image
-        src="/AdminGod_white_transparent.png"
+        src="/logo_white.png"
         alt="AdminSearch logo"
         fill
         className={cn("dark:hidden", className)}
@@ -24,7 +24,7 @@ export function ThemeLogo({
         priority={priority}
       />
       <Image
-        src="/AdminGod_dark_bgmatch.png"
+        src="/logo_dark.png"
         alt="AdminSearch logo"
         fill
         className={cn("hidden dark:block", className)}
