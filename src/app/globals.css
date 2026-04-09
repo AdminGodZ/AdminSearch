@@ -82,7 +82,7 @@
   --sidebar-border: oklch(0.89 0.015 83.5);
   --sidebar-ring: oklch(0.65 0.091 253.86);
   --control-bg: #f5f5f5;
-  --control-hover: #eeeeee;
+  --control-hover: #f0f0f0;
   --control-active: #f0f0f0;
   --header-control-bg: #f5f5f5;
   --header-control-hover: #f0f0f0;
@@ -159,7 +159,7 @@
   --sidebar-ring: rgb(138 180 248 / 40%);
   --control-bg: #4f5256;
   --control-hover: #5f6367;
-  --control-active: #333437;
+  --control-active: #5f6367;
   --header-control-bg: #303134;
   --header-control-hover: #3c4043;
   --header-control-active: #3c4043;
