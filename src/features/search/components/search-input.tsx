@@ -19,7 +19,7 @@ const inputSizeClasses = {
 } as const;
 
 const suggestionItemClassName =
-  "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#3c4043]";
+  "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#414447]";
 const AUTOCOMPLETE_DEBOUNCE_MS = 0;
 
 export function SearchInput({
@@ -156,7 +156,7 @@ export function SearchInput({
       <label htmlFor={inputId} className="sr-only">
         Search query
       </label>
-      <Search className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-muted-foreground" />
+      <Search className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-muted-foreground dark:text-white" />
       <Input
         ref={inputRef}
         id={inputId}
@@ -214,7 +214,7 @@ export function SearchInput({
           inputSizeClasses[size],
           className,
           isMergedOpen &&
-            "rounded-b-none rounded-t-[1.75rem] border-b border-b-[#ebebeb] bg-[var(--control-active)] dark:border-b-border dark:bg-[var(--control-active)]",
+            "rounded-b-none rounded-t-[1.75rem] border-b border-b-[#ebebeb] bg-[var(--control-active)] dark:border-b-white/10 dark:bg-[var(--control-active)]",
         )}
         autoComplete="off"
         spellCheck={false}
@@ -237,7 +237,7 @@ export function SearchInput({
               setSuggestions([]);
               setIsOpen(false);
             }}
-            className="absolute top-1/2 right-3 z-10 inline-flex size-9 cursor-pointer items-center justify-center -translate-y-1/2 rounded-full text-muted-foreground transition-colors hover:bg-black/6 hover:text-foreground dark:hover:bg-white/8"
+            className="absolute top-1/2 right-3 z-10 inline-flex size-9 cursor-pointer items-center justify-center -translate-y-1/2 rounded-full text-muted-foreground transition-colors hover:bg-black/6 hover:text-foreground dark:text-white dark:hover:bg-white/8"
             aria-label="Clear search"
           >
             <X className="size-5" />
@@ -247,7 +247,7 @@ export function SearchInput({
 
       {isMergedOpen ? (
         <div className="absolute top-[calc(100%-1px)] left-0 z-30 w-full overflow-hidden rounded-b-[1.75rem] bg-[var(--control-active)] shadow-none dark:bg-[var(--control-active)]">
-          <div className="h-px w-full bg-[#dddddd] dark:bg-[#3c4043]" />
+          <div className="h-px w-full bg-[#dddddd] dark:bg-white/10" />
           <div id={suggestionsId} role="listbox" className="p-2">
             {suggestions.map((suggestion, index) => (
               <div key={suggestion}>
@@ -262,7 +262,7 @@ export function SearchInput({
                   className={cn(
                     suggestionItemClassName,
                     highlightedIndex === index &&
-                      "bg-[#f8f8f8] dark:bg-[#3c4043]",
+                      "bg-[#f8f8f8] dark:bg-[#414447]",
                   )}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   onMouseDown={(event) => {

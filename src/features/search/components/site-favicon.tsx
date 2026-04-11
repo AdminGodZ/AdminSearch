@@ -20,7 +20,7 @@ export function SiteFavicon({ hostname, src }: SiteFaviconProps) {
   }
 
   return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] dark:border-transparent dark:bg-white">
       {/* biome-ignore lint/performance/noImgElement: Favicons are remote site assets with dynamic origins. */}
       <img
         src={src}

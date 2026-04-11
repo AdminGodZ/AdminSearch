@@ -1,4 +1,7 @@
-# AdminSearch
+<p align="center">
+  <h1>AdminSearch</h1>
+  <img src="./public/AdminSearch_main.png" alt="AdminSearch preview" width="920" />
+</p>
 
 AdminSearch is a self-hosted Next.js search frontend backed by a private
 SearXNG instance. The browser never talks to SearXNG directly. All search and

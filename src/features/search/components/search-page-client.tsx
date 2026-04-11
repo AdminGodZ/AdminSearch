@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
@@ -41,14 +41,72 @@ const resultSkeletonKeys = [
   "result-skeleton-5",
 ];
 
-const MAX_VISIBLE_SUGGESTIONS = 8;
 const panelCardClassName = "rounded-[28px]";
-const paginationButtonClassName =
-  "rounded-full border-[var(--surface-chip-border)] bg-background";
 const sidebarCardClassName =
-  "rounded-[28px] border border-[var(--surface-panel-border)] bg-[var(--surface-panel)] ring-0 shadow-none";
+  "rounded-[28px] border-transparent bg-[var(--surface-panel)] ring-0 shadow-none";
 const searchHeaderColumns = "lg:grid-cols-[132px_725px_minmax(0,1fr)]";
 const searchContentColumns = "lg:grid-cols-[206px_minmax(0,1fr)]";
+
+async function fetchSearchPageData(
+  paramsString: string,
+  page: number,
+  signal: AbortSignal,
+) {
+  const params = new URLSearchParams(paramsString);
+
+  if (page > 1) {
+    params.set("page", String(page));
+  } else {
+    params.delete("page");
+  }
+
+  const response = await fetch(`/api/search?${params.toString()}`, {
+    signal,
+    cache: "no-store",
+  });
+
+  const payload: unknown = await response.json();
+
+  if (!response.ok) {
+    const message =
+      payload &&
+      typeof payload === "object" &&
+      "message" in payload &&
+      typeof payload.message === "string"
+        ? payload.message
+        : "Search request failed.";
+
+    throw new Error(message);
+  }
+
+  return payload as SearchResponse;
+}
+
+function mergeSearchResponses(current: SearchResponse, next: SearchResponse) {
+  const seen = new Set(
+    current.results.map((result) => result.id || result.url),
+  );
+  const mergedResults = [...current.results];
+
+  for (const result of next.results) {
+    const key = result.id || result.url;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    mergedResults.push(result);
+  }
+
+  return {
+    ...current,
+    page: next.page,
+    totalResults: next.totalResults ?? current.totalResults,
+    results: mergedResults,
+    hasMore: next.hasMore,
+  } satisfies SearchResponse;
+}
 
 function normalizeTab(value: string | null): SearchTab {
   switch (value) {
@@ -143,7 +201,7 @@ function SearchSidebar({
   }
 
   return (
-    <aside className="space-y-5 xl:sticky xl:top-8">
+    <aside className="space-y-5">
       {data.answers.length ? (
         <Card className={sidebarCardClassName}>
           <CardContent className="space-y-3 p-6">
@@ -179,9 +237,22 @@ function SearchSidebar({
               />
             ) : null}
             <div className="space-y-1.5">
-              <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
-                {infobox.title}
-              </h2>
+              {infobox.url ? (
+                <a
+                  href={infobox.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex hover:underline"
+                >
+                  <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
+                    {infobox.title}
+                  </h2>
+                </a>
+              ) : (
+                <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
+                  {infobox.title}
+                </h2>
+              )}
               {infobox.source ? (
                 <p className="text-[13px] text-[var(--text-soft)]">
                   {infobox.source}
@@ -285,13 +356,19 @@ export function SearchPageClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [state, setState] = useState<SearchState>({ status: "idle" });
+  const [loadedPage, setLoadedPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const queryString = searchParams.toString();
-  const deferredQueryString = useDeferredValue(queryString);
+  const queryStringWithoutPage = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("page");
+    return params.toString();
+  }, [searchParams]);
+  const deferredQueryString = useDeferredValue(queryStringWithoutPage);
 
   const currentQuery = searchParams.get("q")?.trim() ?? "";
   const currentTab = normalizeTab(searchParams.get("tab"));
-  const currentPage = normalizePage(searchParams.get("page"));
+  const requestedPage = normalizePage(searchParams.get("page"));
   const currentLanguage = searchParams.get("language")?.trim() || undefined;
   const currentTimeRange = useMemo(() => {
     const value = searchParams.get("timeRange");
@@ -307,6 +384,7 @@ export function SearchPageClient() {
 
     if (!deferredQuery) {
       setState({ status: "idle" });
+      setLoadedPage(1);
       return;
     }
 
@@ -324,30 +402,32 @@ export function SearchPageClient() {
 
     void (async () => {
       try {
-        const response = await fetch(
-          `/api/search?${deferredParams.toString()}`,
-          {
-            signal: controller.signal,
-            cache: "no-store",
-          },
-        );
-        const payload: unknown = await response.json();
+        let aggregated: SearchResponse | null = null;
 
-        if (!response.ok) {
-          const message =
-            payload &&
-            typeof payload === "object" &&
-            "message" in payload &&
-            typeof payload.message === "string"
-              ? payload.message
-              : "Search request failed.";
+        for (let page = 1; page <= requestedPage; page += 1) {
+          const payload = await fetchSearchPageData(
+            deferredParams.toString(),
+            page,
+            controller.signal,
+          );
 
-          throw new Error(message);
+          aggregated = aggregated
+            ? mergeSearchResponses(aggregated, payload)
+            : payload;
+
+          if (!payload.hasMore) {
+            break;
+          }
         }
 
+        if (!aggregated) {
+          throw new Error("Search request failed.");
+        }
+
+        setLoadedPage(aggregated.page);
         setState({
           status: "success",
-          data: payload as SearchResponse,
+          data: aggregated,
         });
       } catch (error: unknown) {
         if (controller.signal.aborted) {
@@ -369,7 +449,7 @@ export function SearchPageClient() {
     })();
 
     return () => controller.abort();
-  }, [deferredQueryString]);
+  }, [deferredQueryString, requestedPage]);
 
   const activeData =
     state.status === "success"
@@ -377,6 +457,7 @@ export function SearchPageClient() {
       : state.status === "loading" || state.status === "error"
         ? state.previous
         : undefined;
+  const activePage = activeData?.page ?? loadedPage;
 
   const hasResults = Boolean(activeData?.results.length);
   const hasSidebarContent = Boolean(
@@ -385,10 +466,10 @@ export function SearchPageClient() {
   const showLoadingFallback = state.status === "loading" && !activeData;
   const resultsSectionClass =
     currentTab === "images"
-      ? "max-w-[1280px]"
+      ? "max-w-[1152px]"
       : hasSidebarContent
-        ? "w-full"
-        : "max-w-[980px]";
+        ? "max-w-[655px]"
+        : "max-w-[655px]";
   const resultsLabel =
     currentTab === "images"
       ? "image results"
@@ -397,6 +478,59 @@ export function SearchPageClient() {
         : currentTab === "news"
           ? "news results"
           : "results";
+
+  async function handleLoadMore() {
+    if (!activeData || !activeData.hasMore || isLoadingMore) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const nextPage = activePage + 1;
+
+    setIsLoadingMore(true);
+
+    try {
+      const nextPayload = await fetchSearchPageData(
+        queryStringWithoutPage,
+        nextPage,
+        controller.signal,
+      );
+
+      setLoadedPage(nextPayload.page);
+      setState((previous) => {
+        const current =
+          previous.status === "success"
+            ? previous.data
+            : previous.status === "loading" || previous.status === "error"
+              ? previous.previous
+              : activeData;
+
+        if (!current) {
+          return previous;
+        }
+
+        return {
+          status: "success",
+          data: mergeSearchResponses(current, nextPayload),
+        };
+      });
+    } catch (error: unknown) {
+      setState((previous) => ({
+        status: "error",
+        message:
+          error instanceof Error ? error.message : "Search request failed.",
+        previous:
+          previous.status === "success"
+            ? previous.data
+            : previous.status === "loading" || previous.status === "error"
+              ? previous.previous
+              : activeData,
+      }));
+    } finally {
+      setIsLoadingMore(false);
+      controller.abort();
+    }
+  }
 
   return (
     <main className="w-full flex-1 px-5 py-8 sm:px-8 lg:px-10">
@@ -477,7 +611,7 @@ export function SearchPageClient() {
                   "grid items-start gap-7",
                   hasSidebarContent &&
                     currentTab !== "images" &&
-                    "xl:grid-cols-[minmax(0,980px)_minmax(320px,380px)]",
+                    "xl:grid-cols-[minmax(0,882px)_minmax(320px,380px)]",
                 )}
               >
                 <div className="space-y-7 min-w-0">
@@ -535,7 +669,7 @@ export function SearchPageClient() {
                   {!currentQuery ? (
                     <Card
                       variant="panel"
-                      className={cn("max-w-[980px]", panelCardClassName)}
+                      className={cn("max-w-[882px]", panelCardClassName)}
                     >
                       <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-2">
@@ -562,30 +696,6 @@ export function SearchPageClient() {
                     <LoadingResults tab={currentTab} />
                   ) : null}
 
-                  {activeData?.suggestions.length ? (
-                    <div className={cn("space-y-3", resultsSectionClass)}>
-                      <span className="block text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
-                        Try next
-                      </span>
-                      <div className="flex flex-wrap gap-x-4 gap-y-2">
-                        {activeData.suggestions
-                          .slice(0, MAX_VISIBLE_SUGGESTIONS)
-                          .map((suggestion) => (
-                            <Link
-                              key={suggestion}
-                              href={buildHref(pathname, searchParams, {
-                                q: suggestion,
-                                page: null,
-                              })}
-                              className="max-w-full truncate text-sm text-[var(--text-body)] transition-colors hover:text-foreground hover:underline"
-                            >
-                              {suggestion}
-                            </Link>
-                          ))}
-                      </div>
-                    </div>
-                  ) : null}
-
                   {activeData && hasResults ? (
                     <div className={resultsSectionClass}>
                       <ResultList
@@ -610,76 +720,32 @@ export function SearchPageClient() {
                     </Card>
                   ) : null}
 
-                  {activeData && (currentPage > 1 || activeData.hasMore) ? (
-                    <>
-                      <div className={resultsSectionClass}>
-                        <Separator className="my-2 bg-[var(--surface-separator)]" />
-                      </div>
-                      <div
-                        className={cn(
-                          "flex flex-wrap items-center justify-between gap-3",
-                          resultsSectionClass,
-                        )}
+                  {activeData?.hasMore ? (
+                    <div
+                      className={cn(
+                        "relative flex items-center",
+                        resultsSectionClass,
+                      )}
+                    >
+                      <Separator className="flex-1 bg-[var(--surface-separator)]" />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="mx-4 size-10 shrink-0 cursor-pointer rounded-full border-transparent bg-[var(--control-bg)] shadow-none hover:bg-[var(--control-hover)] dark:hover:bg-[var(--control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] dark:focus-visible:bg-[var(--control-active)] focus-visible:ring-0"
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        aria-label="Load more results"
                       >
-                        {currentPage > 1 ? (
-                          <Button
-                            asChild
-                            variant="outline"
-                            className={paginationButtonClassName}
-                          >
-                            <Link
-                              href={buildHref(pathname, searchParams, {
-                                page: currentPage - 1,
-                              })}
-                            >
-                              <ArrowLeft className="size-4" />
-                              Previous
-                            </Link>
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={paginationButtonClassName}
-                            disabled
-                          >
-                            <ArrowLeft className="size-4" />
-                            Previous
-                          </Button>
-                        )}
-
-                        <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
-                          Page {currentPage}
-                        </p>
-
-                        {activeData.hasMore ? (
-                          <Button
-                            asChild
-                            variant="brand"
-                            className="rounded-full"
-                          >
-                            <Link
-                              href={buildHref(pathname, searchParams, {
-                                page: currentPage + 1,
-                              })}
-                            >
-                              Next
-                              <ArrowRight className="size-4" />
-                            </Link>
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="brand"
-                            className="rounded-full"
-                            disabled
-                          >
-                            Next
-                            <ArrowRight className="size-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </>
+                        <ChevronDown
+                          className={cn(
+                            "size-5",
+                            isLoadingMore && "animate-bounce",
+                          )}
+                        />
+                      </Button>
+                      <Separator className="flex-1 bg-[var(--surface-separator)]" />
+                    </div>
                   ) : null}
                 </div>
 
