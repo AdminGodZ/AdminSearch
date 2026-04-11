@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
@@ -41,10 +41,9 @@ const resultSkeletonKeys = [
   "result-skeleton-5",
 ];
 
-const MAX_VISIBLE_SUGGESTIONS = 8;
 const panelCardClassName = "rounded-[28px]";
 const sidebarCardClassName =
-  "rounded-[28px] border border-[var(--surface-panel-border)] bg-[var(--surface-panel)] ring-0 shadow-none";
+  "rounded-[28px] border-transparent bg-[var(--surface-panel)] ring-0 shadow-none";
 const searchHeaderColumns = "lg:grid-cols-[132px_725px_minmax(0,1fr)]";
 const searchContentColumns = "lg:grid-cols-[206px_minmax(0,1fr)]";
 
@@ -202,7 +201,7 @@ function SearchSidebar({
   }
 
   return (
-    <aside className="space-y-5 xl:sticky xl:top-8">
+    <aside className="space-y-5">
       {data.answers.length ? (
         <Card className={sidebarCardClassName}>
           <CardContent className="space-y-3 p-6">
@@ -238,9 +237,22 @@ function SearchSidebar({
               />
             ) : null}
             <div className="space-y-1.5">
-              <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
-                {infobox.title}
-              </h2>
+              {infobox.url ? (
+                <a
+                  href={infobox.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex hover:underline"
+                >
+                  <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
+                    {infobox.title}
+                  </h2>
+                </a>
+              ) : (
+                <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
+                  {infobox.title}
+                </h2>
+              )}
               {infobox.source ? (
                 <p className="text-[13px] text-[var(--text-soft)]">
                   {infobox.source}
@@ -454,10 +466,10 @@ export function SearchPageClient() {
   const showLoadingFallback = state.status === "loading" && !activeData;
   const resultsSectionClass =
     currentTab === "images"
-      ? "max-w-[1280px]"
+      ? "max-w-[1152px]"
       : hasSidebarContent
-        ? "w-full"
-        : "max-w-[980px]";
+        ? "max-w-[655px]"
+        : "max-w-[655px]";
   const resultsLabel =
     currentTab === "images"
       ? "image results"
@@ -599,7 +611,7 @@ export function SearchPageClient() {
                   "grid items-start gap-7",
                   hasSidebarContent &&
                     currentTab !== "images" &&
-                    "xl:grid-cols-[minmax(0,980px)_minmax(320px,380px)]",
+                    "xl:grid-cols-[minmax(0,882px)_minmax(320px,380px)]",
                 )}
               >
                 <div className="space-y-7 min-w-0">
@@ -657,7 +669,7 @@ export function SearchPageClient() {
                   {!currentQuery ? (
                     <Card
                       variant="panel"
-                      className={cn("max-w-[980px]", panelCardClassName)}
+                      className={cn("max-w-[882px]", panelCardClassName)}
                     >
                       <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-2">
@@ -682,30 +694,6 @@ export function SearchPageClient() {
                     </Card>
                   ) : showLoadingFallback ? (
                     <LoadingResults tab={currentTab} />
-                  ) : null}
-
-                  {activeData?.suggestions.length ? (
-                    <div className={cn("space-y-3", resultsSectionClass)}>
-                      <span className="block text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
-                        Try next
-                      </span>
-                      <div className="flex flex-wrap gap-x-4 gap-y-2">
-                        {activeData.suggestions
-                          .slice(0, MAX_VISIBLE_SUGGESTIONS)
-                          .map((suggestion) => (
-                            <Link
-                              key={suggestion}
-                              href={buildHref(pathname, searchParams, {
-                                q: suggestion,
-                                page: null,
-                              })}
-                              className="max-w-full truncate text-sm text-[var(--text-body)] transition-colors hover:text-foreground hover:underline"
-                            >
-                              {suggestion}
-                            </Link>
-                          ))}
-                      </div>
-                    </div>
                   ) : null}
 
                   {activeData && hasResults ? (
@@ -733,40 +721,31 @@ export function SearchPageClient() {
                   ) : null}
 
                   {activeData?.hasMore ? (
-                    <>
-                      <div className={resultsSectionClass}>
-                        <Separator className="my-2 bg-[var(--surface-separator)]" />
-                      </div>
-                      <Card
-                        className={cn(
-                          sidebarCardClassName,
-                          "overflow-hidden",
-                          resultsSectionClass,
-                        )}
+                    <div
+                      className={cn(
+                        "relative flex items-center",
+                        resultsSectionClass,
+                      )}
+                    >
+                      <Separator className="flex-1 bg-[var(--surface-separator)]" />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="mx-4 size-10 shrink-0 cursor-pointer rounded-full border-transparent bg-[var(--control-bg)] shadow-none hover:bg-[var(--control-hover)] dark:hover:bg-[var(--control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] dark:focus-visible:bg-[var(--control-active)] focus-visible:ring-0"
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        aria-label="Load more results"
                       >
-                        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                          <div className="space-y-1">
-                            <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
-                              More results
-                            </p>
-                            <p className="text-sm leading-6 text-[var(--text-body)]">
-                              Load 20 more {resultsLabel} without leaving this
-                              page.
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="brand"
-                            className="rounded-full"
-                            onClick={handleLoadMore}
-                            disabled={isLoadingMore}
-                          >
-                            {isLoadingMore ? "Loading more..." : "Load 20 more"}
-                            <ArrowRight className="size-4" />
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </>
+                        <ChevronDown
+                          className={cn(
+                            "size-5",
+                            isLoadingMore && "animate-bounce",
+                          )}
+                        />
+                      </Button>
+                      <Separator className="flex-1 bg-[var(--surface-separator)]" />
+                    </div>
                   ) : null}
                 </div>
 
