@@ -1,57 +1,95 @@
-import { Card, CardContent } from "@/components/ui/card";
+"use client";
+
+import { Globe } from "lucide-react";
+import { useState } from "react";
+
 import type { SearchResult } from "@/features/search/types";
 
 type ImageGridProps = {
   results: SearchResult[];
 };
 
+function ImageFavicon({ url }: { url: string }) {
+  const [failed, setFailed] = useState(false);
+
+  let authority: string;
+  let faviconUrl: string | undefined;
+
+  try {
+    const parsed = new URL(url);
+    authority = parsed.hostname.replace(/^www\./, "");
+    faviconUrl = `/api/favicon?authority=${encodeURIComponent(parsed.hostname)}`;
+  } catch {
+    authority = url;
+    faviconUrl = undefined;
+  }
+
+  if (!faviconUrl || failed) {
+    return (
+      <>
+        <Globe className="size-3 shrink-0 text-[var(--text-soft)]" />
+        <span className="truncate text-[11px] leading-none text-[var(--text-soft)]">
+          {authority}
+        </span>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {/* biome-ignore lint/performance/noImgElement: Favicons are remote site assets with dynamic origins. */}
+      <img
+        src={faviconUrl}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        className="size-3 shrink-0 rounded-[2px] object-contain"
+        onError={() => setFailed(true)}
+      />
+      <span className="truncate text-[11px] leading-none text-[var(--text-soft)]">
+        {authority}
+      </span>
+    </>
+  );
+}
+
 export function ImageGrid({ results }: ImageGridProps) {
   return (
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
       {results.map((result) => (
-        <Card
+        <a
           key={result.id}
-          variant="panel"
-          className="overflow-hidden rounded-[28px]"
+          href={result.url}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="group min-w-0 overflow-hidden rounded-xl bg-[var(--surface-panel)]"
         >
-          <a
-            href={result.url}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="block"
-          >
-            <div className="aspect-[4/3] bg-muted">
-              {result.thumbnailUrl ? (
-                // biome-ignore lint/performance/noImgElement: Direct remote thumbnails are an explicit MVP tradeoff for image search.
-                <img
-                  src={result.thumbnailUrl}
-                  alt={result.title}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  No thumbnail
-                </div>
-              )}
+          <div className="overflow-hidden">
+            {result.thumbnailUrl ? (
+              // biome-ignore lint/performance/noImgElement: Direct remote thumbnails are an explicit MVP tradeoff for image search.
+              <img
+                src={result.thumbnailUrl}
+                alt={result.title}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+              />
+            ) : (
+              <div className="flex aspect-[4/3] items-center justify-center bg-muted text-xs text-muted-foreground">
+                No preview
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 space-y-0.5 px-2.5 py-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <ImageFavicon url={result.url} />
             </div>
-          </a>
-
-          <CardContent className="space-y-2 p-5">
-            <a
-              href={result.url}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="line-clamp-2 text-sm leading-6 font-medium text-[var(--text-strong)] transition-colors hover:text-primary"
-            >
+            <p className="line-clamp-1 text-xs font-medium text-[var(--text-strong)] transition-colors group-hover:text-primary">
               {result.title}
-            </a>
-            <p className="truncate text-xs tracking-[0.18em] text-[var(--text-soft)] uppercase">
-              {result.source ?? result.displayUrl ?? result.url}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </a>
       ))}
     </div>
   );
