@@ -146,7 +146,7 @@ export function ResultCard({ result }: ResultCardProps) {
       ) : null}
 
       {result.engine ? (
-        <p className="text-[13px] leading-5 text-[var(--text-soft-alt)]">
+        <p className="text-[13px] leading-5 text-[var(--text-engine)]">
           - {formatEngineName(result.engine)}
         </p>
       ) : null}

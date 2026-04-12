@@ -584,14 +584,16 @@ export function SearchPageClient() {
                 )}
               >
                 <div className="hidden lg:block" />
-                <div className="flex min-h-11 w-full max-w-full flex-wrap items-end gap-x-10 gap-y-2">
-                  <SearchTabs tab={currentTab} />
-                  <Filters
-                    language={currentLanguage}
-                    timeRange={currentTimeRange}
-                    safeSearch={currentSafeSearch}
-                  />
-                </div>
+                <SearchTabs
+                  tab={currentTab}
+                  trailingContent={
+                    <Filters
+                      language={currentLanguage}
+                      timeRange={currentTimeRange}
+                      safeSearch={currentSafeSearch}
+                    />
+                  }
+                />
               </div>
             </div>
           </div>

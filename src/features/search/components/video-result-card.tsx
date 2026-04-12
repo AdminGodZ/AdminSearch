@@ -183,7 +183,7 @@ export function VideoResultCard({ result }: VideoResultCardProps) {
           ) : null}
 
           {result.engine ? (
-            <p className="text-[13px] leading-5 text-[var(--text-soft-alt)]">
+            <p className="text-[13px] leading-5 text-[var(--text-engine)]">
               - {formatEngineName(result.engine)}
             </p>
           ) : null}
