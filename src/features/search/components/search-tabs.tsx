@@ -13,7 +13,7 @@ type SearchTabsProps = {
 };
 
 export const searchTabTriggerClassName =
-  "relative inline-flex h-10 cursor-pointer flex-none items-center justify-center gap-1.5 rounded-none border-0 border-b-2 border-b-transparent px-0 pt-1 pb-3 text-[15px] font-medium leading-none whitespace-nowrap text-[var(--text-soft-alt)] shadow-none outline-none ring-0 transition-colors hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 after:hidden";
+  "relative -mb-[2px] inline-flex h-10 cursor-pointer flex-none items-center justify-center gap-1.5 rounded-none border-0 border-b-2 border-b-transparent px-0 pt-1 pb-3 text-[15px] font-medium leading-none whitespace-nowrap text-[var(--text-soft-alt)] shadow-none outline-none ring-0 transition-colors hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:z-10 data-[state=active]:border-b-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 after:hidden";
 
 const tabs = [
   { value: "all", label: "All" },

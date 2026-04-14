@@ -1,9 +1,14 @@
 "use client";
 
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
 import { Header } from "@/components/site/header";
 import { Button } from "@/components/ui/button";
@@ -24,14 +29,10 @@ type SearchState =
   | { status: "success"; data: SearchResponse }
   | { status: "error"; message: string; previous?: SearchResponse };
 
-const imageSkeletonKeys = [
-  "image-skeleton-1",
-  "image-skeleton-2",
-  "image-skeleton-3",
-  "image-skeleton-4",
-  "image-skeleton-5",
-  "image-skeleton-6",
-];
+const imageSkeletonKeys = Array.from(
+  { length: 14 },
+  (_, i) => `image-skeleton-${i + 1}`,
+);
 
 const resultSkeletonKeys = [
   "result-skeleton-1",
@@ -141,15 +142,18 @@ function normalizePage(value: string | null) {
 function LoadingResults({ tab }: { tab: SearchTab }) {
   if (tab === "images") {
     return (
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
         {imageSkeletonKeys.map((key) => (
-          <Card key={key} variant="panel" className="rounded-[28px]">
-            <CardContent className="space-y-3 p-5">
-              <Skeleton className="aspect-[4/3] w-full rounded-[22px]" />
-              <Skeleton className="h-4 w-4/5 rounded-full" />
-              <Skeleton className="h-3 w-1/2 rounded-full" />
-            </CardContent>
-          </Card>
+          <div
+            key={key}
+            className="overflow-hidden rounded-xl bg-[var(--surface-panel)]"
+          >
+            <Skeleton className="aspect-[4/3] w-full rounded-none" />
+            <div className="space-y-1.5 px-2.5 py-2">
+              <Skeleton className="h-2.5 w-1/3 rounded-full" />
+              <Skeleton className="h-3 w-4/5 rounded-full" />
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -185,6 +189,130 @@ function formatRequestDuration(value?: number) {
   }
 
   return `${(value / 1000).toFixed(2)}s`;
+}
+
+function ImageSuggestionStrip({
+  suggestions,
+  thumbnails,
+  pathname,
+  searchParams,
+}: {
+  suggestions: string[];
+  thumbnails: Array<string | undefined>;
+  pathname: string;
+  searchParams: ReturnType<typeof useSearchParams>;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showScrollLeftButton, setShowScrollLeftButton] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+
+    if (!el) {
+      return;
+    }
+
+    function check() {
+      const container = scrollRef.current;
+
+      if (!container) {
+        return;
+      }
+
+      setShowScrollButton(
+        container.scrollLeft + container.clientWidth <
+          container.scrollWidth - 4,
+      );
+      setShowScrollLeftButton(container.scrollLeft > 4);
+    }
+
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", check);
+      observer.disconnect();
+    };
+  }, []);
+
+  if (!suggestions.length) {
+    return null;
+  }
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="flex min-w-max gap-2.5 pr-12">
+          {suggestions.slice(0, 16).map((suggestion, index) => {
+            const thumbnailUrl = thumbnails[index];
+
+            return (
+              <Link
+                key={suggestion}
+                href={buildHref(pathname, searchParams, {
+                  q: suggestion,
+                  page: null,
+                })}
+                className="group flex h-9 min-w-0 max-w-[220px] items-center gap-2 rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-panel)] pr-3.5 pl-1 text-left transition-colors hover:bg-accent"
+              >
+                <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--control-bg)]">
+                  {thumbnailUrl ? (
+                    // biome-ignore lint/performance/noImgElement: Suggestion thumbnails intentionally reuse current image search result thumbnails.
+                    <img
+                      src={thumbnailUrl}
+                      alt=""
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                <span className="truncate text-[13px] font-medium text-[var(--text-strong)] transition-colors group-hover:text-foreground">
+                  {suggestion}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {showScrollLeftButton ? (
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex w-20 items-center justify-start bg-gradient-to-r from-background from-40% to-transparent">
+          <button
+            type="button"
+            className="pointer-events-auto flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--surface-chip-border)] bg-background shadow-sm transition-colors hover:bg-accent"
+            onClick={() =>
+              scrollRef.current?.scrollBy({ left: -300, behavior: "smooth" })
+            }
+            aria-label="Scroll suggestions left"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+        </div>
+      ) : null}
+
+      {showScrollButton ? (
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex w-20 items-center justify-end bg-gradient-to-l from-background from-40% to-transparent">
+          <button
+            type="button"
+            className="pointer-events-auto flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--surface-chip-border)] bg-background shadow-sm transition-colors hover:bg-accent"
+            onClick={() =>
+              scrollRef.current?.scrollBy({ left: 300, behavior: "smooth" })
+            }
+            aria-label="Scroll suggestions"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function SearchSidebar({
@@ -358,6 +486,7 @@ export function SearchPageClient() {
   const [state, setState] = useState<SearchState>({ status: "idle" });
   const [loadedPage, setLoadedPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
 
   const queryStringWithoutPage = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -451,6 +580,36 @@ export function SearchPageClient() {
     return () => controller.abort();
   }, [deferredQueryString, requestedPage]);
 
+  useEffect(() => {
+    if (currentTab !== "images" || !currentQuery) {
+      setImageTabSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const fallbackParams = new URLSearchParams(queryStringWithoutPage);
+    fallbackParams.set("tab", "all");
+    fallbackParams.delete("page");
+
+    void (async () => {
+      try {
+        const payload = await fetchSearchPageData(
+          fallbackParams.toString(),
+          1,
+          controller.signal,
+        );
+
+        setImageTabSuggestions(payload.suggestions);
+      } catch {
+        if (!controller.signal.aborted) {
+          setImageTabSuggestions([]);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [currentQuery, currentTab, queryStringWithoutPage]);
+
   const activeData =
     state.status === "success"
       ? state.data
@@ -466,7 +625,7 @@ export function SearchPageClient() {
   const showLoadingFallback = state.status === "loading" && !activeData;
   const resultsSectionClass =
     currentTab === "images"
-      ? "max-w-[1152px]"
+      ? ""
       : hasSidebarContent
         ? "max-w-[655px]"
         : "max-w-[655px]";
@@ -478,6 +637,10 @@ export function SearchPageClient() {
         : currentTab === "news"
           ? "news results"
           : "results";
+  const visibleImageSuggestions =
+    currentTab === "images" && activeData && activeData.suggestions.length > 0
+      ? activeData.suggestions
+      : imageTabSuggestions;
 
   async function handleLoadMore() {
     if (!activeData || !activeData.hasMore || isLoadingMore) {
@@ -603,11 +766,31 @@ export function SearchPageClient() {
           <div
             className={cn(
               "grid gap-7 lg:gap-x-5 lg:gap-y-7",
-              searchContentColumns,
+              currentTab !== "images" && searchContentColumns,
             )}
           >
-            <div className="hidden lg:block" />
-            <div className="space-y-7">
+            {currentTab !== "images" ? (
+              <div className="hidden lg:block" />
+            ) : null}
+            <div
+              className={cn(
+                "space-y-7 min-w-0",
+                currentTab === "images" && "overflow-x-hidden",
+              )}
+            >
+              {currentTab === "images" && visibleImageSuggestions.length ? (
+                <div className={cn("space-y-4", resultsSectionClass)}>
+                  <ImageSuggestionStrip
+                    suggestions={visibleImageSuggestions}
+                    thumbnails={(activeData?.results ?? [])
+                      .slice(0, 16)
+                      .map((result) => result.thumbnailUrl)}
+                    pathname={pathname}
+                    searchParams={searchParams}
+                  />
+                </div>
+              ) : null}
+
               <div
                 className={cn(
                   "grid items-start gap-7",
