@@ -13,6 +13,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/site/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Filters } from "@/features/search/components/filters";
@@ -142,11 +143,11 @@ function normalizePage(value: string | null) {
 function LoadingResults({ tab }: { tab: SearchTab }) {
   if (tab === "images") {
     return (
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+      <div className="grid items-start grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
         {imageSkeletonKeys.map((key) => (
           <div
             key={key}
-            className="overflow-hidden rounded-xl bg-[var(--surface-panel)]"
+            className="self-start overflow-hidden rounded-xl bg-[var(--surface-panel)]"
           >
             <Skeleton className="aspect-[4/3] w-full rounded-none" />
             <div className="space-y-1.5 px-2.5 py-2">
@@ -202,19 +203,24 @@ function ImageSuggestionStrip({
   pathname: string;
   searchParams: ReturnType<typeof useSearchParams>;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRootRef = useRef<HTMLDivElement>(null);
   const [showScrollLeftButton, setShowScrollLeftButton] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   useEffect(() => {
-    const el = scrollRef.current;
+    const root = scrollRootRef.current;
+    const el = root?.querySelector<HTMLDivElement>(
+      '[data-slot="scroll-area-viewport"]',
+    );
 
     if (!el) {
       return;
     }
 
     function check() {
-      const container = scrollRef.current;
+      const container = root?.querySelector<HTMLDivElement>(
+        '[data-slot="scroll-area-viewport"]',
+      );
 
       if (!container) {
         return;
@@ -244,10 +250,7 @@ function ImageSuggestionStrip({
 
   return (
     <div className="relative">
-      <div
-        ref={scrollRef}
-        className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
+      <ScrollArea ref={scrollRootRef} className="w-full whitespace-nowrap">
         <div className="flex min-w-max gap-2.5 pr-12">
           {suggestions.slice(0, 16).map((suggestion, index) => {
             const thumbnailUrl = thumbnails[index];
@@ -280,7 +283,7 @@ function ImageSuggestionStrip({
             );
           })}
         </div>
-      </div>
+      </ScrollArea>
 
       {showScrollLeftButton ? (
         <div className="pointer-events-none absolute inset-y-0 left-0 flex w-20 items-center justify-start bg-gradient-to-r from-background from-40% to-transparent">
@@ -288,7 +291,11 @@ function ImageSuggestionStrip({
             type="button"
             className="pointer-events-auto flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--surface-chip-border)] bg-background shadow-sm transition-colors hover:bg-accent"
             onClick={() =>
-              scrollRef.current?.scrollBy({ left: -300, behavior: "smooth" })
+              scrollRootRef.current
+                ?.querySelector<HTMLDivElement>(
+                  '[data-slot="scroll-area-viewport"]',
+                )
+                ?.scrollBy({ left: -300, behavior: "smooth" })
             }
             aria-label="Scroll suggestions left"
           >
@@ -303,7 +310,11 @@ function ImageSuggestionStrip({
             type="button"
             className="pointer-events-auto flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--surface-chip-border)] bg-background shadow-sm transition-colors hover:bg-accent"
             onClick={() =>
-              scrollRef.current?.scrollBy({ left: 300, behavior: "smooth" })
+              scrollRootRef.current
+                ?.querySelector<HTMLDivElement>(
+                  '[data-slot="scroll-area-viewport"]',
+                )
+                ?.scrollBy({ left: 300, behavior: "smooth" })
             }
             aria-label="Scroll suggestions"
           >
@@ -355,14 +366,16 @@ function SearchSidebar({
         >
           <CardContent className="space-y-6 p-7">
             {infobox.imageUrl ? (
-              // biome-ignore lint/performance/noImgElement: Infobox images are remote SearXNG-provided media with dynamic origins.
-              <img
-                src={infobox.imageUrl}
-                alt={infobox.title}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="max-h-[240px] w-full rounded-2xl object-cover"
-              />
+              <div className="flex max-h-[240px] min-h-[160px] w-full items-center justify-center overflow-hidden rounded-2xl p-4">
+                {/* biome-ignore lint/performance/noImgElement: Infobox images are remote SearXNG-provided media with dynamic origins. */}
+                <img
+                  src={infobox.imageUrl}
+                  alt={infobox.title}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  className="max-h-[208px] w-full object-contain"
+                />
+              </div>
             ) : null}
             <div className="space-y-1.5">
               {infobox.url ? (

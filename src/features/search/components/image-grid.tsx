@@ -56,14 +56,14 @@ function ImageFavicon({ url }: { url: string }) {
 
 export function ImageGrid({ results }: ImageGridProps) {
   return (
-    <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+    <div className="grid min-w-0 items-start grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
       {results.map((result) => (
         <a
           key={result.id}
           href={result.url}
           target="_blank"
           rel="noreferrer noopener"
-          className="group min-w-0 overflow-hidden rounded-xl bg-[var(--surface-panel)]"
+          className="group min-w-0 self-start overflow-hidden rounded-xl bg-[var(--surface-panel)]"
         >
           <div className="overflow-hidden">
             {result.thumbnailUrl ? (
