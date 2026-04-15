@@ -142,11 +142,11 @@ function normalizePage(value: string | null) {
 function LoadingResults({ tab }: { tab: SearchTab }) {
   if (tab === "images") {
     return (
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+      <div className="grid items-start grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
         {imageSkeletonKeys.map((key) => (
           <div
             key={key}
-            className="overflow-hidden rounded-xl bg-[var(--surface-panel)]"
+            className="self-start overflow-hidden rounded-xl bg-[var(--surface-panel)]"
           >
             <Skeleton className="aspect-[4/3] w-full rounded-none" />
             <div className="space-y-1.5 px-2.5 py-2">
@@ -355,14 +355,16 @@ function SearchSidebar({
         >
           <CardContent className="space-y-6 p-7">
             {infobox.imageUrl ? (
-              // biome-ignore lint/performance/noImgElement: Infobox images are remote SearXNG-provided media with dynamic origins.
-              <img
-                src={infobox.imageUrl}
-                alt={infobox.title}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="max-h-[240px] w-full rounded-2xl object-cover"
-              />
+              <div className="flex max-h-[240px] min-h-[160px] w-full items-center justify-center overflow-hidden rounded-2xl p-4">
+                {/* biome-ignore lint/performance/noImgElement: Infobox images are remote SearXNG-provided media with dynamic origins. */}
+                <img
+                  src={infobox.imageUrl}
+                  alt={infobox.title}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  className="max-h-[208px] w-full object-contain"
+                />
+              </div>
             ) : null}
             <div className="space-y-1.5">
               {infobox.url ? (

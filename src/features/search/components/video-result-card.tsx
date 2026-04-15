@@ -103,90 +103,92 @@ export function VideoResultCard({ result }: VideoResultCardProps) {
 
   return (
     <article className="max-w-4xl">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <a
-          href={result.url}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="block w-full shrink-0 sm:w-[220px]"
-          onMouseEnter={() => setShowPreview(true)}
-          onMouseLeave={() => setShowPreview(false)}
-          onFocus={() => setShowPreview(true)}
-          onBlur={() => setShowPreview(false)}
-        >
-          <div className="aspect-video overflow-hidden rounded-2xl bg-[var(--surface-panel)]">
-            {showPreview && previewSrc ? (
-              <iframe
-                src={previewSrc}
-                title={`${result.title} preview`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="h-full w-full border-0"
-              />
-            ) : result.thumbnailUrl ? (
-              // biome-ignore lint/performance/noImgElement: Direct remote thumbnails are already used for image search and video previews.
-              <img
-                src={result.thumbnailUrl}
-                alt={result.title}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-[var(--text-soft-alt)]">
-                No thumbnail
-              </div>
-            )}
+      <div className="space-y-3">
+        <div className="flex items-start gap-3">
+          <SiteFavicon hostname={meta.host} src={meta.faviconUrl} />
+
+          <div className="min-w-0 space-y-0.5">
+            <p className="truncate text-sm leading-5 text-[var(--text-strong)]">
+              {meta.host}
+            </p>
+            <p className="truncate text-sm leading-5 text-[var(--text-soft-alt)]">
+              {`https://${meta.host}/`}
+              {meta.path ? (
+                <span className="text-[var(--text-soft)]">
+                  {" › "} {meta.path}
+                </span>
+              ) : null}
+            </p>
           </div>
-        </a>
+        </div>
 
-        <div className="min-w-0 space-y-1">
-          <div className="flex items-start gap-3">
-            <SiteFavicon hostname={meta.host} src={meta.faviconUrl} />
-
-            <div className="min-w-0 space-y-0.5">
-              <p className="truncate text-sm leading-5 text-[var(--text-strong)]">
-                {meta.host}
-              </p>
-              <p className="truncate text-sm leading-5 text-[var(--text-soft-alt)]">
-                {`https://${meta.host}/`}
-                {meta.path ? (
-                  <span className="text-[var(--text-soft)]">
-                    {" › "} {meta.path}
-                  </span>
-                ) : null}
-              </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <a
+            href={result.url}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="block w-full shrink-0 sm:w-[220px]"
+            onMouseEnter={() => setShowPreview(true)}
+            onMouseLeave={() => setShowPreview(false)}
+            onFocus={() => setShowPreview(true)}
+            onBlur={() => setShowPreview(false)}
+          >
+            <div className="aspect-video overflow-hidden rounded-2xl bg-[var(--surface-panel)]">
+              {showPreview && previewSrc ? (
+                <iframe
+                  src={previewSrc}
+                  title={`${result.title} preview`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="h-full w-full border-0"
+                />
+              ) : result.thumbnailUrl ? (
+                // biome-ignore lint/performance/noImgElement: Direct remote thumbnails are already used for image search and video previews.
+                <img
+                  src={result.thumbnailUrl}
+                  alt={result.title}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-[var(--text-soft-alt)]">
+                  No thumbnail
+                </div>
+              )}
             </div>
+          </a>
+
+          <div className="min-w-0 space-y-0.5">
+            <h2 className="line-clamp-2 text-[20px] leading-tight font-normal tracking-tight">
+              <a
+                href={result.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-primary transition-colors hover:underline"
+              >
+                {result.title}
+              </a>
+            </h2>
+
+            {result.snippet ? (
+              <p className="line-clamp-2 text-[14px] leading-6 text-[var(--text-body)]">
+                {result.snippet}
+              </p>
+            ) : null}
+
+            {videoMetaParts.length ? (
+              <p className="text-[14px] leading-6 text-[var(--text-soft-alt)]">
+                {videoMetaParts.join(" · ")}
+              </p>
+            ) : null}
+
+            {result.engine ? (
+              <p className="text-[13px] leading-5 text-[var(--text-engine)]">
+                - {formatEngineName(result.engine)}
+              </p>
+            ) : null}
           </div>
-
-          <h2 className="text-[20px] leading-tight font-normal tracking-tight">
-            <a
-              href={result.url}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="text-primary transition-colors hover:underline"
-            >
-              {result.title}
-            </a>
-          </h2>
-
-          {result.snippet ? (
-            <p className="line-clamp-3 text-[14px] leading-6 text-[var(--text-body)]">
-              {result.snippet}
-            </p>
-          ) : null}
-
-          {videoMetaParts.length ? (
-            <p className="text-[14px] leading-6 text-[var(--text-soft-alt)]">
-              {videoMetaParts.join(" · ")}
-            </p>
-          ) : null}
-
-          {result.engine ? (
-            <p className="text-[13px] leading-5 text-[var(--text-engine)]">
-              - {formatEngineName(result.engine)}
-            </p>
-          ) : null}
         </div>
       </div>
     </article>

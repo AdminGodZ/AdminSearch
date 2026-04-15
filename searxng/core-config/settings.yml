@@ -1,16 +1,18 @@
 use_default_settings:
   engines:
     keep_only:
+      # Generic search:
       - duckduckgo
       - ddg definitions
       - brave
       - google
-      - bing
+      # - bing
       - startpage
+      # Image search:
       - duckduckgo images
       - brave.images
       - google images
-      - bing images
+      # - bing images
       - startpage images
       - youtube
       - google videos
@@ -23,7 +25,7 @@ use_default_settings:
       # - odysee
       - startpage news
       - wikinews
-      - bing news
+      # - bing news
       - brave.news
       - duckduckgo news
       - reuters
@@ -64,6 +66,7 @@ server:
   image_proxy: false
 
 engines:
+  # Generic search:
   - name: duckduckgo
     disabled: false
   - name: ddg definitions
@@ -72,18 +75,19 @@ engines:
     disabled: false
   - name: google
     disabled: false
-  - name: bing
-    disabled: false
+  # - name: bing
+  #   disabled: false
   - name: startpage
     disabled: false
+  # Image search:
   - name: duckduckgo images
     disabled: false
   - name: brave.images
     disabled: false
   - name: google images
     disabled: false
-  - name: bing images
-    disabled: false
+  # - name: bing images
+  #   disabled: false
   - name: startpage images
     disabled: false
   - name: youtube
@@ -107,8 +111,8 @@ engines:
     disabled: false
   - name: wikinews
     disabled: false
-  - name: bing news
-    disabled: false
+  # - name: bing news
+  #   disabled: false
   - name: brave.news
     disabled: false
   - name: duckduckgo news
