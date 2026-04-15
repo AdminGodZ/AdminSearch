@@ -101,8 +101,6 @@
   --text-soft: #697083;
   --text-soft-alt: #61697a;
   --text-engine: #7084a3;
-  --scrollbar-thumb: #c8cdd5;
-  --scrollbar-thumb-hover: #aeb6c2;
   --brand-button: #2d4f79;
   --brand-button-hover: #244469;
   --selection-bg: #e2e2e2;
@@ -115,23 +113,11 @@
 
   html {
     @apply scroll-smooth font-sans;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  html::-webkit-scrollbar {
-    display: none;
   }
 
   body {
     @apply bg-background text-foreground;
     background-image: none;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  body::-webkit-scrollbar {
-    display: none;
   }
 
   [data-slot="dropdown-menu-content"],
@@ -205,8 +191,6 @@
   --text-soft: #9aa0a6;
   --text-soft-alt: #9aa0a6;
   --text-engine: #9db3d8;
-  --scrollbar-thumb: #5f6367;
-  --scrollbar-thumb-hover: #70757a;
   --brand-button: #8ab4f8;
   --brand-button-hover: #aecbfa;
   --selection-bg: #3c4043;

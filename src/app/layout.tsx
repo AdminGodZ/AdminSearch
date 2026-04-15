@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -37,10 +36,7 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <ScrollArea type="always" className="h-screen w-full bg-background">
-            {children}
-            <ScrollBar className="px-0.5 py-3" />
-          </ScrollArea>
+          {children}
         </ThemeProvider>
       </body>
     </html>

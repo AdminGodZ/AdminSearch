@@ -13,7 +13,6 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/site/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Filters } from "@/features/search/components/filters";
@@ -203,24 +202,19 @@ function ImageSuggestionStrip({
   pathname: string;
   searchParams: ReturnType<typeof useSearchParams>;
 }) {
-  const scrollRootRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollLeftButton, setShowScrollLeftButton] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   useEffect(() => {
-    const root = scrollRootRef.current;
-    const el = root?.querySelector<HTMLDivElement>(
-      '[data-slot="scroll-area-viewport"]',
-    );
+    const el = scrollRef.current;
 
     if (!el) {
       return;
     }
 
     function check() {
-      const container = root?.querySelector<HTMLDivElement>(
-        '[data-slot="scroll-area-viewport"]',
-      );
+      const container = scrollRef.current;
 
       if (!container) {
         return;
@@ -250,7 +244,10 @@ function ImageSuggestionStrip({
 
   return (
     <div className="relative">
-      <ScrollArea ref={scrollRootRef} className="w-full whitespace-nowrap">
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         <div className="flex min-w-max gap-2.5 pr-12">
           {suggestions.slice(0, 16).map((suggestion, index) => {
             const thumbnailUrl = thumbnails[index];
@@ -283,7 +280,7 @@ function ImageSuggestionStrip({
             );
           })}
         </div>
-      </ScrollArea>
+      </div>
 
       {showScrollLeftButton ? (
         <div className="pointer-events-none absolute inset-y-0 left-0 flex w-20 items-center justify-start bg-gradient-to-r from-background from-40% to-transparent">
@@ -291,11 +288,7 @@ function ImageSuggestionStrip({
             type="button"
             className="pointer-events-auto flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--surface-chip-border)] bg-background shadow-sm transition-colors hover:bg-accent"
             onClick={() =>
-              scrollRootRef.current
-                ?.querySelector<HTMLDivElement>(
-                  '[data-slot="scroll-area-viewport"]',
-                )
-                ?.scrollBy({ left: -300, behavior: "smooth" })
+              scrollRef.current?.scrollBy({ left: -300, behavior: "smooth" })
             }
             aria-label="Scroll suggestions left"
           >
@@ -310,11 +303,7 @@ function ImageSuggestionStrip({
             type="button"
             className="pointer-events-auto flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--surface-chip-border)] bg-background shadow-sm transition-colors hover:bg-accent"
             onClick={() =>
-              scrollRootRef.current
-                ?.querySelector<HTMLDivElement>(
-                  '[data-slot="scroll-area-viewport"]',
-                )
-                ?.scrollBy({ left: 300, behavior: "smooth" })
+              scrollRef.current?.scrollBy({ left: 300, behavior: "smooth" })
             }
             aria-label="Scroll suggestions"
           >
