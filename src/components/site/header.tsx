@@ -1,4 +1,5 @@
 import { Settings } from "lucide-react";
+import Link from "next/link";
 import type { ComponentProps } from "react";
 
 import { LanguageSelect } from "@/components/site/language-select";
@@ -26,13 +27,14 @@ export function Header({
         <LanguageSelect className={invertedClassName} />
         <ThemeToggle className={invertedClassName} />
         <Button
-          type="button"
+          asChild
           variant="chrome"
           size="header"
-          aria-label="Settings"
           className={cn("w-10 min-w-0 cursor-pointer px-0", invertedClassName)}
         >
-          <Settings className="size-4.5" />
+          <Link href="/settings" aria-label="Settings">
+            <Settings className="size-4.5" />
+          </Link>
         </Button>
       </div>
     </header>

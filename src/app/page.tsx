@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
+
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
 import { SpecialText } from "@/components/site/special-text";
 import { ThemeLogo } from "@/components/site/theme-logo";
 import { SearchForm } from "@/features/search/components/search-form";
+
+export const metadata: Metadata = {
+  title: "Home",
+};
 
 export default function Home() {
   return (
