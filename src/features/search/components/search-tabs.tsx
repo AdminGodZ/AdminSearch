@@ -13,7 +13,7 @@ type SearchTabsProps = {
 };
 
 export const searchTabTriggerClassName =
-  "relative -mb-[2px] inline-flex h-10 cursor-pointer flex-none items-center justify-center gap-1.5 rounded-none border-0 border-b-2 border-b-transparent px-0 pt-1 pb-3 text-[15px] font-medium leading-none whitespace-nowrap text-[var(--text-soft-alt)] shadow-none outline-none ring-0 transition-colors hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:z-10 data-[state=active]:border-b-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 after:hidden";
+  "relative inline-flex h-10 cursor-pointer flex-none items-center justify-center gap-1.5 rounded-none border-0 px-0 pt-1 pb-3 text-[15px] font-medium leading-none whitespace-nowrap text-[var(--text-soft-alt)] shadow-none outline-none ring-0 transition-colors hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:z-10 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:text-white after:hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
 
 const tabs = [
   { value: "all", label: "All" },
@@ -54,7 +54,10 @@ export function SearchTabs({ tab, trailingContent }: SearchTabsProps) {
             value={item.value}
             className={searchTabTriggerClassName}
           >
-            {item.label}
+            <span>{item.label}</span>
+            {tab === item.value ? (
+              <span className="pointer-events-none absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-foreground dark:bg-white" />
+            ) : null}
           </TabsTrigger>
         ))}
         {trailingContent}
