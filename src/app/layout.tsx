@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   ),
   title: {
     default: "AdminSearch",
-    template: "%s | AdminSearch",
+    template: "AdminSearch - %s",
   },
   description:
     "A custom public search frontend powered by a private SearXNG backend.",
