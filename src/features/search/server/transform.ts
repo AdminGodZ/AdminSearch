@@ -1,4 +1,4 @@
-import { APP_RESULTS_PER_PAGE } from "@/features/search/server/searx-client";
+import { DEFAULT_RESULTS_PER_PAGE } from "@/features/search/server/searx-client";
 import type {
   SearchInfobox,
   SearchInfoboxAttribute,
@@ -374,7 +374,7 @@ function extractInfoboxes(rawInfoboxes: unknown[] | undefined) {
 export function transformSearxResponse(
   payload: SearxResponse,
   request: SearchRequest,
-  options?: { hasMore?: boolean },
+  options?: { hasMore?: boolean; resultsPerPage?: number },
 ): SearchResponse {
   const results = Array.isArray(payload.results)
     ? payload.results
@@ -391,7 +391,8 @@ export function transformSearxResponse(
     options?.hasMore ??
     (numberOfResults !== undefined
       ? request.page * Math.max(results.length, 1) < numberOfResults
-      : results.length >= APP_RESULTS_PER_PAGE);
+      : results.length >=
+        (options?.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE));
 
   return {
     query: request.q,

@@ -1,11 +1,16 @@
 import { SiteFavicon } from "@/features/search/components/site-favicon";
 import type { SearchResult } from "@/features/search/types";
+import { cn } from "@/lib/utils";
 
 type ResultCardProps = {
+  compactDensity?: boolean;
+  faviconResolver?: string;
+  openInNewTab?: boolean;
   result: SearchResult;
+  showFavicons?: boolean;
 };
 
-function getResultMeta(result: SearchResult) {
+function getResultMeta(result: SearchResult, faviconResolver: string) {
   const fallback = {
     host: result.source ?? result.displayUrl ?? result.url,
     path: "",
@@ -19,7 +24,7 @@ function getResultMeta(result: SearchResult) {
     return {
       host: authority.replace(/^www\./, ""),
       path: parsed.pathname === "/" ? "" : parsed.pathname,
-      faviconUrl: `/api/favicon?authority=${encodeURIComponent(authority)}`,
+      faviconUrl: `/api/favicon?authority=${encodeURIComponent(authority)}&resolver=${encodeURIComponent(faviconResolver)}`,
     };
   } catch {
     return fallback;
@@ -104,14 +109,26 @@ function getPrimaryLabel(result: SearchResult, host: string) {
   return platformLabel;
 }
 
-export function ResultCard({ result }: ResultCardProps) {
-  const meta = getResultMeta(result);
+export function ResultCard({
+  compactDensity = false,
+  faviconResolver = "google",
+  openInNewTab = true,
+  result,
+  showFavicons = true,
+}: ResultCardProps) {
+  const meta = getResultMeta(result, faviconResolver);
   const primaryLabel = getPrimaryLabel(result, meta.host);
 
   return (
     <article className="max-w-4xl space-y-1">
       <div className="flex items-start gap-3">
-        <SiteFavicon hostname={meta.host} src={meta.faviconUrl} />
+        {showFavicons ? (
+          <SiteFavicon
+            key={meta.faviconUrl}
+            hostname={meta.host}
+            src={meta.faviconUrl}
+          />
+        ) : null}
 
         <div className="min-w-0 space-y-0.5">
           <p className="truncate text-sm leading-5 text-[var(--text-strong)]">
@@ -131,8 +148,8 @@ export function ResultCard({ result }: ResultCardProps) {
       <h2 className="text-[20px] leading-tight font-normal tracking-tight">
         <a
           href={result.url}
-          target="_blank"
-          rel="noreferrer noopener"
+          target={openInNewTab ? "_blank" : undefined}
+          rel={openInNewTab ? "noreferrer noopener" : undefined}
           className="text-primary transition-colors hover:underline"
         >
           {result.title}
@@ -140,7 +157,12 @@ export function ResultCard({ result }: ResultCardProps) {
       </h2>
 
       {result.snippet ? (
-        <p className="text-[14px] leading-6 text-[var(--text-body)]">
+        <p
+          className={cn(
+            "text-[14px] text-[var(--text-body)]",
+            compactDensity ? "leading-5" : "leading-6",
+          )}
+        >
           {result.snippet}
         </p>
       ) : null}

@@ -3,12 +3,18 @@
 import { useMemo, useState } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
 import type { SearchResult } from "@/features/search/types";
+import { cn } from "@/lib/utils";
 
 type VideoResultCardProps = {
+  compactDensity?: boolean;
+  faviconResolver?: string;
+  openInNewTab?: boolean;
   result: SearchResult;
+  showFavicons?: boolean;
+  showThumbnails?: boolean;
 };
 
-function getResultMeta(result: SearchResult) {
+function getResultMeta(result: SearchResult, faviconResolver: string) {
   const fallback = {
     host: result.source ?? result.displayUrl ?? result.url,
     path: "",
@@ -22,7 +28,7 @@ function getResultMeta(result: SearchResult) {
     return {
       host: authority.replace(/^www\./, ""),
       path: parsed.pathname === "/" ? "" : parsed.pathname,
-      faviconUrl: `/api/favicon?authority=${encodeURIComponent(authority)}`,
+      faviconUrl: `/api/favicon?authority=${encodeURIComponent(authority)}&resolver=${encodeURIComponent(faviconResolver)}`,
     };
   } catch {
     return fallback;
@@ -87,8 +93,15 @@ function buildPreviewSrc(previewUrl: string) {
   }
 }
 
-export function VideoResultCard({ result }: VideoResultCardProps) {
-  const meta = getResultMeta(result);
+export function VideoResultCard({
+  compactDensity = false,
+  faviconResolver = "google",
+  openInNewTab = true,
+  result,
+  showFavicons = true,
+  showThumbnails = true,
+}: VideoResultCardProps) {
+  const meta = getResultMeta(result, faviconResolver);
   const [showPreview, setShowPreview] = useState(false);
   const previewSrc = useMemo(
     () => (result.previewUrl ? buildPreviewSrc(result.previewUrl) : undefined),
@@ -103,9 +116,15 @@ export function VideoResultCard({ result }: VideoResultCardProps) {
 
   return (
     <article className="max-w-4xl">
-      <div className="space-y-3">
+      <div className={cn("space-y-3", compactDensity && "space-y-2")}>
         <div className="flex items-start gap-3">
-          <SiteFavicon hostname={meta.host} src={meta.faviconUrl} />
+          {showFavicons ? (
+            <SiteFavicon
+              key={meta.faviconUrl}
+              hostname={meta.host}
+              src={meta.faviconUrl}
+            />
+          ) : null}
 
           <div className="min-w-0 space-y-0.5">
             <p className="truncate text-sm leading-5 text-[var(--text-strong)]">
@@ -122,19 +141,28 @@ export function VideoResultCard({ result }: VideoResultCardProps) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div
+          className={cn(
+            "flex flex-col sm:flex-row sm:items-start",
+            compactDensity ? "gap-3" : "gap-4",
+          )}
+        >
           <a
             href={result.url}
-            target="_blank"
-            rel="noreferrer noopener"
+            target={openInNewTab ? "_blank" : undefined}
+            rel={openInNewTab ? "noreferrer noopener" : undefined}
             className="block w-full shrink-0 sm:w-[220px]"
-            onMouseEnter={() => setShowPreview(true)}
+            onMouseEnter={() => setShowPreview(showThumbnails)}
             onMouseLeave={() => setShowPreview(false)}
-            onFocus={() => setShowPreview(true)}
+            onFocus={() => setShowPreview(showThumbnails)}
             onBlur={() => setShowPreview(false)}
           >
             <div className="aspect-video overflow-hidden rounded-2xl bg-[var(--surface-panel)]">
-              {showPreview && previewSrc ? (
+              {!showThumbnails ? (
+                <div className="flex h-full items-center justify-center text-sm text-[var(--text-soft-alt)]">
+                  Preview hidden
+                </div>
+              ) : showPreview && previewSrc ? (
                 <iframe
                   src={previewSrc}
                   title={`${result.title} preview`}
@@ -163,8 +191,8 @@ export function VideoResultCard({ result }: VideoResultCardProps) {
             <h2 className="line-clamp-2 text-[20px] leading-tight font-normal tracking-tight">
               <a
                 href={result.url}
-                target="_blank"
-                rel="noreferrer noopener"
+                target={openInNewTab ? "_blank" : undefined}
+                rel={openInNewTab ? "noreferrer noopener" : undefined}
                 className="text-primary transition-colors hover:underline"
               >
                 {result.title}
@@ -172,7 +200,12 @@ export function VideoResultCard({ result }: VideoResultCardProps) {
             </h2>
 
             {result.snippet ? (
-              <p className="line-clamp-2 text-[14px] leading-6 text-[var(--text-body)]">
+              <p
+                className={cn(
+                  "line-clamp-2 text-[14px] text-[var(--text-body)]",
+                  compactDensity ? "leading-5" : "leading-6",
+                )}
+              >
                 {result.snippet}
               </p>
             ) : null}

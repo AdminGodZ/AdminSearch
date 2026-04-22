@@ -7,6 +7,8 @@ import {
   SearchUpstreamError,
 } from "@/features/search/server/searx-client";
 import { transformSearxResponse } from "@/features/search/server/transform";
+import { getSearchRuntimePreferences } from "@/features/settings/lib/preferences";
+import { getPersistedPreferences } from "@/features/settings/server/preferences";
 import { checkRateLimit, createRateLimitHeaders } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -41,12 +43,22 @@ export async function GET(request: Request) {
 
   try {
     const searchRequest = parseSearchRequest(new URL(request.url).searchParams);
-    const upstreamResponse = await fetchSearxResponse(searchRequest);
+    const preferences = await getPersistedPreferences();
+    const runtimePreferences = getSearchRuntimePreferences(
+      preferences.settings,
+      preferences.engines,
+      searchRequest.tab,
+    );
+    const upstreamResponse = await fetchSearxResponse(
+      searchRequest,
+      runtimePreferences,
+    );
     const payload = transformSearxResponse(
       upstreamResponse.payload,
       searchRequest,
       {
         hasMore: upstreamResponse.hasMore,
+        resultsPerPage: runtimePreferences.resultsPerPage,
       },
     );
     payload.requestDurationMs = performance.now() - startedAt;
