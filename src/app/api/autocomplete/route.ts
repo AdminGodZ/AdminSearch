@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { getPersistedPreferences } from "@/features/settings/server/preferences";
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -20,8 +22,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ suggestions: [] });
   }
 
+  const preferences = await getPersistedPreferences();
   const upstreamUrl = new URL("/autocompleter", getSearxBaseUrl());
   upstreamUrl.searchParams.set("q", query);
+  upstreamUrl.searchParams.set(
+    "autocomplete",
+    preferences.settings.autocomplete,
+  );
 
   let response: Response;
 

@@ -6,7 +6,7 @@ import type {
 
 const DEFAULT_SEARXNG_URL = "http://127.0.0.1:8080";
 const REQUEST_TIMEOUT_MS = 8_000;
-export const APP_RESULTS_PER_PAGE = 20;
+export const DEFAULT_RESULTS_PER_PAGE = 20;
 const MAX_UPSTREAM_PAGES = 12;
 
 export class SearchUpstreamError extends Error {
@@ -22,6 +22,15 @@ export class SearchUpstreamError extends Error {
 export type PaginatedSearxResponse = {
   payload: SearxResponse;
   hasMore: boolean;
+};
+
+export type SearxRuntimeOptions = {
+  disabledPlugins?: string[];
+  enabledEngines?: string[];
+  enabledPlugins?: string[];
+  engineTokens?: string[];
+  imageProxy?: boolean;
+  resultsPerPage?: number;
 };
 
 function getSearxBaseUrl() {
@@ -61,6 +70,7 @@ function readRawResultUrl(result: SearxRawResult) {
 async function fetchSearxPage(
   request: SearchRequest,
   upstreamPage: number,
+  options?: SearxRuntimeOptions,
 ): Promise<SearxResponse> {
   const params = new URLSearchParams({
     q: request.q,
@@ -78,17 +88,39 @@ async function fetchSearxPage(
     params.set("time_range", request.timeRange);
   }
 
+  if (options?.enabledEngines?.length) {
+    params.set("engines", options.enabledEngines.join(","));
+  }
+
+  if (options?.enabledPlugins?.length) {
+    params.set("enabled_plugins", options.enabledPlugins.join(","));
+  }
+
+  if (options?.disabledPlugins?.length) {
+    params.set("disabled_plugins", options.disabledPlugins.join(","));
+  }
+
+  if (typeof options?.imageProxy === "boolean") {
+    params.set("image_proxy", options.imageProxy ? "True" : "False");
+  }
+
   const url = new URL("/search", getSearxBaseUrl());
   url.search = params.toString();
 
   let response: Response;
 
   try {
+    const headers: Record<string, string> = {
+      accept: "application/json",
+    };
+
+    if (options?.engineTokens?.length) {
+      headers.cookie = `tokens=${options.engineTokens.join(",")}`;
+    }
+
     response = await fetch(url, {
       method: "GET",
-      headers: {
-        accept: "application/json",
-      },
+      headers,
       cache: "no-store",
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -121,14 +153,29 @@ async function fetchSearxPage(
 
 export async function fetchSearxResponse(
   request: SearchRequest,
+  options?: SearxRuntimeOptions,
 ): Promise<PaginatedSearxResponse> {
-  const startIndex = (request.page - 1) * APP_RESULTS_PER_PAGE;
-  const endIndex = startIndex + APP_RESULTS_PER_PAGE;
+  const resultsPerPage = options?.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE;
+  const startIndex = (request.page - 1) * resultsPerPage;
+  const endIndex = startIndex + resultsPerPage;
   const targetResultCount = endIndex + 1;
   const aggregatedResults: SearxRawResult[] = [];
   const seenUrls = new Set<string>();
   let firstPayload: SearxResponse | null = null;
   let totalAvailable: number | undefined;
+
+  if (options?.enabledEngines && options.enabledEngines.length === 0) {
+    return {
+      payload: {
+        number_of_results: 0,
+        results: [],
+        suggestions: [],
+        answers: [],
+        infoboxes: [],
+      },
+      hasMore: false,
+    };
+  }
 
   for (
     let upstreamPage = 1;
@@ -136,7 +183,7 @@ export async function fetchSearxResponse(
     aggregatedResults.length < targetResultCount;
     upstreamPage += 1
   ) {
-    const payload = await fetchSearxPage(request, upstreamPage);
+    const payload = await fetchSearxPage(request, upstreamPage, options);
 
     if (upstreamPage === 1) {
       firstPayload = payload;

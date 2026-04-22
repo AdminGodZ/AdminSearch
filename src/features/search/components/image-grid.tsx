@@ -4,12 +4,24 @@ import { Globe } from "lucide-react";
 import { useState } from "react";
 
 import type { SearchResult } from "@/features/search/types";
+import { cn } from "@/lib/utils";
 
 type ImageGridProps = {
+  compactDensity?: boolean;
+  faviconResolver?: string;
+  openInNewTab?: boolean;
   results: SearchResult[];
+  showFavicons?: boolean;
+  showThumbnails?: boolean;
 };
 
-function ImageFavicon({ url }: { url: string }) {
+function ImageFavicon({
+  faviconResolver,
+  url,
+}: {
+  faviconResolver: string;
+  url: string;
+}) {
   const [failed, setFailed] = useState(false);
 
   let authority: string;
@@ -18,7 +30,7 @@ function ImageFavicon({ url }: { url: string }) {
   try {
     const parsed = new URL(url);
     authority = parsed.hostname.replace(/^www\./, "");
-    faviconUrl = `/api/favicon?authority=${encodeURIComponent(parsed.hostname)}`;
+    faviconUrl = `/api/favicon?authority=${encodeURIComponent(parsed.hostname)}&resolver=${encodeURIComponent(faviconResolver)}`;
   } catch {
     authority = url;
     faviconUrl = undefined;
@@ -54,19 +66,35 @@ function ImageFavicon({ url }: { url: string }) {
   );
 }
 
-export function ImageGrid({ results }: ImageGridProps) {
+export function ImageGrid({
+  compactDensity = false,
+  faviconResolver = "google",
+  openInNewTab = true,
+  results,
+  showFavicons = true,
+  showThumbnails = true,
+}: ImageGridProps) {
   return (
-    <div className="grid min-w-0 items-start grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+    <div
+      className={cn(
+        "grid min-w-0 items-start grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7",
+        compactDensity ? "gap-1.5" : "gap-2",
+      )}
+    >
       {results.map((result) => (
         <a
           key={result.id}
           href={result.url}
-          target="_blank"
-          rel="noreferrer noopener"
+          target={openInNewTab ? "_blank" : undefined}
+          rel={openInNewTab ? "noreferrer noopener" : undefined}
           className="group min-w-0 self-start overflow-hidden rounded-xl bg-[var(--surface-panel)]"
         >
           <div className="overflow-hidden">
-            {result.thumbnailUrl ? (
+            {!showThumbnails ? (
+              <div className="flex aspect-[4/3] items-center justify-center bg-muted text-xs text-muted-foreground">
+                Preview hidden
+              </div>
+            ) : result.thumbnailUrl ? (
               // biome-ignore lint/performance/noImgElement: Direct remote thumbnails are an explicit MVP tradeoff for image search.
               <img
                 src={result.thumbnailUrl}
@@ -81,10 +109,21 @@ export function ImageGrid({ results }: ImageGridProps) {
               </div>
             )}
           </div>
-          <div className="min-w-0 space-y-0.5 px-2.5 py-2">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <ImageFavicon url={result.url} />
-            </div>
+          <div
+            className={cn(
+              "min-w-0 space-y-0.5 px-2.5",
+              compactDensity ? "py-1.5" : "py-2",
+            )}
+          >
+            {showFavicons ? (
+              <div className="flex min-w-0 items-center gap-1.5">
+                <ImageFavicon
+                  key={`${faviconResolver}:${result.url}`}
+                  faviconResolver={faviconResolver}
+                  url={result.url}
+                />
+              </div>
+            ) : null}
             <p className="line-clamp-1 text-xs font-medium text-[var(--text-strong)] transition-colors group-hover:text-primary">
               {result.title}
             </p>

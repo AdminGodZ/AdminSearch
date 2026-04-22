@@ -59,6 +59,12 @@ plugins:
   searx.plugins.time_zone.SXNGPlugin:
     active: true
 
+  searx.plugins.tracker_url_remover.SXNGPlugin:
+    active: false
+
+  searx.plugins.oa_doi_rewrite.SXNGPlugin:
+    active: false
+
 server:
   secret_key: "change-this-in-production"
   public_instance: false

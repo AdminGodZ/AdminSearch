@@ -11,14 +11,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  SETTINGS_SYNC_STORAGE_KEY,
+  UI_LANGUAGE_EVENT,
+  UI_LANGUAGE_STORAGE_KEY,
+} from "@/features/settings/lib/preferences";
+import {
+  getPersistedSettingsStorageMode,
+  persistUiLanguagePreference,
+  readUiLanguagePreference,
+} from "@/features/settings/lib/preferences-client";
 import { cn } from "@/lib/utils";
 
 type Language = "en" | "de";
 type LanguageSelectProps = {
   className?: string;
 };
-
-const STORAGE_KEY = "adminsearch-language";
 
 export function LanguageSelect({ className }: LanguageSelectProps) {
   const [mounted, setMounted] = useState(false);
@@ -27,22 +35,50 @@ export function LanguageSelect({ className }: LanguageSelectProps) {
   useEffect(() => {
     setMounted(true);
 
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-
-    if (saved === "en" || saved === "de") {
-      setLanguage(saved);
-      document.documentElement.lang = saved;
-      return;
+    function handleLanguageChange(event: Event) {
+      const detail = (event as CustomEvent<{ language?: string }>).detail;
+      const next = detail?.language === "de" ? "de" : "en";
+      setLanguage(next);
+      document.documentElement.lang = next;
     }
 
-    document.documentElement.lang = "en";
+    function syncLanguageFromStorage() {
+      const saved = readUiLanguagePreference();
+      const next = saved === "de" ? "de" : "en";
+      setLanguage(next);
+      document.documentElement.lang = next;
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (
+        event.key === SETTINGS_SYNC_STORAGE_KEY ||
+        event.key === UI_LANGUAGE_STORAGE_KEY
+      ) {
+        syncLanguageFromStorage();
+      }
+    }
+
+    window.addEventListener(UI_LANGUAGE_EVENT, handleLanguageChange);
+    window.addEventListener("storage", handleStorage);
+
+    syncLanguageFromStorage();
+
+    return () => {
+      window.removeEventListener(UI_LANGUAGE_EVENT, handleLanguageChange);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   function onValueChange(value: string) {
     const next = value === "de" ? "de" : "en";
     setLanguage(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
+    persistUiLanguagePreference(next, getPersistedSettingsStorageMode());
     document.documentElement.lang = next;
+    window.dispatchEvent(
+      new CustomEvent(UI_LANGUAGE_EVENT, {
+        detail: { language: next },
+      }),
+    );
   }
 
   if (!mounted) {

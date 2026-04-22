@@ -4,13 +4,16 @@ import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
 import { SpecialText } from "@/components/site/special-text";
 import { ThemeLogo } from "@/components/site/theme-logo";
-import { SearchForm } from "@/features/search/components/search-form";
+import { HomeSearchFormClient } from "@/features/search/components/home-search-form-client";
+import { getPersistedPreferences } from "@/features/settings/server/preferences";
 
 export const metadata: Metadata = {
   title: "Home",
 };
 
-export default function Home() {
+export default async function Home() {
+  const preferences = await getPersistedPreferences();
+
   return (
     <main className="flex min-h-screen flex-col bg-background">
       <div className="flex w-full justify-end pt-6 pl-6 pr-6 sm:pl-8 sm:pr-6 lg:pl-10 lg:pr-6">
@@ -31,14 +34,7 @@ export default function Home() {
             </h1>
 
             <div className="mt-8 w-full max-w-3xl">
-              <SearchForm
-                action="/search"
-                defaultQuery=""
-                tab="all"
-                size="hero"
-                variant="landing"
-                placeholder="Search AdminSearch"
-              />
+              <HomeSearchFormClient initialPreferences={preferences} />
             </div>
           </div>
         </section>

@@ -21,6 +21,16 @@ import { SearchForm } from "@/features/search/components/search-form";
 import { SearchTabs } from "@/features/search/components/search-tabs";
 import { buildHref } from "@/features/search/lib/url-state";
 import type { SearchResponse, SearchTab } from "@/features/search/types";
+import {
+  getSearchInterfacePreferences,
+  getSearchPreferenceDefaults,
+  type PersistedPreferences,
+  SETTINGS_SYNC_EVENT,
+  SETTINGS_SYNC_STORAGE_KEY,
+  type SearchInterfacePreferences,
+  type SearchPreferenceDefaults,
+} from "@/features/settings/lib/preferences";
+import { readPersistedPreferencesFromBrowser } from "@/features/settings/lib/preferences-client";
 import { cn } from "@/lib/utils";
 
 type SearchState =
@@ -317,10 +327,12 @@ function ImageSuggestionStrip({
 
 function SearchSidebar({
   data,
+  openInNewTab,
   pathname,
   searchParams,
 }: {
   data: SearchResponse;
+  openInNewTab: boolean;
   pathname: string;
   searchParams: ReturnType<typeof useSearchParams>;
 }) {
@@ -370,8 +382,8 @@ function SearchSidebar({
               {infobox.url ? (
                 <a
                   href={infobox.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
+                  target={openInNewTab ? "_blank" : undefined}
+                  rel={openInNewTab ? "noreferrer noopener" : undefined}
                   className="inline-flex hover:underline"
                 >
                   <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
@@ -436,8 +448,8 @@ function SearchSidebar({
                     <a
                       key={`${infobox.id}-${urlEntry.url}`}
                       href={urlEntry.url}
-                      target="_blank"
-                      rel="noreferrer noopener"
+                      target={openInNewTab ? "_blank" : undefined}
+                      rel={openInNewTab ? "noreferrer noopener" : undefined}
                       className="rounded-full border border-[var(--surface-chip-border)] px-3.5 py-1.5 text-sm text-primary transition-colors hover:bg-accent hover:text-foreground"
                     >
                       {urlEntry.title}
@@ -482,36 +494,143 @@ function SearchSidebar({
   );
 }
 
-export function SearchPageClient() {
+export function SearchPageClient({
+  initialPreferences,
+}: {
+  initialPreferences: PersistedPreferences;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [state, setState] = useState<SearchState>({ status: "idle" });
   const [loadedPage, setLoadedPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
+  const [preferences, setPreferences] =
+    useState<PersistedPreferences>(initialPreferences);
+
+  useEffect(() => {
+    setPreferences(initialPreferences);
+  }, [initialPreferences]);
+
+  useEffect(() => {
+    function syncPreferencesFromBrowser() {
+      setPreferences(readPersistedPreferencesFromBrowser());
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === SETTINGS_SYNC_STORAGE_KEY) {
+        syncPreferencesFromBrowser();
+      }
+    }
+
+    window.addEventListener(SETTINGS_SYNC_EVENT, syncPreferencesFromBrowser);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        SETTINGS_SYNC_EVENT,
+        syncPreferencesFromBrowser,
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
+  const defaults = useMemo<SearchPreferenceDefaults>(
+    () => getSearchPreferenceDefaults(preferences.settings),
+    [preferences.settings],
+  );
+  const interfacePreferences = useMemo<SearchInterfacePreferences>(
+    () => getSearchInterfacePreferences(preferences.settings),
+    [preferences.settings],
+  );
+  const runtimeRefreshKey = useMemo(
+    () =>
+      JSON.stringify({
+        engines: {
+          general: [...preferences.engines.general].sort(),
+          images: [...preferences.engines.images].sort(),
+          videos: [...preferences.engines.videos].sort(),
+          news: [...preferences.engines.news].sort(),
+        },
+        imageProxy: preferences.settings.imageProxy,
+        tokens: preferences.settings.engineTokens,
+        plugins: {
+          calculator: preferences.settings.calculator,
+          doiRewrite: preferences.settings.doiRewrite,
+          hashSearch: preferences.settings.hashSearch,
+          selfInfo: preferences.settings.selfInfo,
+          timeZone: preferences.settings.timeZone,
+          trackerCleaner: preferences.settings.trackerCleaner,
+          unitConverter: preferences.settings.unitConverter,
+        },
+        resultsPerPage: preferences.settings.loadMoreCount,
+      }),
+    [preferences.engines, preferences.settings],
+  );
+
+  const effectiveParams = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (!params.get("tab") && defaults.defaultTab !== "all") {
+      params.set("tab", defaults.defaultTab);
+    }
+
+    if (!params.get("language") && defaults.language) {
+      params.set("language", defaults.language);
+    }
+
+    if (!params.get("timeRange") && defaults.timeRange) {
+      params.set("timeRange", defaults.timeRange);
+    }
+
+    if (!params.has("safeSearch") && defaults.safeSearch !== 0) {
+      params.set("safeSearch", String(defaults.safeSearch));
+    }
+
+    return params;
+  }, [
+    defaults.defaultTab,
+    defaults.language,
+    defaults.safeSearch,
+    defaults.timeRange,
+    searchParams,
+  ]);
 
   const queryStringWithoutPage = useMemo(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(effectiveParams.toString());
     params.delete("page");
     return params.toString();
-  }, [searchParams]);
+  }, [effectiveParams]);
   const deferredQueryString = useDeferredValue(queryStringWithoutPage);
 
-  const currentQuery = searchParams.get("q")?.trim() ?? "";
-  const currentTab = normalizeTab(searchParams.get("tab"));
+  const currentQuery = effectiveParams.get("q")?.trim() ?? "";
+  const currentTab = normalizeTab(effectiveParams.get("tab"));
   const requestedPage = normalizePage(searchParams.get("page"));
-  const currentLanguage = searchParams.get("language")?.trim() || undefined;
+  const currentLanguage = effectiveParams.get("language")?.trim() || undefined;
   const currentTimeRange = useMemo(() => {
-    const value = searchParams.get("timeRange");
+    const value = effectiveParams.get("timeRange");
     return value === "day" || value === "month" || value === "year"
       ? value
       : undefined;
-  }, [searchParams]);
-  const currentSafeSearch = normalizeSafeSearch(searchParams.get("safeSearch"));
+  }, [effectiveParams]);
+  const currentSafeSearch = effectiveParams.has("safeSearch")
+    ? normalizeSafeSearch(effectiveParams.get("safeSearch"))
+    : defaults.safeSearch;
 
   useEffect(() => {
+    if (!interfacePreferences.queryInTitle || !currentQuery) {
+      document.title = "AdminSearch - Search";
+      return;
+    }
+
+    document.title = `AdminSearch - ${currentQuery}`;
+  }, [currentQuery, interfacePreferences.queryInTitle]);
+
+  useEffect(() => {
+    const refreshMarker = runtimeRefreshKey;
     const deferredParams = new URLSearchParams(deferredQueryString);
     const deferredQuery = deferredParams.get("q")?.trim() ?? "";
+    void refreshMarker;
 
     if (!deferredQuery) {
       setState({ status: "idle" });
@@ -580,13 +699,15 @@ export function SearchPageClient() {
     })();
 
     return () => controller.abort();
-  }, [deferredQueryString, requestedPage]);
+  }, [deferredQueryString, requestedPage, runtimeRefreshKey]);
 
   useEffect(() => {
+    const refreshMarker = runtimeRefreshKey;
     if (currentTab !== "images" || !currentQuery) {
       setImageTabSuggestions([]);
       return;
     }
+    void refreshMarker;
 
     const controller = new AbortController();
     const fallbackParams = new URLSearchParams(queryStringWithoutPage);
@@ -610,7 +731,7 @@ export function SearchPageClient() {
     })();
 
     return () => controller.abort();
-  }, [currentQuery, currentTab, queryStringWithoutPage]);
+  }, [currentQuery, currentTab, queryStringWithoutPage, runtimeRefreshKey]);
 
   const activeData =
     state.status === "success"
@@ -886,6 +1007,11 @@ export function SearchPageClient() {
                   {activeData && hasResults ? (
                     <div className={resultsSectionClass}>
                       <ResultList
+                        compactDensity={interfacePreferences.compactDensity}
+                        faviconResolver={interfacePreferences.faviconResolver}
+                        openInNewTab={interfacePreferences.openInNewTab}
+                        showFavicons={interfacePreferences.showFavicons}
+                        showThumbnails={interfacePreferences.showThumbnails}
                         tab={currentTab}
                         results={activeData.results}
                       />
@@ -939,6 +1065,7 @@ export function SearchPageClient() {
                 {activeData && currentTab !== "images" ? (
                   <SearchSidebar
                     data={activeData}
+                    openInNewTab={interfacePreferences.openInNewTab}
                     pathname={pathname}
                     searchParams={searchParams}
                   />
