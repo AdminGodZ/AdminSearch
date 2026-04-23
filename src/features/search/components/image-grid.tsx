@@ -77,7 +77,7 @@ export function ImageGrid({
   return (
     <div
       className={cn(
-        "grid min-w-0 items-start grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7",
+        "grid min-w-0 items-start grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6",
         compactDensity ? "gap-1.5" : "gap-2",
       )}
     >
@@ -87,11 +87,11 @@ export function ImageGrid({
           href={result.url}
           target={openInNewTab ? "_blank" : undefined}
           rel={openInNewTab ? "noreferrer noopener" : undefined}
-          className="group min-w-0 self-start overflow-hidden rounded-xl bg-[var(--surface-panel)]"
+          className="group flex min-w-0 self-start flex-col overflow-hidden rounded-xl bg-[var(--surface-panel)]"
         >
-          <div className="overflow-hidden">
+          <div className="aspect-[16/10] overflow-hidden bg-muted">
             {!showThumbnails ? (
-              <div className="flex aspect-[4/3] items-center justify-center bg-muted text-xs text-muted-foreground">
+              <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
                 Preview hidden
               </div>
             ) : result.thumbnailUrl ? (
@@ -101,18 +101,18 @@ export function ImageGrid({
                 alt={result.title}
                 loading="lazy"
                 referrerPolicy="no-referrer"
-                className="w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
               />
             ) : (
-              <div className="flex aspect-[4/3] items-center justify-center bg-muted text-xs text-muted-foreground">
+              <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
                 No preview
               </div>
             )}
           </div>
           <div
             className={cn(
-              "min-w-0 space-y-0.5 px-2.5",
-              compactDensity ? "py-1.5" : "py-2",
+              "flex min-h-[68px] min-w-0 flex-1 flex-col justify-start space-y-0.5 px-2.5",
+              compactDensity ? "py-1.5" : "py-2.5",
             )}
           >
             {showFavicons ? (
@@ -124,7 +124,7 @@ export function ImageGrid({
                 />
               </div>
             ) : null}
-            <p className="line-clamp-1 text-xs font-medium text-[var(--text-strong)] transition-colors group-hover:text-primary">
+            <p className="line-clamp-2 text-xs leading-4 font-medium text-[var(--text-strong)] transition-colors group-hover:text-primary">
               {result.title}
             </p>
           </div>

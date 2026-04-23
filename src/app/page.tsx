@@ -8,7 +8,9 @@ import { HomeSearchFormClient } from "@/features/search/components/home-search-f
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 
 export const metadata: Metadata = {
-  title: "Home",
+  title: {
+    absolute: "AdminSearch",
+  },
 };
 
 export default async function Home() {
@@ -24,7 +26,11 @@ export default async function Home() {
         <section className="flex flex-1 flex-col items-center justify-start pt-18 pb-8">
           <div className="flex w-full max-w-4xl flex-col items-center">
             <div className="relative size-40 select-none sm:size-44">
-              <ThemeLogo className="object-contain" sizes="176px" priority />
+              <ThemeLogo
+                className="object-contain translate-y-4 sm:translate-y-5"
+                sizes="176px"
+                priority
+              />
             </div>
 
             <h1 className="mt-4 select-none text-4xl leading-none font-semibold tracking-tight text-foreground dark:text-white sm:text-5xl">

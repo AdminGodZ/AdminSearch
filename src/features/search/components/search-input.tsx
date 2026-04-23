@@ -19,7 +19,7 @@ const inputSizeClasses = {
 } as const;
 
 const suggestionItemClassName =
-  "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[#f8f8f8] dark:hover:bg-[#414447]";
+  "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[var(--suggestion-hover)]";
 const AUTOCOMPLETE_DEBOUNCE_MS = 0;
 
 export function SearchInput({
@@ -262,7 +262,7 @@ export function SearchInput({
                   className={cn(
                     suggestionItemClassName,
                     highlightedIndex === index &&
-                      "bg-[#f8f8f8] dark:bg-[#414447]",
+                      "bg-[var(--suggestion-hover)]",
                   )}
                   onMouseEnter={() => setHighlightedIndex(index)}
                   onMouseDown={(event) => {

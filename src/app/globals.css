@@ -84,6 +84,7 @@
   --control-bg: #f5f5f5;
   --control-hover: #f0f0f0;
   --control-active: #f0f0f0;
+  --suggestion-hover: #f8f8f8;
   --header-control-bg: #f5f5f5;
   --header-control-hover: #f0f0f0;
   --header-control-active: #f0f0f0;
@@ -113,10 +114,12 @@
 
   html {
     @apply scroll-smooth font-sans;
+    background-color: var(--background);
   }
 
   body {
     @apply bg-background text-foreground;
+    background-color: var(--background);
     background-image: none;
   }
 
@@ -139,8 +142,13 @@
   }
 }
 
+html.dark,
+html.dark body {
+  background-color: var(--background);
+}
+
 .dark {
-  --background: #262626;
+  --background: #1f1f1f;
   --foreground: #e8eaed;
   --card: #282a2d;
   --card-foreground: #e8eaed;
@@ -171,13 +179,14 @@
   --sidebar-accent-foreground: #e8eaed;
   --sidebar-border: rgb(255 255 255 / 0.12);
   --sidebar-ring: rgb(138 180 248 / 40%);
-  --control-bg: #4f5256;
+  --control-bg: #4d5156;
   --control-hover: #5f6367;
-  --control-active: #5f6367;
+  --control-active: #5f6368;
+  --suggestion-hover: #686c71;
   --header-control-bg: #303134;
   --header-control-hover: #3c4043;
   --header-control-active: #3c4043;
-  --footer-bg: #1e1e1e;
+  --footer-bg: #171717;
   --surface-panel: #232323;
   --surface-panel-border: #343434;
   --surface-chip-border: #3c4043;
