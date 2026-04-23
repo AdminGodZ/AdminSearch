@@ -18,6 +18,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+        inverse:
+          "bg-foreground text-background hover:bg-foreground/90 hover:text-background dark:hover:bg-[#d8dadd] dark:hover:text-[#1f1f1f]",
         chrome:
           "border-transparent bg-[var(--header-control-bg)] text-foreground shadow-none hover:bg-[var(--header-control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--header-control-active)] focus-visible:ring-0 active:translate-y-0",
         destructive:

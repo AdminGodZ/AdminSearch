@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,6 +117,8 @@ const engineGroupMeta: Record<
 
 const selectTriggerClass =
   "h-10 w-full min-w-[200px] rounded-xl border-[var(--surface-panel-border)] bg-background px-3.5 text-[14px] font-medium shadow-none hover:border-foreground/20 focus-visible:border-foreground/30 focus-visible:ring-foreground/5 data-[state=open]:border-foreground/30";
+const settingsToastId = "settings-unsaved-changes";
+const settingsToastWidth = "min(calc(100vw - 2rem), 660px)";
 
 type SettingRowProps = {
   label: string;
@@ -339,7 +342,8 @@ export function SettingsPagePreview({
   initialSettings,
 }: SettingsPagePreviewProps) {
   const { resolvedTheme, setTheme } = useTheme();
-  const saveTimeoutRef = useRef<number | null>(null);
+  const saveHandlerRef = useRef<() => void>(() => undefined);
+  const discardHandlerRef = useRef<() => void>(() => undefined);
   const [settings, setSettings] = useState<SettingsState>(initialSettings);
   const [savedSettings, setSavedSettings] =
     useState<SettingsState>(initialSettings);
@@ -351,7 +355,6 @@ export function SettingsPagePreview({
   );
   const [activeSection, setActiveSection] = useState<SectionId>("general");
   const [engineFilter, setEngineFilter] = useState("");
-  const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -393,14 +396,6 @@ export function SettingsPagePreview({
         : { ...current, theme: resolvedTheme },
     );
   }, [resolvedTheme]);
-
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        window.clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const isDirty = useMemo(() => {
     const settingsChanged = (
@@ -484,16 +479,71 @@ export function SettingsPagePreview({
 
     setSavedSettings(nextSettings);
     setSavedEngines(nextEngines);
-    setSaveState("saved");
+  }
 
-    if (saveTimeoutRef.current) {
-      window.clearTimeout(saveTimeoutRef.current);
+  useEffect(() => {
+    saveHandlerRef.current = handleSave;
+    discardHandlerRef.current = discardChanges;
+  });
+
+  useEffect(() => {
+    if (!isDirty) {
+      toast.dismiss(settingsToastId);
+      return;
     }
 
-    saveTimeoutRef.current = window.setTimeout(() => {
-      setSaveState("idle");
-    }, 2200);
-  }
+    toast.custom(
+      (toastId) => (
+        <div className="flex w-full items-center justify-between gap-4 rounded-full border border-foreground/10 bg-[color-mix(in_oklab,var(--surface-panel)_74%,transparent)] px-5 py-3 text-foreground shadow-[0_18px_60px_rgb(0_0_0_/_0.18)] backdrop-blur-2xl">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-foreground/25 opacity-75" />
+              <span className="relative inline-flex size-2 rounded-full bg-foreground/70" />
+            </span>
+            <p className="text-[13.5px] font-medium text-[var(--text-strong)]">
+              You have unsaved changes
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                toast.dismiss(toastId);
+                discardHandlerRef.current();
+              }}
+              className="cursor-pointer rounded-full px-4 text-[var(--text-soft)] hover:bg-foreground/[0.06] hover:text-[var(--text-strong)]"
+            >
+              Discard
+            </Button>
+            <Button
+              variant="inverse"
+              size="sm"
+              onClick={() => {
+                saveHandlerRef.current();
+              }}
+              className="cursor-pointer rounded-full px-5"
+            >
+              Save changes
+            </Button>
+          </div>
+        </div>
+      ),
+      {
+        id: settingsToastId,
+        duration: Infinity,
+        position: "bottom-center",
+        style: { width: settingsToastWidth },
+        unstyled: true,
+      },
+    );
+  }, [isDirty]);
+
+  useEffect(() => {
+    return () => {
+      toast.dismiss(settingsToastId);
+    };
+  }, []);
 
   const activeMeta = navSections.find((s) => s.id === activeSection);
 
@@ -973,47 +1023,6 @@ export function SettingsPagePreview({
               </div>
             </div>
           )}
-        </div>
-      </div>
-
-      <div
-        className={cn(
-          "pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 transition-all duration-300 sm:bottom-6",
-          isDirty
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-3 opacity-0",
-        )}
-      >
-        <div className="pointer-events-auto flex w-full max-w-[640px] items-center justify-between gap-4 rounded-2xl border border-[var(--surface-panel-border)] bg-[var(--surface-panel)] px-4 py-3 shadow-[var(--surface-shell-shadow)] backdrop-blur">
-          <div className="flex items-center gap-2.5">
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/40 opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-primary" />
-            </span>
-            <p className="text-[13.5px] font-medium text-[var(--text-strong)]">
-              {saveState === "saved"
-                ? "Settings saved to this browser"
-                : "You have unsaved changes"}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={discardChanges}
-              className="rounded-full text-[var(--text-soft)] hover:text-[var(--text-strong)]"
-            >
-              Discard
-            </Button>
-            <Button
-              variant="brand"
-              size="sm"
-              onClick={handleSave}
-              className="rounded-full px-4"
-            >
-              Save changes
-            </Button>
-          </div>
         </div>
       </div>
     </section>
