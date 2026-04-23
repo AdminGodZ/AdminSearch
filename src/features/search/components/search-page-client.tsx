@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Header } from "@/components/site/header";
 import { Button } from "@/components/ui/button";
@@ -149,19 +149,23 @@ function normalizePage(value: string | null) {
   return Number.isInteger(page) && page > 0 ? page : 1;
 }
 
-function LoadingResults({ tab }: { tab: SearchTab }) {
+function LoadingResults({
+  className,
+  tab,
+}: {
+  className?: string;
+  tab: SearchTab;
+}) {
   if (tab === "images") {
     return (
-      <div className="grid items-start grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+      <div className="grid items-start grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6">
         {imageSkeletonKeys.map((key) => (
-          <div
-            key={key}
-            className="self-start overflow-hidden rounded-xl bg-[var(--surface-panel)]"
-          >
-            <Skeleton className="aspect-[4/3] w-full rounded-none" />
-            <div className="space-y-1.5 px-2.5 py-2">
+          <div key={key} className="self-start overflow-hidden rounded-xl">
+            <Skeleton className="aspect-[16/10] w-full rounded-none" />
+            <div className="min-h-[68px] space-y-1.5 px-2.5 py-2.5">
               <Skeleton className="h-2.5 w-1/3 rounded-full" />
               <Skeleton className="h-3 w-4/5 rounded-full" />
+              <Skeleton className="h-3 w-3/5 rounded-full" />
             </div>
           </div>
         ))}
@@ -170,16 +174,23 @@ function LoadingResults({ tab }: { tab: SearchTab }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className={cn("space-y-8", className)}>
       {resultSkeletonKeys.map((key) => (
-        <Card key={key} variant="panel" className="rounded-[28px]">
-          <CardContent className="space-y-4 p-7 sm:p-8">
-            <Skeleton className="h-3 w-1/4 rounded-full" />
-            <Skeleton className="h-10 w-3/4 rounded-full" />
-            <Skeleton className="h-5 w-full rounded-full" />
-            <Skeleton className="h-5 w-2/3 rounded-full" />
-          </CardContent>
-        </Card>
+        <div key={key} className="flex items-start gap-4 py-1">
+          <Skeleton className="mt-1 size-9 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-24 rounded-full" />
+              <Skeleton className="h-3 w-40 rounded-full" />
+            </div>
+            <Skeleton className="h-6 w-4/5 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full rounded-full" />
+              <Skeleton className="h-4 w-2/3 rounded-full" />
+            </div>
+            <Skeleton className="h-3 w-20 rounded-full" />
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -199,6 +210,14 @@ function formatRequestDuration(value?: number) {
   }
 
   return `${(value / 1000).toFixed(2)}s`;
+}
+
+function searchDataMatchesCurrentView(
+  data: SearchResponse,
+  tab: SearchTab,
+  query: string,
+) {
+  return data.tab === tab && data.query.trim() === query;
 }
 
 function ImageSuggestionStrip({
@@ -601,7 +620,6 @@ export function SearchPageClient({
     params.delete("page");
     return params.toString();
   }, [effectiveParams]);
-  const deferredQueryString = useDeferredValue(queryStringWithoutPage);
 
   const currentQuery = effectiveParams.get("q")?.trim() ?? "";
   const currentTab = normalizeTab(effectiveParams.get("tab"));
@@ -628,11 +646,11 @@ export function SearchPageClient({
 
   useEffect(() => {
     const refreshMarker = runtimeRefreshKey;
-    const deferredParams = new URLSearchParams(deferredQueryString);
-    const deferredQuery = deferredParams.get("q")?.trim() ?? "";
+    const params = new URLSearchParams(queryStringWithoutPage);
+    const query = params.get("q")?.trim() ?? "";
     void refreshMarker;
 
-    if (!deferredQuery) {
+    if (!query) {
       setState({ status: "idle" });
       setLoadedPage(1);
       return;
@@ -643,9 +661,16 @@ export function SearchPageClient({
     setState((previous) => ({
       status: "loading",
       previous:
-        previous.status === "success"
+        previous.status === "success" &&
+        searchDataMatchesCurrentView(previous.data, currentTab, currentQuery)
           ? previous.data
-          : previous.status === "loading" || previous.status === "error"
+          : (previous.status === "loading" || previous.status === "error") &&
+              previous.previous &&
+              searchDataMatchesCurrentView(
+                previous.previous,
+                currentTab,
+                currentQuery,
+              )
             ? previous.previous
             : undefined,
     }));
@@ -656,7 +681,7 @@ export function SearchPageClient({
 
         for (let page = 1; page <= requestedPage; page += 1) {
           const payload = await fetchSearchPageData(
-            deferredParams.toString(),
+            params.toString(),
             page,
             controller.signal,
           );
@@ -675,6 +700,9 @@ export function SearchPageClient({
         }
 
         setLoadedPage(aggregated.page);
+        if (aggregated.tab === "all" && aggregated.suggestions.length > 0) {
+          setImageTabSuggestions(aggregated.suggestions);
+        }
         setState({
           status: "success",
           data: aggregated,
@@ -689,9 +717,21 @@ export function SearchPageClient({
           message:
             error instanceof Error ? error.message : "Search request failed.",
           previous:
-            previous.status === "success"
+            previous.status === "success" &&
+            searchDataMatchesCurrentView(
+              previous.data,
+              currentTab,
+              currentQuery,
+            )
               ? previous.data
-              : previous.status === "loading" || previous.status === "error"
+              : (previous.status === "loading" ||
+                    previous.status === "error") &&
+                  previous.previous &&
+                  searchDataMatchesCurrentView(
+                    previous.previous,
+                    currentTab,
+                    currentQuery,
+                  )
                 ? previous.previous
                 : undefined,
         }));
@@ -699,44 +739,27 @@ export function SearchPageClient({
     })();
 
     return () => controller.abort();
-  }, [deferredQueryString, requestedPage, runtimeRefreshKey]);
+  }, [
+    currentQuery,
+    currentTab,
+    queryStringWithoutPage,
+    requestedPage,
+    runtimeRefreshKey,
+  ]);
 
   useEffect(() => {
-    const refreshMarker = runtimeRefreshKey;
-    if (currentTab !== "images" || !currentQuery) {
+    if (!currentQuery) {
       setImageTabSuggestions([]);
-      return;
     }
-    void refreshMarker;
-
-    const controller = new AbortController();
-    const fallbackParams = new URLSearchParams(queryStringWithoutPage);
-    fallbackParams.set("tab", "all");
-    fallbackParams.delete("page");
-
-    void (async () => {
-      try {
-        const payload = await fetchSearchPageData(
-          fallbackParams.toString(),
-          1,
-          controller.signal,
-        );
-
-        setImageTabSuggestions(payload.suggestions);
-      } catch {
-        if (!controller.signal.aborted) {
-          setImageTabSuggestions([]);
-        }
-      }
-    })();
-
-    return () => controller.abort();
-  }, [currentQuery, currentTab, queryStringWithoutPage, runtimeRefreshKey]);
+  }, [currentQuery]);
 
   const activeData =
-    state.status === "success"
+    state.status === "success" &&
+    searchDataMatchesCurrentView(state.data, currentTab, currentQuery)
       ? state.data
-      : state.status === "loading" || state.status === "error"
+      : (state.status === "loading" || state.status === "error") &&
+          state.previous &&
+          searchDataMatchesCurrentView(state.previous, currentTab, currentQuery)
         ? state.previous
         : undefined;
   const activePage = activeData?.page ?? loadedPage;
@@ -745,7 +768,10 @@ export function SearchPageClient({
   const hasSidebarContent = Boolean(
     activeData && (activeData.answers.length || activeData.infoboxes.length),
   );
-  const showLoadingFallback = state.status === "loading" && !activeData;
+  const showLoadingFallback =
+    currentQuery &&
+    !activeData &&
+    (state.status === "loading" || state.status === "success");
   const resultsSectionClass =
     currentTab === "images"
       ? ""
@@ -819,7 +845,7 @@ export function SearchPageClient({
   }
 
   return (
-    <main className="w-full flex-1 px-5 py-8 sm:px-8 lg:px-10">
+    <main className="w-full flex-1 bg-background px-5 py-8 sm:px-8 lg:px-10">
       <div className="space-y-8">
         <section className="-mx-5 border-b border-border/70 px-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
           <div className="w-full">
@@ -1001,7 +1027,10 @@ export function SearchPageClient({
                       </CardContent>
                     </Card>
                   ) : showLoadingFallback ? (
-                    <LoadingResults tab={currentTab} />
+                    <LoadingResults
+                      className={resultsSectionClass}
+                      tab={currentTab}
+                    />
                   ) : null}
 
                   {activeData && hasResults ? (
