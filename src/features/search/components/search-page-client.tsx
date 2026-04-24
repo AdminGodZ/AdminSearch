@@ -19,6 +19,10 @@ import { Filters } from "@/features/search/components/filters";
 import { ResultList } from "@/features/search/components/result-list";
 import { SearchForm } from "@/features/search/components/search-form";
 import { SearchTabs } from "@/features/search/components/search-tabs";
+import {
+  readSearchCache,
+  writeSearchCache,
+} from "@/features/search/lib/search-result-cache";
 import { buildHref } from "@/features/search/lib/url-state";
 import type { SearchResponse, SearchTab } from "@/features/search/types";
 import {
@@ -428,33 +432,37 @@ function SearchSidebar({
             ) : null}
 
             {infobox.attributes.length ? (
-              <div className="overflow-hidden rounded-2xl border border-border/40 divide-y divide-border/40">
+              <dl className="divide-y divide-[var(--surface-separator)]">
                 {infobox.attributes.map((attribute) => (
                   <div
                     key={`${infobox.id}-${attribute.label}`}
-                    className="px-5 py-3.5"
+                    className="grid gap-1.5 py-3.5 sm:grid-cols-[112px_minmax(0,1fr)] sm:gap-4"
                   >
-                    <p className="text-[11px] font-medium tracking-[0.12em] text-[var(--text-soft)] uppercase">
+                    <dt className="text-[13px] leading-6 font-medium text-[var(--text-soft)]">
                       {attribute.label}
-                    </p>
-                    {attribute.image ? (
-                      // biome-ignore lint/performance/noImgElement: Infobox attribute images are remote SearXNG-provided media with dynamic origins.
-                      <img
-                        src={attribute.image.src}
-                        alt={attribute.image.alt ?? attribute.label}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="mt-1.5 max-h-[140px] w-auto rounded-lg object-contain"
-                      />
-                    ) : null}
-                    {attribute.value ? (
-                      <p className="mt-0.5 text-[13px] leading-5 text-[var(--text-body)]">
-                        {attribute.value}
-                      </p>
+                    </dt>
+                    {attribute.image || attribute.value ? (
+                      <dd className="min-w-0 space-y-3">
+                        {attribute.image ? (
+                          // biome-ignore lint/performance/noImgElement: Infobox attribute images are remote SearXNG-provided media with dynamic origins.
+                          <img
+                            src={attribute.image.src}
+                            alt={attribute.image.alt ?? attribute.label}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            className="max-h-[152px] max-w-full rounded-xl object-contain"
+                          />
+                        ) : null}
+                        {attribute.value ? (
+                          <p className="break-words text-[14px] leading-6 text-[var(--text-body)] [overflow-wrap:anywhere]">
+                            {attribute.value}
+                          </p>
+                        ) : null}
+                      </dd>
                     ) : null}
                   </div>
                 ))}
-              </div>
+              </dl>
             ) : null}
 
             {infobox.urls.length ? (
@@ -634,6 +642,25 @@ export function SearchPageClient({
   const currentSafeSearch = effectiveParams.has("safeSearch")
     ? normalizeSafeSearch(effectiveParams.get("safeSearch"))
     : defaults.safeSearch;
+  const searchCacheKey = useMemo(
+    () =>
+      JSON.stringify({
+        query: currentQuery,
+        tab: currentTab,
+        language: currentLanguage ?? null,
+        timeRange: currentTimeRange ?? null,
+        safeSearch: currentSafeSearch,
+        runtime: runtimeRefreshKey,
+      }),
+    [
+      currentLanguage,
+      currentQuery,
+      currentSafeSearch,
+      currentTab,
+      currentTimeRange,
+      runtimeRefreshKey,
+    ],
+  );
 
   useEffect(() => {
     if (!interfacePreferences.queryInTitle || !currentQuery) {
@@ -645,15 +672,29 @@ export function SearchPageClient({
   }, [currentQuery, interfacePreferences.queryInTitle]);
 
   useEffect(() => {
-    const refreshMarker = runtimeRefreshKey;
     const params = new URLSearchParams(queryStringWithoutPage);
     const query = params.get("q")?.trim() ?? "";
-    void refreshMarker;
 
     if (!query) {
       setState({ status: "idle" });
       setLoadedPage(1);
       return;
+    }
+
+    if (interfacePreferences.resultReuseMode === "cache") {
+      const cachedData = readSearchCache(searchCacheKey, requestedPage);
+
+      if (cachedData) {
+        setLoadedPage(cachedData.page);
+        if (cachedData.tab === "all" && cachedData.suggestions.length > 0) {
+          setImageTabSuggestions(cachedData.suggestions);
+        }
+        setState({
+          status: "success",
+          data: cachedData,
+        });
+        return;
+      }
     }
 
     const controller = new AbortController();
@@ -703,6 +744,7 @@ export function SearchPageClient({
         if (aggregated.tab === "all" && aggregated.suggestions.length > 0) {
           setImageTabSuggestions(aggregated.suggestions);
         }
+        writeSearchCache(searchCacheKey, aggregated);
         setState({
           status: "success",
           data: aggregated,
@@ -742,9 +784,10 @@ export function SearchPageClient({
   }, [
     currentQuery,
     currentTab,
+    interfacePreferences.resultReuseMode,
     queryStringWithoutPage,
     requestedPage,
-    runtimeRefreshKey,
+    searchCacheKey,
   ]);
 
   useEffect(() => {
@@ -821,9 +864,13 @@ export function SearchPageClient({
           return previous;
         }
 
+        const merged = mergeSearchResponses(current, nextPayload);
+
+        writeSearchCache(searchCacheKey, merged);
+
         return {
           status: "success",
-          data: mergeSearchResponses(current, nextPayload),
+          data: merged,
         };
       });
     } catch (error: unknown) {
@@ -945,7 +992,7 @@ export function SearchPageClient({
                   "grid items-start gap-7",
                   hasSidebarContent &&
                     currentTab !== "images" &&
-                    "xl:grid-cols-[minmax(0,882px)_minmax(320px,380px)]",
+                    "xl:grid-cols-[minmax(0,882px)_minmax(320px,418px)]",
                 )}
               >
                 <div className="space-y-7 min-w-0">

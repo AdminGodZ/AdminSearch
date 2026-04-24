@@ -115,6 +115,7 @@
   html {
     @apply scroll-smooth font-sans;
     background-color: var(--background);
+    overflow-y: scroll;
     scrollbar-gutter: stable both-edges;
   }
 
@@ -123,6 +124,16 @@
     background-color: var(--background);
     background-image: none;
   }
+
+  /* biome-ignore-start lint/complexity/noImportantStyles: Radix Select injects important body scroll-lock styles that shift the page width. */
+  html body[data-scroll-locked] {
+    overflow: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  /* biome-ignore-end lint/complexity/noImportantStyles: end Radix scroll-lock override */
 
   [data-slot="dropdown-menu-content"],
   [data-slot="dropdown-menu-sub-content"],
@@ -140,12 +151,6 @@
   ::selection {
     background: var(--selection-bg);
     color: inherit;
-  }
-
-  @supports not (scrollbar-gutter: stable both-edges) {
-    html {
-      overflow-y: scroll;
-    }
   }
 }
 
