@@ -33,6 +33,7 @@ import {
   type EngineGroupKey,
   type EngineState,
   engineCatalog,
+  normalizeResultReuseMode,
   type SettingsState,
   UI_LANGUAGE_EVENT,
 } from "@/features/settings/lib/preferences";
@@ -737,6 +738,24 @@ export function SettingsPagePreview({
                       { value: "20", label: "20 results" },
                       { value: "30", label: "30 results" },
                       { value: "40", label: "40 results" },
+                    ]}
+                  />
+                </SettingRow>
+                <SettingRow
+                  label="Result reuse"
+                  description="Choose whether revisiting an already loaded search view fetches again or restores cached results for 30 minutes."
+                >
+                  <SettingSelect
+                    value={normalizeResultReuseMode(settings.resultReuseMode)}
+                    onValueChange={(value) =>
+                      updateSetting(
+                        "resultReuseMode",
+                        normalizeResultReuseMode(value),
+                      )
+                    }
+                    options={[
+                      { value: "fresh", label: "Fetch fresh results" },
+                      { value: "cache", label: "Cache visited results" },
                     ]}
                   />
                 </SettingRow>

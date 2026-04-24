@@ -16,6 +16,7 @@ export type SettingsState = {
   autocomplete: string;
   faviconResolver: string;
   loadMoreCount: string;
+  resultReuseMode: string;
   uiLanguage: string;
   theme: string;
   engineTokens: string;
@@ -35,6 +36,8 @@ export type SettingsState = {
   timeZone: boolean;
 };
 
+export type ResultReuseMode = "fresh" | "cache";
+
 export type EngineGroupKey = "general" | "images" | "videos" | "news";
 export type EngineState = Record<EngineGroupKey, Set<string>>;
 
@@ -52,6 +55,7 @@ export const defaultSettingsState: SettingsState = {
   autocomplete: "google",
   faviconResolver: "google",
   loadMoreCount: "20",
+  resultReuseMode: "fresh",
   uiLanguage: "en",
   theme: "light",
   engineTokens: "",
@@ -165,7 +169,9 @@ export type SearchInterfacePreferences = Pick<
   | "queryInTitle"
   | "showFavicons"
   | "showThumbnails"
->;
+> & {
+  resultReuseMode: ResultReuseMode;
+};
 
 const PLUGIN_SETTING_MAP = {
   calculator: "calculator",
@@ -210,6 +216,12 @@ function sanitizeStringSetting(
 
 function sanitizeBooleanSetting(value: unknown, fallback: boolean) {
   return typeof value === "boolean" ? value : fallback;
+}
+
+export function normalizeResultReuseMode(
+  value: string | undefined,
+): ResultReuseMode {
+  return value === "cache" ? "cache" : "fresh";
 }
 
 export function createDefaultPreferences(): PersistedPreferences {
@@ -290,6 +302,11 @@ export function parsePreferencesCookie(
         settings.loadMoreCount,
         defaults.settings.loadMoreCount,
         ["10", "20", "30", "40"],
+      ),
+      resultReuseMode: sanitizeStringSetting(
+        settings.resultReuseMode,
+        defaults.settings.resultReuseMode,
+        ["fresh", "cache"],
       ),
       uiLanguage: sanitizeStringSetting(
         settings.uiLanguage,
@@ -517,6 +534,7 @@ export function getSearchInterfacePreferences(
     faviconResolver: settings.faviconResolver,
     openInNewTab: settings.openInNewTab,
     queryInTitle: settings.queryInTitle,
+    resultReuseMode: normalizeResultReuseMode(settings.resultReuseMode),
     showFavicons: settings.showFavicons,
     showThumbnails: settings.showThumbnails,
   };
