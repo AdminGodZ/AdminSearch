@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 export function Footer() {
@@ -22,9 +23,11 @@ export function Footer() {
             href="https://github.com/AdminGodZ/AdminSearch"
             target="_blank"
             rel="noreferrer noopener"
-            className="text-sm font-medium text-foreground transition-colors hover:text-foreground/70 dark:text-white dark:hover:text-white/70"
+            aria-label="Source code (opens in a new tab)"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-foreground/70 dark:text-white dark:hover:text-white/70"
           >
             Source code
+            <ExternalLink aria-hidden="true" className="size-3.5 shrink-0" />
           </a>
           <span aria-hidden="true" className="text-sm text-white">
             ·

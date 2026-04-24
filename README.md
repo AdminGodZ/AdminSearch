@@ -1,6 +1,6 @@
 <p align="center">
   <h1>AdminSearch</h1>
-  <img src="./public/AdminSearch_main.png" alt="AdminSearch preview" width="920" />
+  <img src="./public/adminsearch.png" alt="AdminSearch preview" width="920" />
 </p>
 
 AdminSearch is a self-hosted Next.js search frontend backed by a private

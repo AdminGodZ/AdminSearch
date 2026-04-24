@@ -115,6 +115,7 @@
   html {
     @apply scroll-smooth font-sans;
     background-color: var(--background);
+    scrollbar-gutter: stable both-edges;
   }
 
   body {
@@ -139,6 +140,12 @@
   ::selection {
     background: var(--selection-bg);
     color: inherit;
+  }
+
+  @supports not (scrollbar-gutter: stable both-edges) {
+    html {
+      overflow-y: scroll;
+    }
   }
 }
 
