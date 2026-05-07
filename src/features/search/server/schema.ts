@@ -8,6 +8,7 @@ const positiveInteger = z
   .positive("page must be a positive integer");
 
 export const searchRequestSchema = z.object({
+  cursor: z.string().max(4096).optional(),
   q: z.string().trim().min(1, "q is required"),
   tab: z.enum(["all", "images", "videos", "news"]).default("all"),
   page: z

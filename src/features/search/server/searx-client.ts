@@ -22,6 +22,7 @@ export class SearchUpstreamError extends Error {
 export type PaginatedSearxResponse = {
   payload: SearxResponse;
   hasMore: boolean;
+  nextPageCursor?: string;
 };
 
 export type SearxRuntimeOptions = {
@@ -32,6 +33,8 @@ export type SearxRuntimeOptions = {
   imageProxy?: boolean;
   resultsPerPage?: number;
 };
+
+type SearxEngineData = Record<string, Record<string, string>>;
 
 function getSearxBaseUrl() {
   return (process.env.SEARXNG_INTERNAL_URL ?? DEFAULT_SEARXNG_URL).replace(
@@ -67,15 +70,15 @@ function readRawResultUrl(result: SearxRawResult) {
   return undefined;
 }
 
-async function fetchSearxPage(
+function createSearxSearchParams(
   request: SearchRequest,
   upstreamPage: number,
   options?: SearxRuntimeOptions,
-): Promise<SearxResponse> {
+  engineData?: SearxEngineData,
+) {
   const params = new URLSearchParams({
     q: request.q,
     categories: getCategories(request.tab),
-    format: "json",
     pageno: String(upstreamPage),
     safesearch: String(request.safeSearch ?? 0),
   });
@@ -103,6 +106,128 @@ async function fetchSearxPage(
   if (typeof options?.imageProxy === "boolean") {
     params.set("image_proxy", options.imageProxy ? "True" : "False");
   }
+
+  if (engineData) {
+    for (const [engine, values] of Object.entries(engineData)) {
+      for (const [key, value] of Object.entries(values)) {
+        params.set(`engine_data-${engine}-${key}`, value);
+      }
+    }
+  }
+
+  return params;
+}
+
+function hasEngineData(engineData: SearxEngineData) {
+  return Object.values(engineData).some(
+    (values) => Object.keys(values).length > 0,
+  );
+}
+
+function sanitizeEngineData(value: unknown): SearxEngineData {
+  const engineData: SearxEngineData = {};
+
+  if (!value || typeof value !== "object") {
+    return engineData;
+  }
+
+  for (const [engine, rawValues] of Object.entries(value)) {
+    if (!rawValues || typeof rawValues !== "object") {
+      continue;
+    }
+
+    for (const [key, rawValue] of Object.entries(rawValues)) {
+      if (typeof rawValue !== "string" || rawValue.trim() === "") {
+        continue;
+      }
+
+      engineData[engine] = {
+        ...engineData[engine],
+        [key]: rawValue,
+      };
+    }
+  }
+
+  return engineData;
+}
+
+function encodeEngineDataCursor(engineData: SearxEngineData) {
+  if (!hasEngineData(engineData)) {
+    return undefined;
+  }
+
+  return Buffer.from(JSON.stringify(engineData), "utf8").toString("base64url");
+}
+
+function decodeEngineDataCursor(cursor: string | undefined) {
+  if (!cursor) {
+    return {};
+  }
+
+  try {
+    return sanitizeEngineData(
+      JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function decodeHtmlAttribute(value: string) {
+  return value
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#34;", '"')
+    .replaceAll("&#x27;", "'")
+    .replaceAll("&#39;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&");
+}
+
+function parseEngineDataFromHtml(html: string): SearxEngineData {
+  const engineData: SearxEngineData = {};
+  const inputPattern =
+    /name="engine_data-([^"-]+)-([^"]+)"\s+value="([^"]*)"/gu;
+
+  for (const match of html.matchAll(inputPattern)) {
+    const [, engine, key, rawValue] = match;
+
+    if (!engine || !key) {
+      continue;
+    }
+
+    engineData[engine] = {
+      ...engineData[engine],
+      [key]: decodeHtmlAttribute(rawValue),
+    };
+  }
+
+  return engineData;
+}
+
+function shouldFetchEngineData(
+  request: SearchRequest,
+  options?: SearxRuntimeOptions,
+) {
+  return (
+    request.tab === "videos" &&
+    (!options?.enabledEngines || options.enabledEngines.includes("youtube"))
+  );
+}
+
+async function fetchSearxPage(
+  request: SearchRequest,
+  upstreamPage: number,
+  options?: SearxRuntimeOptions,
+  engineData?: SearxEngineData,
+): Promise<SearxResponse> {
+  const params = createSearxSearchParams(
+    request,
+    upstreamPage,
+    options,
+    engineData,
+  );
+  params.set("format", "json");
 
   const url = new URL("/search", getSearxBaseUrl());
   url.search = params.toString();
@@ -151,10 +276,95 @@ async function fetchSearxPage(
   return payload as SearxResponse;
 }
 
+async function fetchSearxEngineData(
+  request: SearchRequest,
+  upstreamPage: number,
+  options?: SearxRuntimeOptions,
+  engineData?: SearxEngineData,
+) {
+  const params = createSearxSearchParams(
+    request,
+    upstreamPage,
+    options,
+    engineData,
+  );
+  const url = new URL("/search", getSearxBaseUrl());
+  url.search = params.toString();
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        accept: "text/html",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      return {};
+    }
+
+    return parseEngineDataFromHtml(await response.text());
+  } catch {
+    return {};
+  }
+}
+
+async function fetchSearxVideoResponse(
+  request: SearchRequest,
+  options?: SearxRuntimeOptions,
+): Promise<PaginatedSearxResponse> {
+  const resultsPerPage = options?.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE;
+  const engineData = decodeEngineDataCursor(request.cursor);
+  const hasCursor = hasEngineData(engineData);
+  const upstreamPage = hasCursor ? Math.max(request.page, 2) : 1;
+  const payload = await fetchSearxPage(
+    request,
+    upstreamPage,
+    options,
+    engineData,
+  );
+  const nextEngineData = await fetchSearxEngineData(
+    request,
+    upstreamPage,
+    options,
+    engineData,
+  );
+  const pageResults = Array.isArray(payload.results) ? payload.results : [];
+  const totalAvailable =
+    typeof payload.number_of_results === "number" &&
+    payload.number_of_results > 0
+      ? payload.number_of_results
+      : undefined;
+  const nextPageCursor = encodeEngineDataCursor(nextEngineData);
+  const hasMore =
+    Boolean(nextPageCursor) ||
+    (totalAvailable !== undefined &&
+      totalAvailable > request.page * resultsPerPage);
+
+  return {
+    payload: {
+      ...payload,
+      results: pageResults.slice(0, resultsPerPage),
+      number_of_results: totalAvailable,
+      suggestions: hasCursor ? [] : payload.suggestions,
+      answers: hasCursor ? [] : payload.answers,
+      infoboxes: hasCursor ? [] : payload.infoboxes,
+    },
+    hasMore,
+    nextPageCursor,
+  };
+}
+
 export async function fetchSearxResponse(
   request: SearchRequest,
   options?: SearxRuntimeOptions,
 ): Promise<PaginatedSearxResponse> {
+  if (shouldFetchEngineData(request, options)) {
+    return fetchSearxVideoResponse(request, options);
+  }
+
   const resultsPerPage = options?.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE;
   const startIndex = (request.page - 1) * resultsPerPage;
   const endIndex = startIndex + resultsPerPage;
@@ -199,6 +409,8 @@ export async function fetchSearxResponse(
       break;
     }
 
+    let addedResults = 0;
+
     for (const result of pageResults) {
       const url = readRawResultUrl(result);
 
@@ -211,10 +423,16 @@ export async function fetchSearxResponse(
       }
 
       aggregatedResults.push(result);
+      addedResults += 1;
+    }
+
+    if (addedResults === 0) {
+      break;
     }
 
     if (
       totalAvailable !== undefined &&
+      totalAvailable > 0 &&
       aggregatedResults.length >= totalAvailable
     ) {
       break;
@@ -225,13 +443,18 @@ export async function fetchSearxResponse(
   const slicedResults = aggregatedResults.slice(startIndex, endIndex);
   const hasMore =
     aggregatedResults.length > endIndex ||
-    (totalAvailable !== undefined && totalAvailable > endIndex);
+    (totalAvailable !== undefined &&
+      totalAvailable > 0 &&
+      totalAvailable > endIndex);
 
   return {
     payload: {
       ...basePayload,
       results: slicedResults,
-      number_of_results: totalAvailable ?? aggregatedResults.length,
+      number_of_results:
+        totalAvailable !== undefined && totalAvailable > 0
+          ? totalAvailable
+          : aggregatedResults.length,
       suggestions: request.page === 1 ? basePayload.suggestions : [],
       answers: request.page === 1 ? basePayload.answers : [],
       infoboxes: request.page === 1 ? basePayload.infoboxes : [],

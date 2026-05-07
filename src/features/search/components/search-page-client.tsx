@@ -66,6 +66,7 @@ async function fetchSearchPageData(
   paramsString: string,
   page: number,
   signal: AbortSignal,
+  cursor?: string,
 ) {
   const params = new URLSearchParams(paramsString);
 
@@ -73,6 +74,12 @@ async function fetchSearchPageData(
     params.set("page", String(page));
   } else {
     params.delete("page");
+  }
+
+  if (cursor) {
+    params.set("cursor", cursor);
+  } else {
+    params.delete("cursor");
   }
 
   const response = await fetch(`/api/search?${params.toString()}`, {
@@ -117,6 +124,7 @@ function mergeSearchResponses(current: SearchResponse, next: SearchResponse) {
   return {
     ...current,
     page: next.page,
+    nextPageCursor: next.nextPageCursor,
     totalResults: next.totalResults ?? current.totalResults,
     results: mergedResults,
     hasMore: next.hasMore,
@@ -719,17 +727,20 @@ export function SearchPageClient({
     void (async () => {
       try {
         let aggregated: SearchResponse | null = null;
+        let nextPageCursor: string | undefined;
 
         for (let page = 1; page <= requestedPage; page += 1) {
           const payload = await fetchSearchPageData(
             params.toString(),
             page,
             controller.signal,
+            nextPageCursor,
           );
 
           aggregated = aggregated
             ? mergeSearchResponses(aggregated, payload)
             : payload;
+          nextPageCursor = payload.nextPageCursor;
 
           if (!payload.hasMore) {
             break;
@@ -849,6 +860,7 @@ export function SearchPageClient({
         queryStringWithoutPage,
         nextPage,
         controller.signal,
+        activeData.nextPageCursor,
       );
 
       setLoadedPage(nextPayload.page);
