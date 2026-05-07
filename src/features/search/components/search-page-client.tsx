@@ -8,8 +8,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { DashRing } from "@/components/loading-ui/dash-ring";
 import { Header } from "@/components/site/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -540,6 +541,7 @@ export function SearchPageClient({
   const [loadedPage, setLoadedPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
+  const infiniteScrollSentinelRef = useRef<HTMLDivElement>(null);
   const [preferences, setPreferences] =
     useState<PersistedPreferences>(initialPreferences);
 
@@ -599,6 +601,7 @@ export function SearchPageClient({
           unitConverter: preferences.settings.unitConverter,
         },
         resultsPerPage: preferences.settings.loadMoreCount,
+        httpMethod: preferences.settings.httpMethod,
       }),
     [preferences.engines, preferences.settings],
   );
@@ -845,7 +848,7 @@ export function SearchPageClient({
       ? activeData.suggestions
       : imageTabSuggestions;
 
-  async function handleLoadMore() {
+  const handleLoadMore = useCallback(async () => {
     if (!activeData || !activeData.hasMore || isLoadingMore) {
       return;
     }
@@ -901,7 +904,52 @@ export function SearchPageClient({
       setIsLoadingMore(false);
       controller.abort();
     }
-  }
+  }, [
+    activeData,
+    activePage,
+    isLoadingMore,
+    queryStringWithoutPage,
+    searchCacheKey,
+  ]);
+
+  useEffect(() => {
+    if (
+      !interfacePreferences.infiniteScroll ||
+      !activeData?.hasMore ||
+      isLoadingMore
+    ) {
+      return;
+    }
+
+    const sentinel = infiniteScrollSentinelRef.current;
+
+    if (!sentinel) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) {
+          return;
+        }
+
+        observer.disconnect();
+        void handleLoadMore();
+      },
+      {
+        rootMargin: "600px 0px",
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [
+    activeData?.hasMore,
+    handleLoadMore,
+    interfacePreferences.infiniteScroll,
+    isLoadingMore,
+  ]);
 
   return (
     <main className="w-full flex-1 bg-background px-5 py-8 sm:px-8 lg:px-10">
@@ -1102,6 +1150,7 @@ export function SearchPageClient({
                         showThumbnails={interfacePreferences.showThumbnails}
                         tab={currentTab}
                         results={activeData.results}
+                        urlFormatting={interfacePreferences.urlFormatting}
                       />
                     </div>
                   ) : null}
@@ -1123,6 +1172,7 @@ export function SearchPageClient({
 
                   {activeData?.hasMore ? (
                     <div
+                      ref={infiniteScrollSentinelRef}
                       className={cn(
                         "relative flex items-center",
                         resultsSectionClass,
@@ -1138,12 +1188,11 @@ export function SearchPageClient({
                         disabled={isLoadingMore}
                         aria-label="Load more results"
                       >
-                        <ChevronDown
-                          className={cn(
-                            "size-5",
-                            isLoadingMore && "animate-bounce",
-                          )}
-                        />
+                        {isLoadingMore ? (
+                          <DashRing className="size-5 text-[#fff]" />
+                        ) : (
+                          <ChevronDown className="size-5" />
+                        )}
                       </Button>
                       <Separator className="flex-1 bg-[var(--surface-separator)]" />
                     </div>

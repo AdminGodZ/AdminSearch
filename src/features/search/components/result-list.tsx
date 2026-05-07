@@ -2,6 +2,7 @@ import { ImageGrid } from "@/features/search/components/image-grid";
 import { ResultCard } from "@/features/search/components/result-card";
 import { VideoResultCard } from "@/features/search/components/video-result-card";
 import type { SearchResult, SearchTab } from "@/features/search/types";
+import type { UrlFormattingMode } from "@/features/settings/lib/preferences";
 
 type ResultListProps = {
   compactDensity?: boolean;
@@ -11,6 +12,7 @@ type ResultListProps = {
   results: SearchResult[];
   showFavicons?: boolean;
   showThumbnails?: boolean;
+  urlFormatting?: UrlFormattingMode;
 };
 
 export function ResultList({
@@ -21,6 +23,7 @@ export function ResultList({
   results,
   showFavicons = true,
   showThumbnails = true,
+  urlFormatting = "pretty",
 }: ResultListProps) {
   if (tab === "images") {
     return (
@@ -47,6 +50,7 @@ export function ResultList({
             result={result}
             showFavicons={showFavicons}
             showThumbnails={showThumbnails}
+            urlFormatting={urlFormatting}
           />
         ))}
       </div>
@@ -63,6 +67,7 @@ export function ResultList({
           openInNewTab={openInNewTab}
           result={result}
           showFavicons={showFavicons}
+          urlFormatting={urlFormatting}
         />
       ))}
     </div>

@@ -1,5 +1,6 @@
 import { SiteFavicon } from "@/features/search/components/site-favicon";
 import type { SearchResult } from "@/features/search/types";
+import type { UrlFormattingMode } from "@/features/settings/lib/preferences";
 import { cn } from "@/lib/utils";
 
 type ResultCardProps = {
@@ -8,12 +9,14 @@ type ResultCardProps = {
   openInNewTab?: boolean;
   result: SearchResult;
   showFavicons?: boolean;
+  urlFormatting?: UrlFormattingMode;
 };
 
 function getResultMeta(result: SearchResult, faviconResolver: string) {
   const fallback = {
     host: result.source ?? result.displayUrl ?? result.url,
     path: "",
+    protocol: "https:",
     faviconUrl: undefined as string | undefined,
   };
 
@@ -23,7 +26,11 @@ function getResultMeta(result: SearchResult, faviconResolver: string) {
 
     return {
       host: authority.replace(/^www\./, ""),
-      path: parsed.pathname === "/" ? "" : parsed.pathname,
+      path:
+        parsed.pathname === "/" && !parsed.search && !parsed.hash
+          ? ""
+          : `${parsed.pathname}${parsed.search}${parsed.hash}`,
+      protocol: parsed.protocol,
       faviconUrl: `/api/favicon?authority=${encodeURIComponent(authority)}&resolver=${encodeURIComponent(faviconResolver)}`,
     };
   } catch {
@@ -109,15 +116,32 @@ function getPrimaryLabel(result: SearchResult, host: string) {
   return platformLabel;
 }
 
+function formatResultUrl(
+  result: SearchResult,
+  meta: ReturnType<typeof getResultMeta>,
+  mode: UrlFormattingMode,
+) {
+  switch (mode) {
+    case "full":
+      return result.url;
+    case "host":
+      return meta.host;
+    default:
+      return undefined;
+  }
+}
+
 export function ResultCard({
   compactDensity = false,
   faviconResolver = "google",
   openInNewTab = true,
   result,
   showFavicons = true,
+  urlFormatting = "pretty",
 }: ResultCardProps) {
   const meta = getResultMeta(result, faviconResolver);
   const primaryLabel = getPrimaryLabel(result, meta.host);
+  const formattedUrl = formatResultUrl(result, meta, urlFormatting);
 
   return (
     <article className="max-w-4xl space-y-1">
@@ -135,12 +159,18 @@ export function ResultCard({
             {primaryLabel}
           </p>
           <p className="truncate text-sm leading-5 text-[var(--text-soft-alt)]">
-            {`https://${meta.host}/`}
-            {meta.path ? (
-              <span className="text-[var(--text-soft)]">
-                {" › "} {meta.path}
-              </span>
-            ) : null}
+            {formattedUrl ? (
+              formattedUrl
+            ) : (
+              <>
+                {`${meta.protocol}//${meta.host}/`}
+                {meta.path ? (
+                  <span className="text-[var(--text-soft)]">
+                    {" › "} {meta.path}
+                  </span>
+                ) : null}
+              </>
+            )}
           </p>
         </div>
       </div>
