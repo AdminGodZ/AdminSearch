@@ -79,10 +79,15 @@ function createSearxSearchParams(
 ) {
   const params = new URLSearchParams({
     q: request.q,
-    categories: getCategories(request.tab),
     pageno: String(upstreamPage),
     safesearch: String(request.safeSearch ?? 0),
   });
+
+  if (options?.enabledEngines?.length) {
+    params.set("engines", options.enabledEngines.join(","));
+  } else {
+    params.set("categories", getCategories(request.tab));
+  }
 
   if (request.language) {
     params.set("language", request.language);
@@ -90,10 +95,6 @@ function createSearxSearchParams(
 
   if (request.timeRange) {
     params.set("time_range", request.timeRange);
-  }
-
-  if (options?.enabledEngines?.length) {
-    params.set("engines", options.enabledEngines.join(","));
   }
 
   if (options?.enabledPlugins?.length) {

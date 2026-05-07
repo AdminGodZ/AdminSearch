@@ -10,7 +10,8 @@ type SearchCachePayload = {
   version?: number;
 };
 
-const SEARCH_CACHE_STORAGE_KEY = "adminsearch-search-results-cache-v1";
+const SEARCH_CACHE_STORAGE_KEY = "adminsearch-search-results-cache-v2";
+export const SEARCH_CACHE_VERSION = 2;
 const SEARCH_CACHE_TTL_MS = 30 * 60 * 1000;
 const SEARCH_CACHE_MAX_ENTRIES = 20;
 const searchCache = new Map<string, SearchCacheEntry>();
@@ -50,7 +51,10 @@ function loadSessionSearchCache() {
 
     const payload = JSON.parse(rawValue) as SearchCachePayload;
 
-    if (payload.version !== 1 || !Array.isArray(payload.entries)) {
+    if (
+      payload.version !== SEARCH_CACHE_VERSION ||
+      !Array.isArray(payload.entries)
+    ) {
       return;
     }
 
@@ -86,7 +90,7 @@ function persistSessionSearchCache() {
     window.sessionStorage.setItem(
       SEARCH_CACHE_STORAGE_KEY,
       JSON.stringify({
-        version: 1,
+        version: SEARCH_CACHE_VERSION,
         entries,
       } satisfies SearchCachePayload),
     );
@@ -95,7 +99,7 @@ function persistSessionSearchCache() {
       window.sessionStorage.setItem(
         SEARCH_CACHE_STORAGE_KEY,
         JSON.stringify({
-          version: 1,
+          version: SEARCH_CACHE_VERSION,
           entries: entries.slice(0, Math.ceil(entries.length / 2)),
         } satisfies SearchCachePayload),
       );

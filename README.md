@@ -113,42 +113,51 @@ Query params accepted by `/api/search`:
 
 General search:
 
-- `duckduckgo`
-- `ddg definitions`
-- `brave`
-- `google`
 - `bing`
+- `brave`
+- `duckduckgo`
+- `google`
+- `mojeek`
+- `qwant`
 - `startpage`
+- `yahoo`
+- `ddg definitions`
+- `wikidata`
+- `wikipedia`
+- `wolframalpha`
+- `yandex`
 
 Image search:
 
-- `duckduckgo images`
+- `bing images`
 - `brave.images`
 - `google images`
-- `bing images`
+- `mojeek images`
+- `qwant images`
 - `startpage images`
+- `duckduckgo images`
+- `yandex images`
 
 Video search:
 
-- `youtube`
-- `google videos`
-
-Commented alternates kept in config:
-
 - `bing videos`
 - `brave.videos`
+- `google videos`
+- `qwant videos`
 - `dailymotion`
 - `duckduckgo videos`
-- `odysee`
+- `youtube`
 
 News search:
 
-- `google news`
+- `mojeek news`
 - `startpage news`
 - `wikinews`
 - `bing news`
 - `brave.news`
 - `duckduckgo news`
+- `google news`
+- `qwant news`
 - `reuters`
 - `yahoo news`
 

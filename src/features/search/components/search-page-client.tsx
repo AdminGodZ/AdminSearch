@@ -22,6 +22,7 @@ import { SearchForm } from "@/features/search/components/search-form";
 import { SearchTabs } from "@/features/search/components/search-tabs";
 import {
   readSearchCache,
+  SEARCH_CACHE_VERSION,
   writeSearchCache,
 } from "@/features/search/lib/search-result-cache";
 import { buildHref } from "@/features/search/lib/url-state";
@@ -542,6 +543,7 @@ export function SearchPageClient({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
   const infiniteScrollSentinelRef = useRef<HTMLDivElement>(null);
+  const isLoadingMoreRef = useRef(false);
   const [preferences, setPreferences] =
     useState<PersistedPreferences>(initialPreferences);
 
@@ -602,6 +604,7 @@ export function SearchPageClient({
         },
         resultsPerPage: preferences.settings.loadMoreCount,
         httpMethod: preferences.settings.httpMethod,
+        searchCacheVersion: SEARCH_CACHE_VERSION,
       }),
     [preferences.engines, preferences.settings],
   );
@@ -849,13 +852,14 @@ export function SearchPageClient({
       : imageTabSuggestions;
 
   const handleLoadMore = useCallback(async () => {
-    if (!activeData || !activeData.hasMore || isLoadingMore) {
+    if (!activeData || !activeData.hasMore || isLoadingMoreRef.current) {
       return;
     }
 
     const controller = new AbortController();
     const nextPage = activePage + 1;
 
+    isLoadingMoreRef.current = true;
     setIsLoadingMore(true);
 
     try {
@@ -901,16 +905,11 @@ export function SearchPageClient({
               : activeData,
       }));
     } finally {
+      isLoadingMoreRef.current = false;
       setIsLoadingMore(false);
       controller.abort();
     }
-  }, [
-    activeData,
-    activePage,
-    isLoadingMore,
-    queryStringWithoutPage,
-    searchCacheKey,
-  ]);
+  }, [activeData, activePage, queryStringWithoutPage, searchCacheKey]);
 
   useEffect(() => {
     if (
@@ -927,9 +926,38 @@ export function SearchPageClient({
       return;
     }
 
+    function maybeLoadMore() {
+      const currentSentinel = infiniteScrollSentinelRef.current;
+
+      if (!currentSentinel || isLoadingMoreRef.current) {
+        return;
+      }
+
+      if (
+        currentSentinel.getBoundingClientRect().top >
+        window.innerHeight + 900
+      ) {
+        return;
+      }
+
+      void handleLoadMore();
+    }
+
+    let animationFrame: number | undefined;
+    const scheduleLoadCheck = () => {
+      if (animationFrame !== undefined) {
+        return;
+      }
+
+      animationFrame = window.requestAnimationFrame(() => {
+        animationFrame = undefined;
+        maybeLoadMore();
+      });
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries[0]?.isIntersecting) {
+        if (!entries[0]?.isIntersecting || isLoadingMoreRef.current) {
           return;
         }
 
@@ -942,8 +970,19 @@ export function SearchPageClient({
     );
 
     observer.observe(sentinel);
+    scheduleLoadCheck();
+    window.addEventListener("scroll", scheduleLoadCheck, { passive: true });
+    window.addEventListener("resize", scheduleLoadCheck);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", scheduleLoadCheck);
+      window.removeEventListener("resize", scheduleLoadCheck);
+
+      if (animationFrame !== undefined) {
+        window.cancelAnimationFrame(animationFrame);
+      }
+    };
   }, [
     activeData?.hasMore,
     handleLoadMore,

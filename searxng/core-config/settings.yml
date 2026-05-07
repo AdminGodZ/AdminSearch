@@ -2,32 +2,45 @@ use_default_settings:
   engines:
     keep_only:
       # Generic search:
-      - duckduckgo
-      - ddg definitions
+      - bing
       - brave
+      - duckduckgo
       - google
-      # - bing
+      - mojeek
+      - qwant
       - startpage
+      - yahoo
+      - ddg definitions
+      - wikidata
+      - wikipedia
+      - wolframalpha
+      - yandex
       # Image search:
-      - duckduckgo images
+      - bing images
       - brave.images
       - google images
-      # - bing images
+      - mojeek images
+      - qwant images
       - startpage images
-      - youtube
-      - google videos
-      - google news
+      - duckduckgo images
+      - yandex images
       # Video alternates:
-      # - bing videos
-      # - brave.videos
-      # - dailymotion
-      # - duckduckgo videos
-      # - odysee
+      - bing videos
+      - brave.videos
+      - google videos
+      - qwant videos
+      - duckduckgo videos
+      - dailymotion
+      - youtube
+      # News search:
+      - mojeek news
       - startpage news
       - wikinews
-      # - bing news
+      - bing news
       - brave.news
       - duckduckgo news
+      - google news
+      - qwant news
       - reuters
       - yahoo news
 
@@ -73,55 +86,80 @@ server:
 
 engines:
   # Generic search:
-  - name: duckduckgo
-    disabled: false
-  - name: ddg definitions
+  - name: bing
     disabled: false
   - name: brave
     disabled: false
+  - name: duckduckgo
+    disabled: false
   - name: google
     disabled: false
-  # - name: bing
-  #   disabled: false
+  - name: mojeek
+    disabled: false
+  - name: qwant
+    disabled: false
   - name: startpage
     disabled: false
+  - name: yahoo
+    disabled: false
+  - name: ddg definitions
+    disabled: false
+  - name: wikidata
+    disabled: false
+  - name: wikipedia
+    disabled: false
+  - name: wolframalpha
+    disabled: false
+  - name: yandex
+    disabled: false
   # Image search:
-  - name: duckduckgo images
+  - name: bing images
     disabled: false
   - name: brave.images
     disabled: false
   - name: google images
     disabled: false
-  # - name: bing images
-  #   disabled: false
+  - name: mojeek images
+    disabled: false
+  - name: qwant images
+    disabled: false
   - name: startpage images
     disabled: false
-  - name: youtube
+  - name: duckduckgo images
+    disabled: false
+  - name: yandex images
+    disabled: false
+  # Video alternates:
+  - name: bing videos
+    disabled: false
+  - name: brave.videos
     disabled: false
   - name: google videos
     disabled: false
-  - name: google news
+  - name: qwant videos
     disabled: false
-  # Video alternates:
-  # - name: bing videos
-  #   disabled: false
-  # - name: brave.videos
-  #   disabled: false
-  # - name: dailymotion
-  #   disabled: false
-  # - name: duckduckgo videos
-  #   disabled: false
-  # - name: odysee
-  #   disabled: false
+  - name: duckduckgo videos
+    disabled: false
+  - name: dailymotion
+    disabled: false
+  - name: youtube
+    disabled: false
+  # News search:
+  - name: mojeek news
+    disabled: false
   - name: startpage news
     disabled: false
   - name: wikinews
     disabled: false
-  # - name: bing news
-  #   disabled: false
+  - name: bing news
+    disabled: false
   - name: brave.news
     disabled: false
   - name: duckduckgo news
+    disabled: false
+  - name: google news
+    disabled: false
+  - name: qwant news
     disabled: false
   - name: reuters
     disabled: false

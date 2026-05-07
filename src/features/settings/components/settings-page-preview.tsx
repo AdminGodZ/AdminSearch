@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Check,
   Globe,
   Image as ImageIcon,
   Info,
@@ -118,6 +117,13 @@ const engineGroupMeta: Record<
   },
 };
 
+const engineGroupOrder: EngineGroupKey[] = [
+  "general",
+  "images",
+  "videos",
+  "news",
+];
+
 const selectTriggerClass =
   "h-10 w-full min-w-[200px] rounded-xl border-[var(--surface-panel-border)] bg-background px-3.5 text-[14px] font-medium shadow-none hover:border-foreground/20 focus-visible:border-foreground/30 focus-visible:ring-foreground/5 data-[state=open]:border-foreground/30";
 const settingsToastId = "settings-unsaved-changes";
@@ -211,25 +217,14 @@ function SettingSelect({
   );
 }
 
-type EngineGroupProps = {
+type EngineRowsProps = {
   groupKey: EngineGroupKey;
   filter: string;
   selected: Set<string>;
   onToggle: (engine: string) => void;
-  onSelectAll: () => void;
-  onClear: () => void;
 };
 
-function EngineGroup({
-  groupKey,
-  filter,
-  selected,
-  onToggle,
-  onSelectAll,
-  onClear,
-}: EngineGroupProps) {
-  const meta = engineGroupMeta[groupKey];
-  const Icon = meta.icon;
+function EngineRows({ groupKey, filter, selected, onToggle }: EngineRowsProps) {
   const allEngines = engineCatalog[groupKey];
   const filtered = filter
     ? allEngines.filter((engine) =>
@@ -238,71 +233,28 @@ function EngineGroup({
     : allEngines;
 
   return (
-    <div className="rounded-2xl border border-[var(--surface-panel-border)] bg-[var(--surface-panel)]">
-      <div className="flex items-start justify-between gap-4 border-b border-[var(--surface-panel-border)] px-5 py-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Icon className="size-4 text-[var(--text-soft)]" />
-            <h3 className="text-[14.5px] font-semibold text-[var(--text-strong)]">
-              {meta.title}
-            </h3>
-            <span className="ml-1 rounded-full bg-background px-2 py-0.5 text-[11px] font-medium text-[var(--text-soft)] ring-1 ring-[var(--surface-panel-border)]">
-              {selected.size}/{allEngines.length}
+    <div className="divide-y divide-[var(--surface-panel-border)]">
+      {filtered.length === 0 ? (
+        <p className="py-5 text-[13px] text-[var(--text-soft)]">
+          No engines match your filter.
+        </p>
+      ) : (
+        filtered.map((engine) => (
+          <div
+            key={engine}
+            className="flex min-h-14 items-center justify-between gap-4 py-3"
+          >
+            <span className="min-w-0 truncate text-[14.5px] font-medium text-[var(--text-strong)]">
+              {engine}
             </span>
+            <Toggle
+              checked={selected.has(engine)}
+              onToggle={() => onToggle(engine)}
+              label={`${selected.has(engine) ? "Disable" : "Enable"} ${engine}`}
+            />
           </div>
-          <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-soft)]">
-            {meta.description}
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-1 text-[12px]">
-          <button
-            type="button"
-            onClick={onSelectAll}
-            className="rounded-full px-2.5 py-1 font-medium text-[var(--text-soft)] transition-colors hover:bg-background hover:text-[var(--text-strong)]"
-          >
-            All
-          </button>
-          <button
-            type="button"
-            onClick={onClear}
-            className="rounded-full px-2.5 py-1 font-medium text-[var(--text-soft)] transition-colors hover:bg-background hover:text-[var(--text-strong)]"
-          >
-            None
-          </button>
-        </div>
-      </div>
-
-      <div className="px-5 py-4">
-        {filtered.length === 0 ? (
-          <p className="py-2 text-[13px] text-[var(--text-soft)]">
-            No engines match your filter.
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {filtered.map((engine) => {
-              const isActive = selected.has(engine);
-              return (
-                <button
-                  key={engine}
-                  type="button"
-                  onClick={() => onToggle(engine)}
-                  className={cn(
-                    "group inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all",
-                    isActive
-                      ? "border-foreground bg-foreground text-background hover:bg-foreground/90"
-                      : "border-[var(--surface-chip-border)] bg-background text-[var(--text-body)] hover:border-foreground/30 hover:text-[var(--text-strong)]",
-                  )}
-                >
-                  {isActive && (
-                    <Check className="size-3 stroke-[3]" aria-hidden />
-                  )}
-                  {engine}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+        ))
+      )}
     </div>
   );
 }
@@ -358,6 +310,8 @@ export function SettingsPagePreview({
   );
   const [activeSection, setActiveSection] = useState<SectionId>("general");
   const [engineFilter, setEngineFilter] = useState("");
+  const [activeEngineGroup, setActiveEngineGroup] =
+    useState<EngineGroupKey>("general");
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -435,10 +389,6 @@ export function SettingsPagePreview({
       }
       return { ...current, [group]: next };
     });
-  }
-
-  function setEngineGroup(group: EngineGroupKey, next: Set<string>) {
-    setEngines((current) => ({ ...current, [group]: next }));
   }
 
   function discardChanges() {
@@ -1003,20 +953,51 @@ export function SettingsPagePreview({
                 />
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-2">
-                {(Object.keys(engineCatalog) as EngineGroupKey[]).map((key) => (
-                  <EngineGroup
-                    key={key}
-                    groupKey={key}
-                    filter={engineFilter}
-                    selected={engines[key]}
-                    onToggle={(engine) => toggleEngine(key, engine)}
-                    onSelectAll={() =>
-                      setEngineGroup(key, new Set(engineCatalog[key]))
-                    }
-                    onClear={() => setEngineGroup(key, new Set())}
-                  />
-                ))}
+              <div
+                role="tablist"
+                aria-label="Engine categories"
+                className="flex gap-0 overflow-x-auto border-b border-[var(--surface-panel-border)]"
+              >
+                {engineGroupOrder.map((key, index) => {
+                  const meta = engineGroupMeta[key];
+                  const Icon = meta.icon;
+                  const isActive = activeEngineGroup === key;
+
+                  return (
+                    <div key={key} className="flex shrink-0 items-center">
+                      {index > 0 ? (
+                        <span className="mx-5 h-5 w-px bg-[var(--surface-panel-border)]" />
+                      ) : null}
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => setActiveEngineGroup(key)}
+                        className={cn(
+                          "inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 border-b-2 px-0 text-[14px] font-medium transition-colors",
+                          isActive
+                            ? "border-foreground text-[var(--text-strong)]"
+                            : "border-transparent text-[var(--text-soft)] hover:text-[var(--text-strong)]",
+                        )}
+                      >
+                        <Icon className="size-4" aria-hidden />
+                        <span>{meta.title}</span>
+                        <span className="text-[12px] text-[var(--text-soft)]">
+                          {engines[key].size}/{engineCatalog[key].length}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div role="tabpanel">
+                <EngineRows
+                  groupKey={activeEngineGroup}
+                  filter={engineFilter}
+                  selected={engines[activeEngineGroup]}
+                  onToggle={(engine) => toggleEngine(activeEngineGroup, engine)}
+                />
               </div>
             </div>
           )}
