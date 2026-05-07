@@ -171,6 +171,33 @@ export function SearchInput({
           setIsFocused(true);
           setIsOpen(suggestions.length > 0);
         }}
+        onPointerDown={(event) => {
+          const input = event.currentTarget;
+
+          if (event.button !== 0 || value.length === 0) {
+            return;
+          }
+
+          const paddingLeft = Number.parseFloat(
+            window.getComputedStyle(input).paddingLeft,
+          );
+          const textStartX = input.getBoundingClientRect().left + paddingLeft;
+
+          if (event.clientX > textStartX) {
+            return;
+          }
+
+          event.preventDefault();
+          input.focus({ preventScroll: true });
+
+          const moveCaretToEnd = () => {
+            const end = input.value.length;
+            input.setSelectionRange(end, end);
+          };
+
+          moveCaretToEnd();
+          window.requestAnimationFrame(moveCaretToEnd);
+        }}
         onBlur={() => {
           setIsFocused(false);
         }}

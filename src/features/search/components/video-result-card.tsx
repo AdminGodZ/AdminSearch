@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
 import type { SearchResult } from "@/features/search/types";
+import type { UrlFormattingMode } from "@/features/settings/lib/preferences";
 import { cn } from "@/lib/utils";
 
 type VideoResultCardProps = {
@@ -12,12 +13,14 @@ type VideoResultCardProps = {
   result: SearchResult;
   showFavicons?: boolean;
   showThumbnails?: boolean;
+  urlFormatting?: UrlFormattingMode;
 };
 
 function getResultMeta(result: SearchResult, faviconResolver: string) {
   const fallback = {
     host: result.source ?? result.displayUrl ?? result.url,
     path: "",
+    protocol: "https:",
     faviconUrl: undefined as string | undefined,
   };
 
@@ -27,7 +30,11 @@ function getResultMeta(result: SearchResult, faviconResolver: string) {
 
     return {
       host: authority.replace(/^www\./, ""),
-      path: parsed.pathname === "/" ? "" : parsed.pathname,
+      path:
+        parsed.pathname === "/" && !parsed.search && !parsed.hash
+          ? ""
+          : `${parsed.pathname}${parsed.search}${parsed.hash}`,
+      protocol: parsed.protocol,
       faviconUrl: `/api/favicon?authority=${encodeURIComponent(authority)}&resolver=${encodeURIComponent(faviconResolver)}`,
     };
   } catch {
@@ -69,6 +76,21 @@ function formatPublishedAt(value: string) {
   return normalized;
 }
 
+function formatResultUrl(
+  result: SearchResult,
+  meta: ReturnType<typeof getResultMeta>,
+  mode: UrlFormattingMode,
+) {
+  switch (mode) {
+    case "full":
+      return result.url;
+    case "host":
+      return meta.host;
+    default:
+      return undefined;
+  }
+}
+
 function buildPreviewSrc(previewUrl: string) {
   try {
     const url = new URL(previewUrl);
@@ -100,8 +122,10 @@ export function VideoResultCard({
   result,
   showFavicons = true,
   showThumbnails = true,
+  urlFormatting = "pretty",
 }: VideoResultCardProps) {
   const meta = getResultMeta(result, faviconResolver);
+  const formattedUrl = formatResultUrl(result, meta, urlFormatting);
   const [showPreview, setShowPreview] = useState(false);
   const previewSrc = useMemo(
     () => (result.previewUrl ? buildPreviewSrc(result.previewUrl) : undefined),
@@ -131,12 +155,18 @@ export function VideoResultCard({
               {meta.host}
             </p>
             <p className="truncate text-sm leading-5 text-[var(--text-soft-alt)]">
-              {`https://${meta.host}/`}
-              {meta.path ? (
-                <span className="text-[var(--text-soft)]">
-                  {" › "} {meta.path}
-                </span>
-              ) : null}
+              {formattedUrl ? (
+                formattedUrl
+              ) : (
+                <>
+                  {`${meta.protocol}//${meta.host}/`}
+                  {meta.path ? (
+                    <span className="text-[var(--text-soft)]">
+                      {" › "} {meta.path}
+                    </span>
+                  ) : null}
+                </>
+              )}
             </p>
           </div>
         </div>

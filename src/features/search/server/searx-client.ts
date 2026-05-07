@@ -30,6 +30,7 @@ export type SearxRuntimeOptions = {
   enabledEngines?: string[];
   enabledPlugins?: string[];
   engineTokens?: string[];
+  httpMethod?: "get" | "post";
   imageProxy?: boolean;
   resultsPerPage?: number;
 };
@@ -215,6 +216,57 @@ function shouldFetchEngineData(
   );
 }
 
+function getSearxRequestMethod(options?: SearxRuntimeOptions) {
+  return options?.httpMethod === "post" ? "POST" : "GET";
+}
+
+function createSearxFetchRequest({
+  accept,
+  options,
+  params,
+}: {
+  accept: string;
+  options?: SearxRuntimeOptions;
+  params: URLSearchParams;
+}) {
+  const method = getSearxRequestMethod(options);
+  const headers: Record<string, string> = {
+    accept,
+  };
+  const url = new URL("/search", getSearxBaseUrl());
+
+  if (options?.engineTokens?.length) {
+    headers.cookie = `tokens=${options.engineTokens.join(",")}`;
+  }
+
+  if (method === "POST") {
+    headers["content-type"] = "application/x-www-form-urlencoded;charset=UTF-8";
+
+    return {
+      init: {
+        method,
+        headers,
+        body: params.toString(),
+        cache: "no-store",
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      },
+      url,
+    } satisfies { init: RequestInit; url: URL };
+  }
+
+  url.search = params.toString();
+
+  return {
+    init: {
+      method,
+      headers,
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    },
+    url,
+  } satisfies { init: RequestInit; url: URL };
+}
+
 async function fetchSearxPage(
   request: SearchRequest,
   upstreamPage: number,
@@ -228,27 +280,16 @@ async function fetchSearxPage(
     engineData,
   );
   params.set("format", "json");
-
-  const url = new URL("/search", getSearxBaseUrl());
-  url.search = params.toString();
+  const { init, url } = createSearxFetchRequest({
+    accept: "application/json",
+    options,
+    params,
+  });
 
   let response: Response;
 
   try {
-    const headers: Record<string, string> = {
-      accept: "application/json",
-    };
-
-    if (options?.engineTokens?.length) {
-      headers.cookie = `tokens=${options.engineTokens.join(",")}`;
-    }
-
-    response = await fetch(url, {
-      method: "GET",
-      headers,
-      cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+    response = await fetch(url, init);
   } catch (error) {
     if (error instanceof Error && error.name === "TimeoutError") {
       throw new SearchUpstreamError("The search backend timed out.");
@@ -288,18 +329,14 @@ async function fetchSearxEngineData(
     options,
     engineData,
   );
-  const url = new URL("/search", getSearxBaseUrl());
-  url.search = params.toString();
+  const { init, url } = createSearxFetchRequest({
+    accept: "text/html",
+    options,
+    params,
+  });
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        accept: "text/html",
-      },
-      cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+    const response = await fetch(url, init);
 
     if (!response.ok) {
       return {};

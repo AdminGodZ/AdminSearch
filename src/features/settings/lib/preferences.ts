@@ -15,12 +15,15 @@ export type SettingsState = {
   timeRange: string;
   autocomplete: string;
   faviconResolver: string;
+  httpMethod: string;
   loadMoreCount: string;
   resultReuseMode: string;
+  urlFormatting: string;
   uiLanguage: string;
   theme: string;
   engineTokens: string;
   openInNewTab: boolean;
+  infiniteScroll: boolean;
   showFavicons: boolean;
   showThumbnails: boolean;
   compactDensity: boolean;
@@ -37,6 +40,8 @@ export type SettingsState = {
 };
 
 export type ResultReuseMode = "fresh" | "cache";
+export type HttpMethod = "get" | "post";
+export type UrlFormattingMode = "pretty" | "full" | "host";
 
 export type EngineGroupKey = "general" | "images" | "videos" | "news";
 export type EngineState = Record<EngineGroupKey, Set<string>>;
@@ -54,12 +59,15 @@ export const defaultSettingsState: SettingsState = {
   timeRange: "any",
   autocomplete: "google",
   faviconResolver: "google",
+  httpMethod: "get",
   loadMoreCount: "20",
   resultReuseMode: "fresh",
+  urlFormatting: "pretty",
   uiLanguage: "en",
   theme: "light",
   engineTokens: "",
   openInNewTab: true,
+  infiniteScroll: true,
   showFavicons: true,
   showThumbnails: true,
   compactDensity: false,
@@ -157,6 +165,7 @@ export type SearchRuntimePreferences = {
   enabledPlugins: string[];
   engineTokens: string[];
   faviconResolver: string;
+  httpMethod: HttpMethod;
   imageProxy: boolean;
   resultsPerPage: number;
 };
@@ -165,12 +174,14 @@ export type SearchInterfacePreferences = Pick<
   SettingsState,
   | "compactDensity"
   | "faviconResolver"
+  | "infiniteScroll"
   | "openInNewTab"
   | "queryInTitle"
   | "showFavicons"
   | "showThumbnails"
 > & {
   resultReuseMode: ResultReuseMode;
+  urlFormatting: UrlFormattingMode;
 };
 
 const PLUGIN_SETTING_MAP = {
@@ -222,6 +233,16 @@ export function normalizeResultReuseMode(
   value: string | undefined,
 ): ResultReuseMode {
   return value === "cache" ? "cache" : "fresh";
+}
+
+export function normalizeHttpMethod(value: string | undefined): HttpMethod {
+  return value === "post" ? "post" : "get";
+}
+
+export function normalizeUrlFormattingMode(
+  value: string | undefined,
+): UrlFormattingMode {
+  return value === "full" || value === "host" ? value : "pretty";
 }
 
 export function createDefaultPreferences(): PersistedPreferences {
@@ -291,12 +312,25 @@ export function parsePreferencesCookie(
       autocomplete: sanitizeStringSetting(
         settings.autocomplete,
         defaults.settings.autocomplete,
-        ["google", "brave", "duckduckgo", "startpage", "qwant", "wikipedia"],
+        [
+          "google",
+          "brave",
+          "duckduckgo",
+          "bing",
+          "startpage",
+          "qwant",
+          "wikipedia",
+        ],
       ),
       faviconResolver: sanitizeStringSetting(
         settings.faviconResolver,
         defaults.settings.faviconResolver,
         ["google", "duckduckgo"],
+      ),
+      httpMethod: sanitizeStringSetting(
+        settings.httpMethod,
+        defaults.settings.httpMethod,
+        ["get", "post"],
       ),
       loadMoreCount: sanitizeStringSetting(
         settings.loadMoreCount,
@@ -317,6 +351,11 @@ export function parsePreferencesCookie(
         "light",
         "dark",
       ]),
+      urlFormatting: sanitizeStringSetting(
+        settings.urlFormatting,
+        defaults.settings.urlFormatting,
+        ["pretty", "full", "host"],
+      ),
       engineTokens: sanitizeStringSetting(
         settings.engineTokens,
         defaults.settings.engineTokens,
@@ -324,6 +363,10 @@ export function parsePreferencesCookie(
       openInNewTab: sanitizeBooleanSetting(
         settings.openInNewTab,
         defaults.settings.openInNewTab,
+      ),
+      infiniteScroll: sanitizeBooleanSetting(
+        settings.infiniteScroll,
+        defaults.settings.infiniteScroll,
       ),
       showFavicons: sanitizeBooleanSetting(
         settings.showFavicons,
@@ -521,6 +564,7 @@ export function getSearchRuntimePreferences(
     enabledPlugins: pluginState.enabledPlugins,
     engineTokens: getEngineTokenValues(settings),
     faviconResolver: settings.faviconResolver,
+    httpMethod: normalizeHttpMethod(settings.httpMethod),
     imageProxy: settings.imageProxy,
     resultsPerPage: getResultsPerPage(settings),
   };
@@ -532,10 +576,12 @@ export function getSearchInterfacePreferences(
   return {
     compactDensity: settings.compactDensity,
     faviconResolver: settings.faviconResolver,
+    infiniteScroll: settings.infiniteScroll,
     openInNewTab: settings.openInNewTab,
     queryInTitle: settings.queryInTitle,
     resultReuseMode: normalizeResultReuseMode(settings.resultReuseMode),
     showFavicons: settings.showFavicons,
     showThumbnails: settings.showThumbnails,
+    urlFormatting: normalizeUrlFormattingMode(settings.urlFormatting),
   };
 }

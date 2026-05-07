@@ -33,7 +33,9 @@ import {
   type EngineGroupKey,
   type EngineState,
   engineCatalog,
+  normalizeHttpMethod,
   normalizeResultReuseMode,
+  normalizeUrlFormattingMode,
   type SettingsState,
   UI_LANGUAGE_EVENT,
 } from "@/features/settings/lib/preferences";
@@ -703,6 +705,7 @@ export function SettingsPagePreview({
                       { value: "google", label: "Google" },
                       { value: "brave", label: "Brave" },
                       { value: "duckduckgo", label: "DuckDuckGo" },
+                      { value: "bing", label: "Bing" },
                       { value: "startpage", label: "Startpage" },
                       { value: "qwant", label: "Qwant" },
                       { value: "wikipedia", label: "Wikipedia" },
@@ -721,6 +724,21 @@ export function SettingsPagePreview({
                     options={[
                       { value: "google", label: "Google" },
                       { value: "duckduckgo", label: "DuckDuckGo" },
+                    ]}
+                  />
+                </SettingRow>
+                <SettingRow
+                  label="HTTP method"
+                  description="How AdminSearch sends search requests to the SearXNG backend."
+                >
+                  <SettingSelect
+                    value={normalizeHttpMethod(settings.httpMethod)}
+                    onValueChange={(value) =>
+                      updateSetting("httpMethod", normalizeHttpMethod(value))
+                    }
+                    options={[
+                      { value: "get", label: "GET" },
+                      { value: "post", label: "POST" },
                     ]}
                   />
                 </SettingRow>
@@ -821,6 +839,37 @@ export function SettingsPagePreview({
                       updateSetting("openInNewTab", !settings.openInNewTab)
                     }
                     label="Open results in new tab"
+                  />
+                </SettingRow>
+                <SettingRow
+                  label="URL formatting"
+                  description="Choose how result URLs are displayed below each title."
+                >
+                  <SettingSelect
+                    value={normalizeUrlFormattingMode(settings.urlFormatting)}
+                    onValueChange={(value) =>
+                      updateSetting(
+                        "urlFormatting",
+                        normalizeUrlFormattingMode(value),
+                      )
+                    }
+                    options={[
+                      { value: "pretty", label: "Pretty" },
+                      { value: "full", label: "Full" },
+                      { value: "host", label: "Host" },
+                    ]}
+                  />
+                </SettingRow>
+                <SettingRow
+                  label="Infinite scroll"
+                  description="Automatically load more results when you reach the end of the list."
+                >
+                  <Toggle
+                    checked={settings.infiniteScroll}
+                    onToggle={() =>
+                      updateSetting("infiniteScroll", !settings.infiniteScroll)
+                    }
+                    label="Infinite scroll"
                   />
                 </SettingRow>
                 <SettingRow
