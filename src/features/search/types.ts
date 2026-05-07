@@ -1,6 +1,7 @@
 export type SearchTab = "all" | "images" | "videos" | "news";
 
 export type SearchRequest = {
+  cursor?: string;
   q: string;
   tab: SearchTab;
   page: number;
@@ -69,6 +70,7 @@ export type SearchResponse = {
   answers: string[];
   infoboxes: SearchInfobox[];
   hasMore: boolean;
+  nextPageCursor?: string;
 };
 
 export type SearxRawResult = Record<string, unknown>;

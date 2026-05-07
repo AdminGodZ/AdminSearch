@@ -58,6 +58,7 @@ export async function GET(request: Request) {
       searchRequest,
       {
         hasMore: upstreamResponse.hasMore,
+        nextPageCursor: upstreamResponse.nextPageCursor,
         resultsPerPage: runtimePreferences.resultsPerPage,
       },
     );

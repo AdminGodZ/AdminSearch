@@ -23,6 +23,12 @@ function readString(record: SearxRawResult, keys: string[]) {
   return undefined;
 }
 
+function readSnippet(record: SearxRawResult) {
+  const value = readString(record, ["content", "snippet", "description"]);
+
+  return value === "-" ? undefined : value;
+}
+
 function readHostname(url: string) {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -70,7 +76,7 @@ function normalizeResult(
   const previewUrl = readPreviewUrl(result);
   const displayUrl =
     readString(result, ["pretty_url", "parsed_url"]) ?? hostname ?? url;
-  const snippet = readString(result, ["content", "snippet", "description"]);
+  const snippet = readSnippet(result);
   const engine = readString(result, ["engine"]);
   const author = readString(result, ["author"]);
   const duration = readString(result, ["length"]);
@@ -374,7 +380,11 @@ function extractInfoboxes(rawInfoboxes: unknown[] | undefined) {
 export function transformSearxResponse(
   payload: SearxResponse,
   request: SearchRequest,
-  options?: { hasMore?: boolean; resultsPerPage?: number },
+  options?: {
+    hasMore?: boolean;
+    nextPageCursor?: string;
+    resultsPerPage?: number;
+  },
 ): SearchResponse {
   const results = Array.isArray(payload.results)
     ? payload.results
@@ -404,5 +414,6 @@ export function transformSearxResponse(
     answers: extractAnswers(payload.answers),
     infoboxes: extractInfoboxes(payload.infoboxes),
     hasMore,
+    nextPageCursor: options?.nextPageCursor,
   };
 }

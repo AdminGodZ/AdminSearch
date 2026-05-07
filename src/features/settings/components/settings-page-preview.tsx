@@ -575,7 +575,7 @@ export function SettingsPagePreview({
                   type="button"
                   onClick={() => setActiveSection(section.id)}
                   className={cn(
-                    "group/nav relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[14px] font-medium transition-colors",
+                    "group/nav relative flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[14px] font-medium transition-colors",
                     isActive
                       ? "bg-foreground/[0.06] text-[var(--text-strong)]"
                       : "text-[var(--text-body)] hover:bg-foreground/[0.03] hover:text-[var(--text-strong)]",
