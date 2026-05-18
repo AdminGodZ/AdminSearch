@@ -20,6 +20,7 @@ import { Filters } from "@/features/search/components/filters";
 import { ResultList } from "@/features/search/components/result-list";
 import { SearchForm } from "@/features/search/components/search-form";
 import { SearchTabs } from "@/features/search/components/search-tabs";
+import { SEARCH_MAX_PAGE } from "@/features/search/lib/limits";
 import {
   readSearchCache,
   SEARCH_CACHE_VERSION,
@@ -160,7 +161,9 @@ function normalizeSafeSearch(value: string | null): 0 | 1 | 2 {
 
 function normalizePage(value: string | null) {
   const page = Number(value ?? "1");
-  return Number.isInteger(page) && page > 0 ? page : 1;
+  return Number.isInteger(page) && page > 0
+    ? Math.min(page, SEARCH_MAX_PAGE)
+    : 1;
 }
 
 function LoadingResults({
@@ -823,6 +826,9 @@ export function SearchPageClient({
         ? state.previous
         : undefined;
   const activePage = activeData?.page ?? loadedPage;
+  const canLoadMore = Boolean(
+    activeData?.hasMore && activePage < SEARCH_MAX_PAGE,
+  );
 
   const hasResults = Boolean(activeData?.results.length);
   const hasSidebarContent = Boolean(
@@ -852,7 +858,7 @@ export function SearchPageClient({
       : imageTabSuggestions;
 
   const handleLoadMore = useCallback(async () => {
-    if (!activeData || !activeData.hasMore || isLoadingMoreRef.current) {
+    if (!activeData || !canLoadMore || isLoadingMoreRef.current) {
       return;
     }
 
@@ -909,14 +915,16 @@ export function SearchPageClient({
       setIsLoadingMore(false);
       controller.abort();
     }
-  }, [activeData, activePage, queryStringWithoutPage, searchCacheKey]);
+  }, [
+    activeData,
+    activePage,
+    canLoadMore,
+    queryStringWithoutPage,
+    searchCacheKey,
+  ]);
 
   useEffect(() => {
-    if (
-      !interfacePreferences.infiniteScroll ||
-      !activeData?.hasMore ||
-      isLoadingMore
-    ) {
+    if (!interfacePreferences.infiniteScroll || !canLoadMore || isLoadingMore) {
       return;
     }
 
@@ -984,7 +992,7 @@ export function SearchPageClient({
       }
     };
   }, [
-    activeData?.hasMore,
+    canLoadMore,
     handleLoadMore,
     interfacePreferences.infiniteScroll,
     isLoadingMore,
@@ -1209,7 +1217,7 @@ export function SearchPageClient({
                     </Card>
                   ) : null}
 
-                  {activeData?.hasMore ? (
+                  {canLoadMore ? (
                     <div
                       ref={infiniteScrollSentinelRef}
                       className={cn(

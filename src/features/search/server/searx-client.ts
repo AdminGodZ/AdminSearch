@@ -1,3 +1,4 @@
+import { SEARCH_MAX_PAGE } from "@/features/search/lib/limits";
 import type {
   SearchRequest,
   SearxRawResult,
@@ -7,7 +8,7 @@ import type {
 const DEFAULT_SEARXNG_URL = "http://127.0.0.1:8080";
 const REQUEST_TIMEOUT_MS = 8_000;
 export const DEFAULT_RESULTS_PER_PAGE = 20;
-const MAX_UPSTREAM_PAGES = 12;
+const MAX_UPSTREAM_PAGES = SEARCH_MAX_PAGE;
 
 export class SearchUpstreamError extends Error {
   statusCode: number;
@@ -377,9 +378,10 @@ async function fetchSearxVideoResponse(
       : undefined;
   const nextPageCursor = encodeEngineDataCursor(nextEngineData);
   const hasMore =
-    Boolean(nextPageCursor) ||
-    (totalAvailable !== undefined &&
-      totalAvailable > request.page * resultsPerPage);
+    request.page < SEARCH_MAX_PAGE &&
+    (Boolean(nextPageCursor) ||
+      (totalAvailable !== undefined &&
+        totalAvailable > request.page * resultsPerPage));
 
   return {
     payload: {
@@ -480,10 +482,11 @@ export async function fetchSearxResponse(
   const basePayload = firstPayload ?? {};
   const slicedResults = aggregatedResults.slice(startIndex, endIndex);
   const hasMore =
-    aggregatedResults.length > endIndex ||
-    (totalAvailable !== undefined &&
-      totalAvailable > 0 &&
-      totalAvailable > endIndex);
+    request.page < SEARCH_MAX_PAGE &&
+    (aggregatedResults.length > endIndex ||
+      (totalAvailable !== undefined &&
+        totalAvailable > 0 &&
+        totalAvailable > endIndex));
 
   return {
     payload: {

@@ -4,6 +4,7 @@ import { Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { SEARCH_QUERY_MAX_LENGTH } from "@/features/search/lib/limits";
 import { cn } from "@/lib/utils";
 
 type SearchInputProps = {
@@ -20,7 +21,8 @@ const inputSizeClasses = {
 
 const suggestionItemClassName =
   "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[var(--suggestion-hover)]";
-const AUTOCOMPLETE_DEBOUNCE_MS = 0;
+const AUTOCOMPLETE_DEBOUNCE_MS = 250;
+const AUTOCOMPLETE_MIN_QUERY_LENGTH = 2;
 
 export function SearchInput({
   defaultValue,
@@ -52,7 +54,7 @@ export function SearchInput({
   }, [defaultValue]);
 
   useEffect(() => {
-    if (value.trim().length < 1) {
+    if (value.trim().length < AUTOCOMPLETE_MIN_QUERY_LENGTH) {
       setSuggestions([]);
       setIsOpen(false);
       return;
@@ -236,6 +238,7 @@ export function SearchInput({
           }
         }}
         placeholder={placeholder}
+        maxLength={SEARCH_QUERY_MAX_LENGTH}
         className={cn(
           "rounded-full border-transparent bg-[var(--control-bg)] pr-12 pl-12 text-foreground shadow-none [transition-property:border-color,box-shadow,color,background-color] active:bg-[var(--control-hover)] focus:bg-[var(--control-active)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0 dark:text-white dark:placeholder:text-white/60",
           inputSizeClasses[size],
