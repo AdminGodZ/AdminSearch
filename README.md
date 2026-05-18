@@ -232,7 +232,7 @@ App URLs:
 
 - frontend: `http://localhost:3000`
 - private SearXNG: `http://127.0.0.1:8080`
-- private Valkey: `127.0.0.1:6379`
+- private Valkey: internal Compose network only
 
 ## Production stack
 
@@ -294,6 +294,8 @@ docker compose up -d --force-recreate searxng-core
 - video hover previews only work when the upstream result exposes an embeddable
   preview URL
 - rate limiting falls back to in-memory storage if Valkey is unavailable
+- Valkey is not published to the host by default; production Next.js reaches it
+  through the internal Compose network at `redis://valkey:6379`
 - `/search` is dynamic and query-driven; it is not a static search shell
 - shared UI primitives are refined in `src/components/ui`, while search-specific
   behavior stays in `src/features/search`
