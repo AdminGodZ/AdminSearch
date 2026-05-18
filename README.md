@@ -87,6 +87,11 @@ Request flow:
 5. SearXNG fans out to the configured search engines
 6. Next.js returns a normalized frontend-friendly response
 
+Forwarded client IP headers are only trusted when
+`RATE_LIMIT_TRUST_PROXY_HEADERS=true`. Local development keeps this disabled so
+direct requests cannot spoof `x-forwarded-for`. The production Compose stack
+enables it for the Caddy-to-Next.js path and trusts one proxy hop by default.
+
 Only these public app endpoints are used by the UI:
 
 - `GET /api/search`
@@ -249,6 +254,8 @@ Important envs:
 - `NEXT_PUBLIC_APP_URL`
 - `APP_DOMAIN`
 - `SEARXNG_SECRET`
+- `RATE_LIMIT_TRUST_PROXY_HEADERS`
+- `RATE_LIMIT_TRUSTED_PROXY_HOPS`
 - `SEARXNG_DNS_1`
 - `SEARXNG_DNS_2`
 
