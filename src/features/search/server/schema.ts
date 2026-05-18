@@ -1,15 +1,27 @@
 import { z } from "zod";
 
+import {
+  SEARCH_MAX_PAGE,
+  SEARCH_QUERY_MAX_LENGTH,
+} from "@/features/search/lib/limits";
 import type { SearchRequest } from "@/features/search/types";
 
 const positiveInteger = z
   .number()
   .int()
-  .positive("page must be a positive integer");
+  .positive("page must be a positive integer")
+  .max(SEARCH_MAX_PAGE, `page must be at most ${SEARCH_MAX_PAGE}`);
 
 export const searchRequestSchema = z.object({
   cursor: z.string().max(4096).optional(),
-  q: z.string().trim().min(1, "q is required"),
+  q: z
+    .string()
+    .trim()
+    .min(1, "q is required")
+    .max(
+      SEARCH_QUERY_MAX_LENGTH,
+      `q must be at most ${SEARCH_QUERY_MAX_LENGTH} characters`,
+    ),
   tab: z.enum(["all", "images", "videos", "news"]).default("all"),
   page: z
     .preprocess((value) => {
