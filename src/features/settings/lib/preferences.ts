@@ -21,7 +21,6 @@ export type SettingsState = {
   urlFormatting: string;
   uiLanguage: string;
   theme: string;
-  engineTokens: string;
   openInNewTab: boolean;
   infiniteScroll: boolean;
   showFavicons: boolean;
@@ -52,6 +51,10 @@ type StoredPreferencesPayload = {
   engines?: Partial<Record<EngineGroupKey, string[]>>;
 };
 
+type LegacySettingsState = SettingsState & {
+  engineTokens?: unknown;
+};
+
 export const defaultSettingsState: SettingsState = {
   locale: "auto",
   defaultTab: "all",
@@ -65,7 +68,6 @@ export const defaultSettingsState: SettingsState = {
   urlFormatting: "pretty",
   uiLanguage: "en",
   theme: "light",
-  engineTokens: "",
   openInNewTab: true,
   infiniteScroll: true,
   showFavicons: true,
@@ -175,7 +177,7 @@ export type SearchRuntimePreferences = {
   disabledPlugins: string[];
   enabledEngines: string[];
   enabledPlugins: string[];
-  engineTokens: string[];
+  engineTokens?: string[];
   faviconResolver: string;
   httpMethod: HttpMethod;
   imageProxy: boolean;
@@ -368,10 +370,6 @@ export function parsePreferencesCookie(
         defaults.settings.urlFormatting,
         ["pretty", "full", "host"],
       ),
-      engineTokens: sanitizeStringSetting(
-        settings.engineTokens,
-        defaults.settings.engineTokens,
-      ),
       openInNewTab: sanitizeBooleanSetting(
         settings.openInNewTab,
         defaults.settings.openInNewTab,
@@ -467,9 +465,11 @@ export function parsePreferencesCookie(
 export function serializePreferencesCookie(
   value: PersistedPreferences,
 ): string {
+  const { engineTokens: _engineTokens, ...settings } =
+    value.settings as LegacySettingsState;
   const payload: StoredPreferencesPayload = {
     version: SETTINGS_COOKIE_VERSION,
-    settings: value.settings,
+    settings,
     engines: {
       general: [...value.engines.general],
       images: [...value.engines.images],
@@ -555,13 +555,6 @@ export function getPluginPreferenceState(settings: SettingsState) {
   };
 }
 
-export function getEngineTokenValues(settings: SettingsState) {
-  return settings.engineTokens
-    .split(/[;,]/)
-    .map((token) => token.trim())
-    .filter(Boolean);
-}
-
 export function getSearchRuntimePreferences(
   settings: SettingsState,
   engines: EngineState,
@@ -574,7 +567,6 @@ export function getSearchRuntimePreferences(
     disabledPlugins: pluginState.disabledPlugins,
     enabledEngines: getEnabledEnginesForTab(engines, tab),
     enabledPlugins: pluginState.enabledPlugins,
-    engineTokens: getEngineTokenValues(settings),
     faviconResolver: settings.faviconResolver,
     httpMethod: normalizeHttpMethod(settings.httpMethod),
     imageProxy: settings.imageProxy,

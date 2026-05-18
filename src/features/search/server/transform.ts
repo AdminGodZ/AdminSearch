@@ -1,3 +1,5 @@
+import { normalizeWebUrl } from "@/features/search/lib/safe-url";
+import { normalizeVideoPreviewUrl } from "@/features/search/lib/video-preview-url";
 import { DEFAULT_RESULTS_PER_PAGE } from "@/features/search/server/searx-client";
 import type {
   SearchInfobox,
@@ -38,17 +40,19 @@ function readHostname(url: string) {
 }
 
 function readThumbnail(result: SearxRawResult) {
-  return readString(result, [
-    "thumbnail_src",
-    "img_src",
-    "thumbnail",
-    "thumbnail_url",
-    "img",
-  ]);
+  return normalizeWebUrl(
+    readString(result, [
+      "thumbnail_src",
+      "img_src",
+      "thumbnail",
+      "thumbnail_url",
+      "img",
+    ]),
+  );
 }
 
 function readPreviewUrl(result: SearxRawResult) {
-  return readString(result, ["iframe_src"]);
+  return normalizeVideoPreviewUrl(readString(result, ["iframe_src"]));
 }
 
 function readPublishedAt(result: SearxRawResult) {
@@ -60,7 +64,9 @@ function normalizeResult(
   index: number,
   tab: SearchRequest["tab"],
 ): SearchResult | null {
-  const url = readString(result, ["url", "img_src", "thumbnail_src"]);
+  const url = normalizeWebUrl(
+    readString(result, ["url", "img_src", "thumbnail_src"]),
+  );
 
   if (!url) {
     return null;
@@ -122,7 +128,7 @@ function extractString(value: unknown) {
 }
 
 function readInfoboxUrl(record: SearxRawResult) {
-  const directUrl = extractString(record.url);
+  const directUrl = normalizeWebUrl(extractString(record.url));
 
   if (directUrl) {
     return directUrl;
@@ -139,7 +145,9 @@ function readInfoboxUrl(record: SearxRawResult) {
       continue;
     }
 
-    const nestedUrl = extractString((entry as SearxRawResult).url);
+    const nestedUrl = normalizeWebUrl(
+      extractString((entry as SearxRawResult).url),
+    );
 
     if (nestedUrl) {
       return nestedUrl;
@@ -207,7 +215,9 @@ function readInfoboxContent(record: SearxRawResult) {
 }
 
 function readInfoboxImage(record: SearxRawResult) {
-  return readString(record, ["img_src", "thumbnail_src", "thumbnail", "img"]);
+  return normalizeWebUrl(
+    readString(record, ["img_src", "thumbnail_src", "thumbnail", "img"]),
+  );
 }
 
 function normalizeInfoboxAttribute(
@@ -237,7 +247,7 @@ function normalizeInfoboxAttribute(
 
   if (rawImage && typeof rawImage === "object") {
     const imageRecord = rawImage as SearxRawResult;
-    const src = extractString(imageRecord.src);
+    const src = normalizeWebUrl(extractString(imageRecord.src));
 
     if (src) {
       image = {
@@ -272,7 +282,7 @@ function normalizeInfoboxUrl(urlEntry: unknown): SearchInfoboxUrl | null {
   }
 
   const record = urlEntry as SearxRawResult;
-  const url = extractString(record.url);
+  const url = normalizeWebUrl(extractString(record.url));
   const title = extractString(record.title);
 
   if (!url || !title) {
