@@ -79,7 +79,8 @@ plugins:
     active: false
 
 server:
-  secret_key: "change-this-in-production"
+  # Required by docker-compose.yml and injected through SEARXNG_SECRET.
+  secret_key: ""
   public_instance: false
   limiter: false
   image_proxy: false
