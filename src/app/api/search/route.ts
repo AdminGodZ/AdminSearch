@@ -8,6 +8,7 @@ import {
 } from "@/features/search/server/searx-client";
 import { transformSearxResponse } from "@/features/search/server/transform";
 import { getSearchRuntimePreferences } from "@/features/settings/lib/preferences";
+import { getConfiguredEngineTokens } from "@/features/settings/server/engine-tokens";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 import { getClientIp } from "@/server/client-ip";
 import { checkRateLimit, createRateLimitHeaders } from "@/server/rate-limit";
@@ -40,10 +41,11 @@ export async function GET(request: Request) {
       preferences.engines,
       searchRequest.tab,
     );
-    const upstreamResponse = await fetchSearxResponse(
-      searchRequest,
-      runtimePreferences,
-    );
+    const engineTokens = getConfiguredEngineTokens();
+    const upstreamResponse = await fetchSearxResponse(searchRequest, {
+      ...runtimePreferences,
+      engineTokens,
+    });
     const payload = transformSearxResponse(
       upstreamResponse.payload,
       searchRequest,

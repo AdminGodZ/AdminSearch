@@ -97,8 +97,29 @@ function readCookieValue(name: string) {
   return undefined;
 }
 
+function hasLegacyEngineTokens(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    return decodeURIComponent(value).includes('"engineTokens"');
+  } catch {
+    return value.includes("engineTokens");
+  }
+}
+
 export function readPersistedPreferencesFromBrowser() {
-  return parsePreferencesCookie(readCookieValue(SETTINGS_COOKIE_NAME));
+  const rawValue = readCookieValue(SETTINGS_COOKIE_NAME);
+  const preferences = parsePreferencesCookie(rawValue);
+
+  if (hasLegacyEngineTokens(rawValue)) {
+    persistPreferencesCookie(preferences, {
+      persistent: getPersistedSettingsStorageMode(),
+    });
+  }
+
+  return preferences;
 }
 
 export function broadcastSettingsSync() {

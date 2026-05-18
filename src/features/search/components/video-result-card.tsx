@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
+import { buildVideoPreviewEmbedUrl } from "@/features/search/lib/video-preview-url";
 import type { SearchResult } from "@/features/search/types";
 import type { UrlFormattingMode } from "@/features/settings/lib/preferences";
 import { cn } from "@/lib/utils";
@@ -91,30 +92,6 @@ function formatResultUrl(
   }
 }
 
-function buildPreviewSrc(previewUrl: string) {
-  try {
-    const url = new URL(previewUrl);
-
-    if (url.hostname.includes("youtube")) {
-      url.searchParams.set("autoplay", "1");
-      url.searchParams.set("mute", "1");
-      url.searchParams.set("controls", "0");
-      url.searchParams.set("playsinline", "1");
-      url.searchParams.set("rel", "0");
-      url.searchParams.set("iv_load_policy", "3");
-      url.searchParams.set("fs", "0");
-      url.searchParams.set("disablekb", "1");
-      return url.toString();
-    }
-
-    url.searchParams.set("autoplay", "1");
-    url.searchParams.set("mute", "1");
-    return url.toString();
-  } catch {
-    return previewUrl;
-  }
-}
-
 export function VideoResultCard({
   compactDensity = false,
   faviconResolver = "google",
@@ -128,7 +105,7 @@ export function VideoResultCard({
   const formattedUrl = formatResultUrl(result, meta, urlFormatting);
   const [showPreview, setShowPreview] = useState(false);
   const previewSrc = useMemo(
-    () => (result.previewUrl ? buildPreviewSrc(result.previewUrl) : undefined),
+    () => buildVideoPreviewEmbedUrl(result.previewUrl),
     [result.previewUrl],
   );
   const videoMetaParts = [
@@ -196,8 +173,10 @@ export function VideoResultCard({
                 <iframe
                   src={previewSrc}
                   title={`${result.title} preview`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                   allowFullScreen
+                  referrerPolicy="no-referrer"
+                  sandbox="allow-same-origin allow-scripts allow-presentation"
                   className="h-full w-full border-0"
                 />
               ) : result.thumbnailUrl ? (

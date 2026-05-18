@@ -595,7 +595,6 @@ export function SearchPageClient({
           news: [...preferences.engines.news].sort(),
         },
         imageProxy: preferences.settings.imageProxy,
-        tokens: preferences.settings.engineTokens,
         plugins: {
           calculator: preferences.settings.calculator,
           doiRewrite: preferences.settings.doiRewrite,

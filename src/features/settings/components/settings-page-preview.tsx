@@ -43,6 +43,7 @@ import {
   persistPreferencesCookie as persistCookie,
   persistSettingsStorageMode,
   persistUiLanguagePreference,
+  readPersistedPreferencesFromBrowser,
   readUiLanguagePreference,
 } from "@/features/settings/lib/preferences-client";
 import { cn } from "@/lib/utils";
@@ -317,6 +318,8 @@ export function SettingsPagePreview({
     if (typeof window === "undefined") {
       return;
     }
+
+    readPersistedPreferencesFromBrowser();
 
     const uiLanguage = readUiLanguagePreference();
 
@@ -729,16 +732,11 @@ export function SettingsPagePreview({
                 </SettingRow>
                 <SettingRow
                   label="Engine tokens"
-                  description="Comma-separated access tokens for private engines, matching SearXNG's own preference model."
+                  description="Private engine tokens are read from the server environment and are never stored in browser settings."
                 >
-                  <Input
-                    value={settings.engineTokens}
-                    onChange={(event) =>
-                      updateSetting("engineTokens", event.target.value)
-                    }
-                    placeholder="private-token-a, private-token-b"
-                    className="h-10 w-full min-w-[260px] rounded-xl border-[var(--surface-panel-border)] bg-background px-3.5 text-[14px] shadow-none hover:border-foreground/20 focus-visible:border-foreground/30 focus-visible:ring-foreground/5"
-                  />
+                  <p className="max-w-[320px] text-right text-[13px] leading-6 text-[var(--text-soft)]">
+                    Configure SEARXNG_ENGINE_TOKENS on the server.
+                  </p>
                 </SettingRow>
               </div>
             </div>
