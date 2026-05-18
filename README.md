@@ -253,6 +253,8 @@ Important envs:
 
 - `NEXT_PUBLIC_APP_URL`
 - `APP_DOMAIN`
+- `SEARXNG_IMAGE_DIGEST`
+- `VALKEY_IMAGE_DIGEST`
 - `SEARXNG_SECRET`
 - `SEARXNG_ENGINE_TOKENS`
 - `RATE_LIMIT_TRUST_PROXY_HEADERS`
@@ -269,6 +271,10 @@ Current defaults in `.env.example`:
 
 - `SEARXNG_DNS_1=45.90.28.0`
 - `SEARXNG_DNS_2=45.90.30.0`
+
+Production Compose requires pinned image digests and a generated
+`SEARXNG_SECRET`. Leave those values empty in `.env.example`; set them in your
+real `.env` before starting the production profile.
 
 ## Useful commands
 
