@@ -95,8 +95,6 @@ export async function checkRateLimit(key: string): Promise<RateLimitResult> {
   const namespacedKey = `adminsearch:ratelimit:${key}`;
 
   try {
-    await redis.connect();
-
     const total = await redis.incr(namespacedKey);
 
     if (total === 1) {
