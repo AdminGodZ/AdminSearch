@@ -31,7 +31,10 @@ export function Footer() {
             Source code
             <ExternalLink aria-hidden="true" className="size-3.5 shrink-0" />
           </a>
-          <span aria-hidden="true" className="text-sm text-white">
+          <span
+            aria-hidden="true"
+            className="text-sm text-foreground dark:text-white"
+          >
             ·
           </span>
           <Link
