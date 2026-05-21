@@ -257,6 +257,12 @@ Important envs:
 - `VALKEY_IMAGE_DIGEST`
 - `SEARXNG_SECRET`
 - `SEARXNG_ENGINE_TOKENS`
+- `SEARXNG_UPDATE_CHECK_TTL_MS`
+- `SEARXNG_UPDATE_CHECK_TIMEOUT_MS`
+- `SEARCH_RATE_LIMIT_WINDOW_MS`
+- `SEARCH_RATE_LIMIT_MAX`
+- `AUTOCOMPLETE_RATE_LIMIT_WINDOW_MS`
+- `AUTOCOMPLETE_RATE_LIMIT_MAX`
 - `RATE_LIMIT_TRUST_PROXY_HEADERS`
 - `RATE_LIMIT_TRUSTED_PROXY_HOPS`
 - `SEARXNG_DNS_1`
@@ -290,6 +296,8 @@ docker compose up -d --force-recreate searxng-core
 ## Notes
 
 - SearXNG JSON output is enabled in `searxng/core-config/settings.yml`
+- the footer discloses the current SearXNG version and checks Docker Hub for
+  the latest pinned-image digest using a cached server-side request
 - image and video thumbnails are loaded directly from remote sources
 - video hover previews only work when the upstream result exposes an embeddable
   preview URL

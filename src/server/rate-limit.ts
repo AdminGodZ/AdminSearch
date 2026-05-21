@@ -7,6 +7,11 @@ type RateLimitResult = {
   resetAt: number;
 };
 
+type RateLimitOptions = {
+  windowMs?: number;
+  maxRequests?: number;
+};
+
 type MemoryEntry = {
   count: number;
   resetAt: number;
@@ -22,12 +27,17 @@ declare global {
   var __adminsearchRedis: Redis | null | undefined;
 }
 
-function getWindowMs() {
-  return Number(process.env.SEARCH_RATE_LIMIT_WINDOW_MS ?? 60_000);
+function getWindowMs(options?: RateLimitOptions) {
+  return (
+    options?.windowMs ??
+    Number(process.env.SEARCH_RATE_LIMIT_WINDOW_MS ?? 60_000)
+  );
 }
 
-function getMaxRequests() {
-  return Number(process.env.SEARCH_RATE_LIMIT_MAX ?? 30);
+function getMaxRequests(options?: RateLimitOptions) {
+  return (
+    options?.maxRequests ?? Number(process.env.SEARCH_RATE_LIMIT_MAX ?? 30)
+  );
 }
 
 function pruneMemoryStore(now: number, force = false) {
@@ -83,10 +93,13 @@ function getRedisClient() {
   return global.__adminsearchRedis;
 }
 
-async function checkMemoryRateLimit(key: string): Promise<RateLimitResult> {
+async function checkMemoryRateLimit(
+  key: string,
+  options?: RateLimitOptions,
+): Promise<RateLimitResult> {
   const now = Date.now();
-  const windowMs = getWindowMs();
-  const limit = getMaxRequests();
+  const windowMs = getWindowMs(options);
+  const limit = getMaxRequests(options);
 
   pruneMemoryStore(now);
 
@@ -119,13 +132,16 @@ async function checkMemoryRateLimit(key: string): Promise<RateLimitResult> {
   };
 }
 
-export async function checkRateLimit(key: string): Promise<RateLimitResult> {
+export async function checkRateLimit(
+  key: string,
+  options?: RateLimitOptions,
+): Promise<RateLimitResult> {
   const redis = getRedisClient();
-  const windowMs = getWindowMs();
-  const limit = getMaxRequests();
+  const windowMs = getWindowMs(options);
+  const limit = getMaxRequests(options);
 
   if (!redis) {
-    return checkMemoryRateLimit(key);
+    return checkMemoryRateLimit(key, options);
   }
 
   const namespacedKey = `adminsearch:ratelimit:${key}`;
@@ -147,7 +163,7 @@ export async function checkRateLimit(key: string): Promise<RateLimitResult> {
       resetAt,
     };
   } catch {
-    return checkMemoryRateLimit(key);
+    return checkMemoryRateLimit(key, options);
   }
 }
 

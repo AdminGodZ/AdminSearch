@@ -48,6 +48,7 @@ const contentSecurityPolicy = cspDirectives
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  devIndicators: false,
   serverExternalPackages: ["ioredis"],
   async headers() {
     return [
