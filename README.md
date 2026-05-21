@@ -38,7 +38,7 @@
 - <img src="https://cdn.simpleicons.org/radixui/white" alt="" width="18" />  Radix UI
 - <img src="https://cdn.simpleicons.org/biome/60A5FA" alt="" width="18" />  Biome
 - <img src="https://cdn.simpleicons.org/searxng/3050FF" alt="" width="18" />  SearXNG
-- <img src="https://cdn.simpleicons.org/valkey/FF4438" alt="" width="18" />  Valkey
+- <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/valkey.svg" alt="" width="18" />  Valkey
 - <img src="https://cdn.simpleicons.org/caddy/1F88C0" alt="" width="18" />  Caddy
 
 ## Requirements
