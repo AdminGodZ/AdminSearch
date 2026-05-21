@@ -1,29 +1,32 @@
 <div align="center">
   <h1>AdminSearch</h1>
   <p>
+    AdminSearch is a self-hosted search frontend built with Next.js and backed
+    by a private SearXNG instance. The browser talks to AdminSearch,
+    AdminSearch talks to SearXNG, and the SearXNG backend handles the upstream
+    search engines.
+  </p>
+  <p>
+    The project focuses on a clean search experience with privacy-oriented
+    defaults, server-side request handling, configurable engines, autocomplete,
+    result tabs, theme support, and a Docker-based production setup.
+  </p>
+  <p>
     <img src="./public/AdminSearch_Home_light.png" alt="AdminSearch home page in light mode" width="49%" />
     <img src="./public/AdminSearch_Home_dark.png" alt="AdminSearch home page in dark mode" width="49%" />
   </p>
 </div>
 
-AdminSearch is a self-hosted search frontend built with Next.js and backed by a
-private SearXNG instance. The browser talks to AdminSearch, AdminSearch talks to
-SearXNG, and the SearXNG backend handles the upstream search engines.
-
-The project focuses on a clean search experience with privacy-oriented defaults,
-server-side request handling, configurable engines, autocomplete, result tabs,
-theme support, and a Docker-based production setup.
-
 ## Features
 
-- Search tabs for web, images, videos, and news
-- Autocomplete through the configured SearXNG backend
-- Settings for engines, language, theme, privacy, result behavior, and plugins
-- Server-side search proxying and response normalization
-- Redis/Valkey-backed rate limiting in production
-- SearXNG version visibility with upstream status checks
-- Light and dark themes via `next-themes` (with more coming)
-- Docker Compose stack for Next.js, SearXNG, Valkey, and Caddy
+- <img src="https://api.iconify.design/lucide:layout-list.svg?color=%23ffffff" alt="" width="18" /> Search tabs for web, images, videos, and news
+- <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23ffffff" alt="" width="18" /> Autocomplete through the configured SearXNG backend
+- <img src="https://api.iconify.design/lucide:sliders-horizontal.svg?color=%23ffffff" alt="" width="18" /> Settings for engines, language, theme, privacy, result behavior, and plugins
+- <img src="https://api.iconify.design/lucide:server-cog.svg?color=%23ffffff" alt="" width="18" /> Server-side search proxying and response normalization
+- <img src="https://api.iconify.design/lucide:shield-check.svg?color=%23ffffff" alt="" width="18" /> Redis/Valkey-backed rate limiting in production
+- <img src="https://api.iconify.design/lucide:refresh-cw.svg?color=%23ffffff" alt="" width="18" /> SearXNG version visibility with upstream status checks
+- <img src="https://api.iconify.design/lucide:moon-star.svg?color=%23ffffff" alt="" width="18" /> Light and dark themes via `next-themes` (with more coming)
+- <img src="https://api.iconify.design/lucide:container.svg?color=%23ffffff" alt="" width="18" /> Docker Compose stack for Next.js, SearXNG, Valkey, and Caddy
 
 ## Stack
 
