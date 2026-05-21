@@ -1,41 +1,45 @@
 <div align="center">
   <h1>AdminSearch</h1>
   <p>
+    AdminSearch is a self-hosted search frontend built with Next.js and backed
+    by a private SearXNG instance. The browser talks to AdminSearch,
+    AdminSearch talks to SearXNG, and the SearXNG backend handles the upstream
+    search engines.
+  </p>
+  <p>
+    The project focuses on a clean search experience with privacy-oriented
+    defaults, server-side request handling, configurable engines, autocomplete,
+    result tabs, theme support, and a Docker-based production setup.
+  </p>
+  <p>
     <img src="./public/AdminSearch_Home_light.png" alt="AdminSearch home page in light mode" width="49%" />
     <img src="./public/AdminSearch_Home_dark.png" alt="AdminSearch home page in dark mode" width="49%" />
   </p>
 </div>
 
-AdminSearch is a self-hosted search frontend built with Next.js and backed by a
-private SearXNG instance. The browser talks to AdminSearch, AdminSearch talks to
-SearXNG, and the SearXNG backend handles the upstream search engines.
-
-The project focuses on a clean search experience with privacy-oriented defaults,
-server-side request handling, configurable engines, autocomplete, result tabs,
-theme support, and a Docker-based production setup.
-
 ## Features
 
-- Search tabs for web, images, videos, and news
-- Autocomplete through the configured SearXNG backend
-- Settings for engines, language, theme, privacy, result behavior, and plugins
-- Server-side search proxying and response normalization
-- Redis/Valkey-backed rate limiting in production
-- SearXNG version visibility with upstream status checks
-- Light and dark themes via `next-themes` (with more coming)
-- Docker Compose stack for Next.js, SearXNG, Valkey, and Caddy
+- <img src="https://api.iconify.design/lucide:layout-list.svg?color=%23ffffff" alt="" width="18" />  Search tabs for web, images, videos, and news
+- <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23ffffff" alt="" width="18" />  Autocomplete through the configured SearXNG backend
+- <img src="https://api.iconify.design/lucide:sliders-horizontal.svg?color=%23ffffff" alt="" width="18" />  Settings for engines, language, theme, privacy, result behavior, and plugins
+- <img src="https://api.iconify.design/lucide:server-cog.svg?color=%23ffffff" alt="" width="18" />  Server-side search proxying and response normalization
+- <img src="https://api.iconify.design/lucide:shield-check.svg?color=%23ffffff" alt="" width="18" />  Redis/Valkey-backed rate limiting in production
+- <img src="https://api.iconify.design/lucide:refresh-cw.svg?color=%23ffffff" alt="" width="18" />  SearXNG version visibility with upstream status checks
+- <img src="https://api.iconify.design/lucide:moon-star.svg?color=%23ffffff" alt="" width="18" />  Light and dark themes via `next-themes` (with more coming)
+- <img src="https://api.iconify.design/lucide:container.svg?color=%23ffffff" alt="" width="18" />  Docker Compose stack for Next.js, SearXNG, Valkey, and Caddy
 
 ## Stack
 
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- shadcn/ui and Radix UI
-- Biome
-- SearXNG
-- Valkey
-- Caddy
+- <img src="https://cdn.simpleicons.org/nextdotjs/white" alt="" width="18" />  Next.js 16 App Router
+- <img src="https://cdn.simpleicons.org/react/61DAFB" alt="" width="18" />  React 19
+- <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="" width="18" />  TypeScript
+- <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" alt="" width="18" />  Tailwind CSS 4
+- <img src="https://cdn.simpleicons.org/shadcnui/white" alt="" width="18" />  shadcn/ui
+- <img src="https://cdn.simpleicons.org/radixui/white" alt="" width="18" />  Radix UI
+- <img src="https://cdn.simpleicons.org/biome/60A5FA" alt="" width="18" />  Biome
+- <img src="https://cdn.simpleicons.org/searxng/3050FF" alt="" width="18" />  SearXNG
+- <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/valkey.svg" alt="" width="18" />  Valkey
+- <img src="https://cdn.simpleicons.org/caddy/1F88C0" alt="" width="18" />  Caddy
 
 ## Requirements
 
