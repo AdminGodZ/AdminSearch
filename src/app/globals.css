@@ -105,6 +105,9 @@
   --brand-button: #2d4f79;
   --brand-button-hover: #244469;
   --selection-bg: #e2e2e2;
+  --scrollbar-track: #f5f5f5;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-thumb-hover: #9ca3af;
 }
 
 @layer base {
@@ -115,8 +118,9 @@
   html {
     @apply scroll-smooth font-sans;
     background-color: var(--background);
-    overflow-y: scroll;
-    scrollbar-gutter: stable;
+    overflow-y: auto;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    scrollbar-width: thin;
   }
 
   body {
@@ -125,12 +129,16 @@
     background-image: none;
   }
 
-  /* biome-ignore-start lint/complexity/noImportantStyles: Radix Select injects important body scroll-lock styles that shift the page width. */
+  /* biome-ignore-start lint/complexity/noImportantStyles: Radix Select injects important body scroll-lock styles that shift page geometry. */
   html body[data-scroll-locked] {
-    overflow: auto !important;
+    position: static !important;
+    overflow: visible !important;
+    overscroll-behavior: auto !important;
     margin-left: 0 !important;
+    margin-top: 0 !important;
     margin-right: 0 !important;
     padding-left: 0 !important;
+    padding-top: 0 !important;
     padding-right: 0 !important;
   }
   /* biome-ignore-end lint/complexity/noImportantStyles: end Radix scroll-lock override */
@@ -151,6 +159,30 @@
   ::selection {
     background: var(--selection-bg);
     color: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    min-height: 3rem;
+    border: 2px solid var(--scrollbar-track);
+    border-radius: 9999px;
+    background: var(--scrollbar-thumb);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
   }
 }
 
@@ -215,4 +247,7 @@ html.dark body {
   --brand-button: #8ab4f8;
   --brand-button-hover: #aecbfa;
   --selection-bg: #3c4043;
+  --scrollbar-track: #171717;
+  --scrollbar-thumb: #4d5156;
+  --scrollbar-thumb-hover: #5f6368;
 }

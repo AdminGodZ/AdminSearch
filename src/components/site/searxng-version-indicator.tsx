@@ -1,7 +1,12 @@
 "use client";
 
-import { type CSSProperties, useEffect, useId, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type SearxngStatusState = "latest" | "outdated" | "unknown";
@@ -19,7 +24,6 @@ const initialStatus: SearxngVersionStatus = {
 };
 
 export function SearxngVersionIndicator() {
-  const tooltipId = useId();
   const [hasChecked, setHasChecked] = useState(false);
   const [status, setStatus] = useState<SearxngVersionStatus>(initialStatus);
 
@@ -69,33 +73,37 @@ export function SearxngVersionIndicator() {
   );
 
   return (
-    <button
-      aria-describedby={tooltipId}
-      aria-label={content.tooltip}
-      className="group relative inline-flex max-w-full cursor-help items-center gap-2 border-0 bg-transparent p-0 text-xs font-medium text-foreground/65 outline-none transition-colors hover:text-foreground focus-visible:text-foreground dark:text-white/70 dark:hover:text-white dark:focus-visible:text-white"
-      type="button"
-    >
-      <span
-        aria-hidden="true"
-        className={cn(
-          "size-2.5 shrink-0 rounded-full shadow-[0_0_0_3px_var(--status-ring)]",
-          content.dotClassName,
-        )}
-        style={
-          {
-            "--status-ring": content.ringColor,
-          } as CSSProperties
-        }
-      />
-      <span className="min-w-0 truncate">{content.label}</span>
-      <span
-        id={tooltipId}
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden max-w-72 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-sm group-hover:block group-focus-visible:block lg:left-0 lg:translate-x-0"
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          aria-label={content.tooltip}
+          className="inline-flex max-w-full cursor-help items-center gap-2 border-0 bg-transparent p-0 text-xs font-medium text-foreground/65 outline-none transition-colors hover:text-foreground focus-visible:text-foreground dark:text-white/70 dark:hover:text-white dark:focus-visible:text-white"
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "size-2.5 shrink-0 rounded-full shadow-[0_0_0_3px_var(--status-ring)]",
+              content.dotClassName,
+            )}
+            style={
+              {
+                "--status-ring": content.ringColor,
+              } as CSSProperties
+            }
+          />
+          <span className="min-w-0 truncate">{content.label}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent
+        align="center"
+        className="max-w-72 whitespace-nowrap"
+        side="top"
+        sideOffset={8}
       >
         {content.tooltip}
-      </span>
-    </button>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
