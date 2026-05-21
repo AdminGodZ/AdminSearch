@@ -19,26 +19,32 @@
 
 ## Features
 
-- <img src="https://api.iconify.design/lucide:layout-list.svg?color=%23ffffff" alt="" width="18" /> Search tabs for web, images, videos, and news
-- <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23ffffff" alt="" width="18" /> Autocomplete through the configured SearXNG backend
-- <img src="https://api.iconify.design/lucide:sliders-horizontal.svg?color=%23ffffff" alt="" width="18" /> Settings for engines, language, theme, privacy, result behavior, and plugins
-- <img src="https://api.iconify.design/lucide:server-cog.svg?color=%23ffffff" alt="" width="18" /> Server-side search proxying and response normalization
-- <img src="https://api.iconify.design/lucide:shield-check.svg?color=%23ffffff" alt="" width="18" /> Redis/Valkey-backed rate limiting in production
-- <img src="https://api.iconify.design/lucide:refresh-cw.svg?color=%23ffffff" alt="" width="18" /> SearXNG version visibility with upstream status checks
-- <img src="https://api.iconify.design/lucide:moon-star.svg?color=%23ffffff" alt="" width="18" /> Light and dark themes via `next-themes` (with more coming)
-- <img src="https://api.iconify.design/lucide:container.svg?color=%23ffffff" alt="" width="18" /> Docker Compose stack for Next.js, SearXNG, Valkey, and Caddy
+- <img src="https://api.iconify.design/lucide:layout-list.svg?color=%23ffffff" alt="" width="18" />  Search tabs for web, images, videos, and news
+- <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23ffffff" alt="" width="18" />  Autocomplete through the configured SearXNG backend
+- <img src="https://api.iconify.design/lucide:sliders-horizontal.svg?color=%23ffffff" alt="" width="18" />  Settings for engines, language, theme, privacy, result behavior, and plugins
+- <img src="https://api.iconify.design/lucide:server-cog.svg?color=%23ffffff" alt="" width="18" />  Server-side search proxying and response normalization
+- <img src="https://api.iconify.design/lucide:shield-check.svg?color=%23ffffff" alt="" width="18" />  Redis/Valkey-backed rate limiting in production
+- <img src="https://api.iconify.design/lucide:refresh-cw.svg?color=%23ffffff" alt="" width="18" />  SearXNG version visibility with upstream status checks
+- <img src="https://api.iconify.design/lucide:moon-star.svg?color=%23ffffff" alt="" width="18" />  Light and dark themes via `next-themes` (with more coming)
+- <img src="https://api.iconify.design/lucide:container.svg?color=%23ffffff" alt="" width="18" />  Docker Compose stack for Next.js, SearXNG, Valkey, and Caddy
 
 ## Stack
 
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- shadcn/ui and Radix UI
-- Biome
-- SearXNG
-- Valkey
-- Caddy
+<p>
+  <img src="https://cdn.simpleicons.org/nextdotjs/white" alt="Next.js" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/react/61DAFB" alt="React" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="TypeScript" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" alt="Tailwind CSS" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/shadcnui/white" alt="shadcn/ui" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/radixui/white" alt="Radix UI" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/biome/60A5FA" alt="Biome" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/searxng/3050FF" alt="SearXNG" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/valkey/FF4438" alt="Valkey" width="38" height="38" />
+  <img src="https://cdn.simpleicons.org/caddy/1F88C0" alt="Caddy" width="38" height="38" />
+</p>
+
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Radix UI, Biome,
+SearXNG, Valkey, and Caddy.
 
 ## Requirements
 
