@@ -30,21 +30,16 @@
 
 ## Stack
 
-<p>
-  <img src="https://cdn.simpleicons.org/nextdotjs/white" alt="Next.js" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/react/61DAFB" alt="React" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="TypeScript" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" alt="Tailwind CSS" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/shadcnui/white" alt="shadcn/ui" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/radixui/white" alt="Radix UI" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/biome/60A5FA" alt="Biome" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/searxng/3050FF" alt="SearXNG" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/valkey/FF4438" alt="Valkey" width="38" height="38" />
-  <img src="https://cdn.simpleicons.org/caddy/1F88C0" alt="Caddy" width="38" height="38" />
-</p>
-
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Radix UI, Biome,
-SearXNG, Valkey, and Caddy.
+- <img src="https://cdn.simpleicons.org/nextdotjs/white" alt="" width="18" />  Next.js 16 App Router
+- <img src="https://cdn.simpleicons.org/react/61DAFB" alt="" width="18" />  React 19
+- <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="" width="18" />  TypeScript
+- <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" alt="" width="18" />  Tailwind CSS 4
+- <img src="https://cdn.simpleicons.org/shadcnui/white" alt="" width="18" />  shadcn/ui
+- <img src="https://cdn.simpleicons.org/radixui/white" alt="" width="18" />  Radix UI
+- <img src="https://cdn.simpleicons.org/biome/60A5FA" alt="" width="18" />  Biome
+- <img src="https://cdn.simpleicons.org/searxng/3050FF" alt="" width="18" />  SearXNG
+- <img src="https://cdn.simpleicons.org/valkey/FF4438" alt="" width="18" />  Valkey
+- <img src="https://cdn.simpleicons.org/caddy/1F88C0" alt="" width="18" />  Caddy
 
 ## Requirements
 
