@@ -31,21 +31,72 @@ export default function PrivacyPage() {
               Privacy
             </h1>
             <p className="text-sm leading-6 text-[var(--text-body)]">
-              AdminSearch is a self-hosted search frontend powered by SearXNG.
-              This page is the place for your privacy policy and data-handling
-              details once you publish them.
+              AdminSearch is a privacy-focused, self-hosted metasearch frontend
+              powered by SearXNG.
             </p>
           </div>
 
           <section className="space-y-3">
+            <h2 className="text-lg font-medium text-foreground">Open source</h2>
+            <p className="text-sm leading-7 text-[var(--text-body)]">
+              This project is open source. You can review the AdminSearch source
+              code on{" "}
+              <a
+                href="https://github.com/AdminGodZ/AdminSearch"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-foreground/70"
+              >
+                GitHub
+              </a>
+              . AdminSearch also builds on another open source project,{" "}
+              <a
+                href="https://github.com/searxng/searxng"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-foreground/70"
+              >
+                SearXNG
+              </a>
+              , which provides the private metasearch backend.
+            </p>
+          </section>
+
+          <section className="space-y-3">
             <h2 className="text-lg font-medium text-foreground">
-              Current status
+              Self-hosted privacy
             </h2>
             <p className="text-sm leading-7 text-[var(--text-body)]">
-              A full privacy policy has not been published yet. If you open
-              source or publicly deploy this project, replace this placeholder
-              with the actual retention, logging, analytics, and third-party
-              service details for your instance.
+              Self-hosted AdminSearch instances are designed to be fully
+              private. The browser talks to the AdminSearch frontend, and
+              AdminSearch talks to the private SearXNG backend. The browser does
+              not contact SearXNG directly.
+            </p>
+            <p className="text-sm leading-7 text-[var(--text-body)]">
+              The public instance hosted at{" "}
+              <a
+                href="https://search.admingod.ch"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-foreground/70"
+              >
+                search.admingod.ch
+              </a>{" "}
+              uses the same privacy-first setup and is intended to be fully
+              private as well.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-medium text-foreground">
+              Search requests
+            </h2>
+            <p className="text-sm leading-7 text-[var(--text-body)]">
+              AdminSearch does not need user accounts, tracking profiles, or
+              client-side analytics to work. Like any metasearch service, the
+              SearXNG backend may contact upstream search engines to retrieve
+              results, but those requests are made by the private backend rather
+              than directly by your browser.
             </p>
           </section>
         </div>
