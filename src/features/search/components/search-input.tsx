@@ -21,7 +21,7 @@ const inputSizeClasses = {
 
 const suggestionItemClassName =
   "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[var(--suggestion-hover)]";
-const AUTOCOMPLETE_DEBOUNCE_MS = 100;
+const AUTOCOMPLETE_DEBOUNCE_MS = 0;
 const AUTOCOMPLETE_MIN_QUERY_LENGTH = 2;
 
 export function SearchInput({

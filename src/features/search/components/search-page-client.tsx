@@ -60,6 +60,8 @@ const resultSkeletonKeys = [
 ];
 
 const panelCardClassName = "rounded-[28px]";
+const emptyResultsCardClassName =
+  "rounded-[28px] border border-[var(--surface-panel-border)] bg-[var(--surface-panel)] ring-0 shadow-none";
 const sidebarCardClassName =
   "rounded-[28px] border-transparent bg-[var(--surface-panel)] ring-0 shadow-none";
 const searchHeaderColumns = "lg:grid-cols-[132px_725px_minmax(0,1fr)]";
@@ -1203,8 +1205,10 @@ export function SearchPageClient({
 
                   {currentQuery && activeData && !hasResults ? (
                     <Card
-                      variant="panel"
-                      className={cn(panelCardClassName, resultsSectionClass)}
+                      className={cn(
+                        emptyResultsCardClassName,
+                        resultsSectionClass,
+                      )}
                     >
                       <CardContent className="space-y-3 p-6">
                         <p className="font-medium">No results found.</p>

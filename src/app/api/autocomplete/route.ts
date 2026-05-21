@@ -11,6 +11,12 @@ const DEFAULT_SEARXNG_URL = "http://127.0.0.1:8080";
 const REQUEST_TIMEOUT_MS = 5_000;
 const AUTOCOMPLETE_MIN_QUERY_LENGTH = 2;
 const AUTOCOMPLETE_MAX_QUERY_LENGTH = 128;
+const AUTOCOMPLETE_RATE_LIMIT_WINDOW_MS = Number(
+  process.env.AUTOCOMPLETE_RATE_LIMIT_WINDOW_MS ?? 60_000,
+);
+const AUTOCOMPLETE_RATE_LIMIT_MAX = Number(
+  process.env.AUTOCOMPLETE_RATE_LIMIT_MAX ?? 600,
+);
 
 function getSearxBaseUrl() {
   return (process.env.SEARXNG_INTERNAL_URL ?? DEFAULT_SEARXNG_URL).replace(
@@ -23,6 +29,10 @@ export async function GET(request: Request) {
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
   const rateLimit = await checkRateLimit(
     `autocomplete:${getClientIp(request)}`,
+    {
+      windowMs: AUTOCOMPLETE_RATE_LIMIT_WINDOW_MS,
+      maxRequests: AUTOCOMPLETE_RATE_LIMIT_MAX,
+    },
   );
   const rateLimitHeaders = createRateLimitHeaders(rateLimit);
 

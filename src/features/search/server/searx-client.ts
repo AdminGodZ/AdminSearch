@@ -4,6 +4,10 @@ import type {
   SearxRawResult,
   SearxResponse,
 } from "@/features/search/types";
+import {
+  type EngineGroupKey,
+  engineCatalog,
+} from "@/features/settings/lib/preferences";
 
 const DEFAULT_SEARXNG_URL = "http://127.0.0.1:8080";
 const REQUEST_TIMEOUT_MS = 8_000;
@@ -58,6 +62,30 @@ function getCategories(tab: SearchRequest["tab"]) {
   }
 }
 
+function getEngineGroup(tab: SearchRequest["tab"]): EngineGroupKey {
+  switch (tab) {
+    case "images":
+      return "images";
+    case "videos":
+      return "videos";
+    case "news":
+      return "news";
+    default:
+      return "general";
+  }
+}
+
+function getDisabledEnginesForSelection(
+  group: EngineGroupKey,
+  selectedEngines: string[],
+) {
+  const selected = new Set(selectedEngines);
+
+  return engineCatalog[group]
+    .filter((engine) => !selected.has(engine))
+    .map((engine) => `${engine}__${group}`);
+}
+
 function readRawResultUrl(result: SearxRawResult) {
   const keys = ["url", "img_src", "thumbnail_src"] as const;
 
@@ -84,10 +112,18 @@ function createSearxSearchParams(
     safesearch: String(request.safeSearch ?? 0),
   });
 
+  const category = getCategories(request.tab);
+  params.set("categories", category);
+
   if (options?.enabledEngines?.length) {
-    params.set("engines", options.enabledEngines.join(","));
-  } else {
-    params.set("categories", getCategories(request.tab));
+    const disabledEngines = getDisabledEnginesForSelection(
+      getEngineGroup(request.tab),
+      options.enabledEngines,
+    );
+
+    if (disabledEngines.length) {
+      params.set("disabled_engines", disabledEngines.join(","));
+    }
   }
 
   if (request.language) {
