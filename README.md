@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="./public/adminsearch_logo.png" alt="AdminSearch logo" width="140" />
   <h1>AdminSearch</h1>
   <p>
     <img src="./public/AdminSearch_Home_light.png" alt="AdminSearch home page in light mode" width="49%" />
