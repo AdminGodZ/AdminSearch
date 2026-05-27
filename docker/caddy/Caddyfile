@@ -1,4 +1,4 @@
 {$APP_DOMAIN} {
-  encode zstd gzip
-  reverse_proxy nextjs:3000
+	encode zstd gzip
+	reverse_proxy nextjs:3000
 }

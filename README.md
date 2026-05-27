@@ -125,7 +125,7 @@ The Compose stack runs:
 - Valkey
 - Caddy
 
-Start it with:
+Start the standalone stack with:
 
 ```bash
 docker compose up -d --build
@@ -141,11 +141,30 @@ docker compose pull
 docker compose up -d
 ```
 
-For a Cloudflare Tunnel setup where `cloudflared` already runs on the host,
-leave `APP_DOMAIN=:80` and `PUBLIC_BIND_ADDRESS=127.0.0.1`. That makes Caddy a
-local HTTP origin for the tunnel instead of exposing the app directly on the
-server's public interfaces. Point the tunnel at `http://127.0.0.1:80` or your
-chosen `PUBLIC_HTTP_PORT`.
+This standalone mode does not require a Cloudflare container or an external
+Docker network. By default it binds Caddy to `127.0.0.1:80`; set
+`PUBLIC_BIND_ADDRESS=0.0.0.0` only if you intentionally want the host port
+reachable from outside the server.
+
+For a Cloudflare Tunnel setup where `cloudflared` runs as a separate container,
+create the shared Docker network once:
+
+```bash
+docker network create proxy
+```
+
+Then start the stack with the Cloudflare override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.cloudflare.yml up -d --build
+```
+
+Leave `APP_DOMAIN=:8080`, `PUBLIC_BIND_ADDRESS=127.0.0.1`, and
+`PROXY_NETWORK=proxy`. The override attaches Caddy to that external network as
+`adminsearch-caddy`, so the tunnel can use `http://adminsearch-caddy:8080` as
+the origin for `search.admingod.ch`. The loopback host port remains available
+for local checks at `http://127.0.0.1:80` without exposing the app directly on
+the server's public interfaces.
 
 ## Privacy
 
