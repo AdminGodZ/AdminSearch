@@ -270,7 +270,10 @@ function getUpdateState({
 }
 
 function getCurrentSearxngDigest() {
-  return normalizeDigest(process.env.SEARXNG_IMAGE_DIGEST);
+  return (
+    normalizeDigest(process.env.SEARXNG_IMAGE) ??
+    normalizeDigest(process.env.SEARXNG_IMAGE_DIGEST)
+  );
 }
 
 function normalizeDigest(value: string | null | undefined) {

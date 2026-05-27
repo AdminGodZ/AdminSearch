@@ -33,6 +33,14 @@ export function getClientIp(request: Request) {
     return DEFAULT_RATE_LIMIT_KEY;
   }
 
+  const cloudflareIp =
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    request.headers.get("true-client-ip")?.trim();
+
+  if (cloudflareIp) {
+    return cloudflareIp;
+  }
+
   const forwardedFor = readHeaderList(request.headers.get("x-forwarded-for"));
 
   if (forwardedFor.length) {
