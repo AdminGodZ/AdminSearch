@@ -46,8 +46,8 @@
 - Node.js compatible with Next.js 16
 - npm
 - Docker and Docker Compose
-- A pinned SearXNG image digest for the Compose stack
-- A pinned Valkey image digest for the Compose stack
+- A SearXNG image reference for the Compose stack
+- A Valkey image reference for the Compose stack
 
 ## Getting Started
 
@@ -91,18 +91,20 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 SEARXNG_INTERNAL_URL=http://127.0.0.1:8080
 RATE_LIMIT_REDIS_URL=
 SEARXNG_ENGINE_TOKENS=
-SEARXNG_IMAGE_DIGEST=
-VALKEY_IMAGE_DIGEST=
+SEARXNG_IMAGE=docker.io/searxng/searxng:latest
+VALKEY_IMAGE=docker.io/valkey/valkey:8-alpine
 SEARXNG_SECRET=
 ```
 
-For production, set the image digests and a generated `SEARXNG_SECRET`.
+For production, choose the image tags or digest-pinned image references and set a
+generated `SEARXNG_SECRET`.
 `RATE_LIMIT_REDIS_URL` should point to Valkey/Redis so rate limiting is shared
 across server instances.
 
 Forwarded proxy headers for rate limiting should only be trusted when the app is
-behind a known reverse proxy. The Compose production stack is built for the
-Caddy-to-Next.js path and enables that behavior there.
+behind a known reverse proxy. The Compose stack is built for the
+Cloudflare-to-Caddy-to-Next.js path and enables that behavior there. When
+present, AdminSearch prefers Cloudflare's visitor IP headers for rate-limit keys.
 
 ## Scripts
 
@@ -116,7 +118,7 @@ npm run format   # format the codebase
 
 ## Production
 
-The production profile runs:
+The Compose stack runs:
 
 - Next.js
 - SearXNG
@@ -126,11 +128,24 @@ The production profile runs:
 Start it with:
 
 ```bash
-docker compose --profile prod up -d --build
+docker compose up -d --build
 ```
 
-Before deploying, review `.env.example`, pin the image digests, set your domain,
-and generate a strong `SEARXNG_SECRET`.
+Before deploying, review `.env.example`, choose your image references, and
+generate a strong `SEARXNG_SECRET`.
+
+Update the service images with:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+For a Cloudflare Tunnel setup where `cloudflared` already runs on the host,
+leave `APP_DOMAIN=:80` and `PUBLIC_BIND_ADDRESS=127.0.0.1`. That makes Caddy a
+local HTTP origin for the tunnel instead of exposing the app directly on the
+server's public interfaces. Point the tunnel at `http://127.0.0.1:80` or your
+chosen `PUBLIC_HTTP_PORT`.
 
 ## Privacy
 
