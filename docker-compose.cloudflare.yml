@@ -1,0 +1,12 @@
+services:
+  caddy:
+    networks:
+      default:
+      proxy:
+        aliases:
+          - adminsearch-caddy
+
+networks:
+  proxy:
+    name: ${PROXY_NETWORK:-proxy}
+    external: true
