@@ -142,8 +142,8 @@ docker compose up -d
 ```
 
 For a Cloudflare Tunnel setup where `cloudflared` already runs on the host,
-leave `APP_DOMAIN=:80` and `PUBLIC_BIND_ADDRESS=127.0.0.1`. That makes Caddy a
-local HTTP origin for the tunnel instead of exposing the app directly on the
+leave `APP_DOMAIN=:8080` and `PUBLIC_BIND_ADDRESS=127.0.0.1`. That makes Caddy
+a local HTTP origin for the tunnel instead of exposing the app directly on the
 server's public interfaces. Point the tunnel at `http://127.0.0.1:80` or your
 chosen `PUBLIC_HTTP_PORT`.
 

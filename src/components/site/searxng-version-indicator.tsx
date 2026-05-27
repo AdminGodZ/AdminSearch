@@ -23,6 +23,9 @@ const initialStatus: SearxngVersionStatus = {
   state: "unknown",
 };
 
+const SEARXNG_COMMITS_URL = "https://github.com/searxng/searxng/commits/master";
+const SEARXNG_GITHUB_URL = "https://github.com/searxng/searxng";
+
 export function SearxngVersionIndicator() {
   const [hasChecked, setHasChecked] = useState(false);
   const [status, setStatus] = useState<SearxngVersionStatus>(initialStatus);
@@ -71,14 +74,17 @@ export function SearxngVersionIndicator() {
     () => getIndicatorContent(status, hasChecked),
     [hasChecked, status],
   );
+  const changelogUrl = useMemo(() => getSearxngChangelogUrl(status), [status]);
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
+        <a
           aria-label={content.tooltip}
-          className="inline-flex max-w-full cursor-help items-center gap-2 border-0 bg-transparent p-0 text-xs font-medium text-foreground/65 outline-none transition-colors hover:text-foreground focus-visible:text-foreground dark:text-white/70 dark:hover:text-white dark:focus-visible:text-white"
-          type="button"
+          className="inline-flex max-w-full items-center gap-2 text-xs font-medium text-foreground/65 underline-offset-4 outline-none transition-colors hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline dark:text-white/70 dark:hover:text-white dark:focus-visible:text-white"
+          href={changelogUrl}
+          rel="noreferrer noopener"
+          target="_blank"
         >
           <span
             aria-hidden="true"
@@ -93,7 +99,7 @@ export function SearxngVersionIndicator() {
             }
           />
           <span className="min-w-0 truncate">{content.label}</span>
-        </button>
+        </a>
       </TooltipTrigger>
       <TooltipContent
         align="center"
@@ -118,7 +124,7 @@ function getIndicatorContent(
       dotClassName: "bg-emerald-500",
       label: `SearXNG ${currentVersion}`,
       ringColor: "rgb(16 185 129 / 0.18)",
-      tooltip: "Latest version",
+      tooltip: "Latest version.",
     };
   }
 
@@ -144,6 +150,30 @@ function getIndicatorContent(
       ? "Could not check latest upstream version"
       : "Checking latest upstream version",
   };
+}
+
+function getSearxngChangelogUrl(status: SearxngVersionStatus) {
+  const currentCommit = getVersionCommit(status.currentVersion);
+  const latestCommit = getVersionCommit(status.latestVersion);
+
+  if (
+    status.state === "outdated" &&
+    currentCommit &&
+    latestCommit &&
+    currentCommit !== latestCommit
+  ) {
+    return `${SEARXNG_GITHUB_URL}/compare/${currentCommit}...${latestCommit}`;
+  }
+
+  if (currentCommit) {
+    return `${SEARXNG_GITHUB_URL}/commit/${currentCommit}`;
+  }
+
+  return SEARXNG_COMMITS_URL;
+}
+
+function getVersionCommit(value: string | null | undefined) {
+  return value?.trim().match(/[+-]([a-f0-9]{7,40})$/i)?.[1] ?? null;
 }
 
 function sanitizeVersion(value: string | null | undefined) {
