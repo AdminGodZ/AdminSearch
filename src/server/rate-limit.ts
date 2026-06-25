@@ -80,7 +80,7 @@ function getRedisClient() {
     return global.__adminsearchRedis;
   }
 
-  global.__adminsearchRedis = new Redis(redisUrl, {
+  global.__adminsearchRedis = new Redis(normalizeRedisUrl(redisUrl), {
     lazyConnect: true,
     maxRetriesPerRequest: 1,
     enableReadyCheck: false,
@@ -91,6 +91,24 @@ function getRedisClient() {
   });
 
   return global.__adminsearchRedis;
+}
+
+function normalizeRedisUrl(redisUrl: string) {
+  try {
+    const url = new URL(redisUrl);
+
+    if (
+      (url.protocol === "redis:" || url.protocol === "rediss:") &&
+      !url.searchParams.has("family")
+    ) {
+      url.searchParams.set("family", "0");
+      return url.toString();
+    }
+  } catch {
+    return redisUrl;
+  }
+
+  return redisUrl;
 }
 
 async function checkMemoryRateLimit(

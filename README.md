@@ -166,6 +166,62 @@ the origin for `search.admingod.ch`. The loopback host port remains available
 for local checks at `http://127.0.0.1:80` without exposing the app directly on
 the server's public interfaces.
 
+## Railway
+
+Railway should be treated as a separate service topology, not as a direct copy
+of the local Compose stack. Railway does not run this `docker-compose.yml` as
+one container group; model each runtime as its own Railway service.
+
+Use this split:
+
+- `adminsearch`: deploy this repository from GitHub. Railway will use the root
+  `Dockerfile`, which builds the Next.js standalone server.
+- `searxng-core`: deploy this same repository as a second service with the
+  Dockerfile path set to `/searxng/Dockerfile` and the root directory left at
+  `/`. This packages the checked-in `searxng/core-config` files into the SearXNG
+  image.
+- Redis: add Railway's managed Redis service and reference its `REDIS_URL` from
+  the `adminsearch` service.
+
+Do not deploy the Caddy service on Railway. Railway's public networking,
+domains, TLS, and edge proxy replace the local Caddy reverse proxy. The
+`docker/caddy/Caddyfile`, `docker-compose.cloudflare.yml`, `APP_DOMAIN`,
+`PUBLIC_BIND_ADDRESS`, `PUBLIC_HTTP_PORT`, and `PROXY_NETWORK` settings are only
+for the local/server Compose path.
+
+Set these variables on the `adminsearch` service:
+
+```text
+NEXT_PUBLIC_APP_URL=https://<your-railway-or-custom-domain>
+SEARXNG_INTERNAL_URL=http://searxng-core.railway.internal:8080
+RATE_LIMIT_REDIS_URL=${{Redis.REDIS_URL}}
+SEARXNG_IMAGE=docker.io/searxng/searxng:latest
+SEARXNG_ENGINE_TOKENS=
+SEARXNG_UPDATE_CHECK_TTL_MS=21600000
+SEARXNG_UPDATE_CHECK_TIMEOUT_MS=5000
+RATE_LIMIT_TRUST_PROXY_HEADERS=true
+RATE_LIMIT_TRUSTED_PROXY_HOPS=1
+SEARCH_RATE_LIMIT_WINDOW_MS=60000
+SEARCH_RATE_LIMIT_MAX=30
+AUTOCOMPLETE_RATE_LIMIT_WINDOW_MS=60000
+AUTOCOMPLETE_RATE_LIMIT_MAX=600
+```
+
+Replace `Redis` in the `RATE_LIMIT_REDIS_URL` reference if Railway names the
+managed Redis service differently.
+
+Set these variables on the `searxng-core` service:
+
+```text
+SEARXNG_SECRET=<generated-random-secret>
+SEARXNG_PORT=8080
+SEARXNG_BIND_ADDRESS=::
+SEARXNG_IMAGE=docker.io/searxng/searxng:latest
+```
+
+Only generate a public Railway domain for `adminsearch`. Keep `searxng-core`
+private, reachable through `http://searxng-core.railway.internal:8080`.
+
 ## Privacy
 
 AdminSearch is designed to keep browser traffic pointed at your own frontend.
