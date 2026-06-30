@@ -72,19 +72,6 @@ export default function PrivacyPage() {
               AdminSearch talks to the private SearXNG backend. The browser does
               not contact SearXNG directly.
             </p>
-            <p className="text-sm leading-7 text-[var(--text-body)]">
-              The public instance hosted at{" "}
-              <a
-                href="https://search.admingod.ch"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-foreground/70"
-              >
-                search.admingod.ch
-              </a>{" "}
-              uses the same privacy-first setup and is intended to be fully
-              private as well.
-            </p>
           </section>
 
           <section className="space-y-3">
