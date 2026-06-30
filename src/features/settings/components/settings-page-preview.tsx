@@ -12,10 +12,10 @@ import {
   Sparkles,
   Video,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { useThemeTransition } from "@/components/providers/use-theme-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -297,7 +297,7 @@ export function SettingsPagePreview({
   initialEngines,
   initialSettings,
 }: SettingsPagePreviewProps) {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useThemeTransition();
   const saveHandlerRef = useRef<() => void>(() => undefined);
   const discardHandlerRef = useRef<() => void>(() => undefined);
   const [settings, setSettings] = useState<SettingsState>(initialSettings);

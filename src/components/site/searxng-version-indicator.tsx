@@ -133,9 +133,7 @@ function getIndicatorContent(
       dotClassName: "bg-red-500",
       label: `SearXNG ${currentVersion}`,
       ringColor: "rgb(239 68 68 / 0.18)",
-      tooltip: `Update available: latest upstream is ${
-        status.latestVersion ?? "unknown"
-      }`,
+      tooltip: `Update available: ${status.latestVersion ?? "unknown"}`,
     };
   }
 
