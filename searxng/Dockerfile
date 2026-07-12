@@ -1,4 +1,4 @@
-ARG SEARXNG_IMAGE=docker.io/searxng/searxng:latest
+ARG SEARXNG_IMAGE=docker.io/searxng/searxng@sha256:aaf56bb5ad737d48a8a375778d42eb4ab1757231e6b1eb7980e71d8dd5bdf0de
 
 FROM ${SEARXNG_IMAGE}
 
