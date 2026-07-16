@@ -63,6 +63,7 @@ function normalizeResult(
   result: SearxRawResult,
   index: number,
   tab: SearchRequest["tab"],
+  labels: SearchTransformLabels,
 ): SearchResult | null {
   const url = normalizeWebUrl(
     readString(result, ["url", "img_src", "thumbnail_src"]),
@@ -76,7 +77,7 @@ function normalizeResult(
   const title =
     readString(result, ["title", "pretty_url"]) ??
     hostname ??
-    (tab === "images" ? "Untitled image" : "Untitled result");
+    (tab === "images" ? labels.untitledImage : labels.untitledResult);
 
   const thumbnailUrl = readThumbnail(result);
   const previewUrl = readPreviewUrl(result);
@@ -349,6 +350,7 @@ function extractInfoboxRelatedTopics(rawRelatedTopics: unknown) {
 function normalizeInfobox(
   infobox: unknown,
   index: number,
+  labels: SearchTransformLabels,
 ): SearchInfobox | null {
   if (!infobox || typeof infobox !== "object") {
     return null;
@@ -361,7 +363,7 @@ function normalizeInfobox(
     extractString(record.infobox) ??
     extractString(record.id) ??
     url ??
-    `Instant answer ${index + 1}`;
+    labels.instantAnswer(index + 1);
 
   return {
     id: `infobox-${index}-${encodeURIComponent(title)}`,
@@ -377,28 +379,40 @@ function normalizeInfobox(
   };
 }
 
-function extractInfoboxes(rawInfoboxes: unknown[] | undefined) {
+function extractInfoboxes(
+  rawInfoboxes: unknown[] | undefined,
+  labels: SearchTransformLabels,
+) {
   if (!Array.isArray(rawInfoboxes)) {
     return [];
   }
 
   return rawInfoboxes
-    .map((infobox, index) => normalizeInfobox(infobox, index))
+    .map((infobox, index) => normalizeInfobox(infobox, index, labels))
     .filter((infobox): infobox is SearchInfobox => infobox !== null);
 }
+
+export type SearchTransformLabels = {
+  instantAnswer: (number: number) => string;
+  untitledImage: string;
+  untitledResult: string;
+};
 
 export function transformSearxResponse(
   payload: SearxResponse,
   request: SearchRequest,
-  options?: {
+  options: {
     hasMore?: boolean;
+    labels: SearchTransformLabels;
     nextPageCursor?: string;
     resultsPerPage?: number;
   },
 ): SearchResponse {
   const results = Array.isArray(payload.results)
     ? payload.results
-        .map((result, index) => normalizeResult(result, index, request.tab))
+        .map((result, index) =>
+          normalizeResult(result, index, request.tab, options.labels),
+        )
         .filter((result): result is SearchResult => result !== null)
     : [];
 
@@ -422,7 +436,7 @@ export function transformSearxResponse(
     results,
     suggestions: extractSuggestions(payload.suggestions),
     answers: extractAnswers(payload.answers),
-    infoboxes: extractInfoboxes(payload.infoboxes),
+    infoboxes: extractInfoboxes(payload.infoboxes, options.labels),
     hasMore,
     nextPageCursor: options?.nextPageCursor,
   };

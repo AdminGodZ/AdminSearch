@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ export function SearchInput({
   size = "compact",
   className,
 }: SearchInputProps) {
+  const t = useTranslations("SearchInput");
   const inputId = useId();
   const suggestionsId = `${inputId}-suggestions`;
   const formRef = useRef<HTMLDivElement>(null);
@@ -156,7 +158,7 @@ export function SearchInput({
   return (
     <div ref={formRef} className="relative w-full">
       <label htmlFor={inputId} className="sr-only">
-        Search query
+        {t("label")}
       </label>
       <Search className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-muted-foreground dark:text-white" />
       <Input
@@ -268,7 +270,7 @@ export function SearchInput({
               setIsOpen(false);
             }}
             className="absolute top-1/2 right-3 z-10 inline-flex size-9 cursor-pointer items-center justify-center -translate-y-1/2 rounded-full text-muted-foreground transition-colors hover:bg-black/6 hover:text-foreground dark:text-white dark:hover:bg-white/8"
-            aria-label="Clear search"
+            aria-label={t("clear")}
           >
             <X className="size-5" />
           </button>

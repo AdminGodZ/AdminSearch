@@ -1,5 +1,6 @@
 import { Settings } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { ComponentProps } from "react";
 
 import { LanguageSelect } from "@/components/site/language-select";
@@ -13,6 +14,7 @@ export function Header({
   className,
   ...props
 }: HeaderProps & { inverted?: boolean }) {
+  const t = useTranslations("Header");
   const { inverted = false, ...headerProps } = props;
   const invertedClassName = inverted
     ? "dark:text-white dark:[&_svg]:text-white"
@@ -32,7 +34,7 @@ export function Header({
           size="header"
           className={cn("w-10 min-w-0 cursor-pointer px-0", invertedClassName)}
         >
-          <Link href="/settings" aria-label="Settings">
+          <Link href="/settings" aria-label={t("settings")}>
             <Settings className="size-4.5" />
           </Link>
         </Button>

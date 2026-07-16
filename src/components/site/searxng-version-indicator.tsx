@@ -1,6 +1,7 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import {
   Tooltip,
@@ -27,6 +28,7 @@ const SEARXNG_COMMITS_URL = "https://github.com/searxng/searxng/commits/master";
 const SEARXNG_GITHUB_URL = "https://github.com/searxng/searxng";
 
 export function SearxngVersionIndicator() {
+  const t = useTranslations("SearxngVersion");
   const [hasChecked, setHasChecked] = useState(false);
   const [status, setStatus] = useState<SearxngVersionStatus>(initialStatus);
 
@@ -70,10 +72,39 @@ export function SearxngVersionIndicator() {
     return () => controller.abort();
   }, []);
 
-  const content = useMemo(
-    () => getIndicatorContent(status, hasChecked),
-    [hasChecked, status],
-  );
+  const content = useMemo(() => {
+    const currentVersion = status.currentVersion ?? t("unknown");
+
+    if (status.state === "latest") {
+      return {
+        dotClassName: "bg-emerald-500",
+        label: `SearXNG ${currentVersion}`,
+        ringColor: "rgb(16 185 129 / 0.18)",
+        tooltip: t("latest"),
+      };
+    }
+
+    if (status.state === "outdated") {
+      return {
+        dotClassName: "bg-red-500",
+        label: `SearXNG ${currentVersion}`,
+        ringColor: "rgb(239 68 68 / 0.18)",
+        tooltip: t("updateAvailable", {
+          version: status.latestVersion ?? t("unknown"),
+        }),
+      };
+    }
+
+    return {
+      dotClassName: "bg-amber-400",
+      label:
+        status.currentVersion === null && !hasChecked
+          ? t("checkingLabel")
+          : `SearXNG ${currentVersion}`,
+      ringColor: "rgb(251 191 36 / 0.2)",
+      tooltip: hasChecked ? t("checkFailed") : t("checking"),
+    };
+  }, [hasChecked, status, t]);
   const changelogUrl = useMemo(() => getSearxngChangelogUrl(status), [status]);
 
   return (
@@ -111,43 +142,6 @@ export function SearxngVersionIndicator() {
       </TooltipContent>
     </Tooltip>
   );
-}
-
-function getIndicatorContent(
-  status: SearxngVersionStatus,
-  hasChecked: boolean,
-) {
-  const currentVersion = status.currentVersion ?? "unknown";
-
-  if (status.state === "latest") {
-    return {
-      dotClassName: "bg-emerald-500",
-      label: `SearXNG ${currentVersion}`,
-      ringColor: "rgb(16 185 129 / 0.18)",
-      tooltip: "Latest version.",
-    };
-  }
-
-  if (status.state === "outdated") {
-    return {
-      dotClassName: "bg-red-500",
-      label: `SearXNG ${currentVersion}`,
-      ringColor: "rgb(239 68 68 / 0.18)",
-      tooltip: `Update available: ${status.latestVersion ?? "unknown"}`,
-    };
-  }
-
-  return {
-    dotClassName: "bg-amber-400",
-    label:
-      status.currentVersion === null && !hasChecked
-        ? "SearXNG checking"
-        : `SearXNG ${currentVersion}`,
-    ringColor: "rgb(251 191 36 / 0.2)",
-    tooltip: hasChecked
-      ? "Could not check latest upstream version"
-      : "Checking latest upstream version",
-  };
 }
 
 function getSearxngChangelogUrl(status: SearxngVersionStatus) {

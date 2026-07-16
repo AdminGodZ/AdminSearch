@@ -1,0 +1,289 @@
+{
+  "Metadata": {
+    "description": "Eine öffentliche Suchoberfläche mit einem privaten SearXNG-Backend.",
+    "searchTitle": "Suche",
+    "settingsTitle": "Einstellungen",
+    "privacyTitle": "Datenschutz"
+  },
+  "Common": {
+    "settings": "Einstellungen",
+    "search": "Suchen",
+    "languages": {
+      "auto": "Automatisch",
+      "en": "Englisch",
+      "de": "Deutsch",
+      "fr": "Französisch",
+      "es": "Spanisch",
+      "it": "Italienisch",
+      "enUS": "Englisch (USA)",
+      "deCH": "Deutsch (Schweiz)"
+    },
+    "tabs": {
+      "all": "Alle",
+      "images": "Bilder",
+      "videos": "Videos",
+      "news": "Nachrichten"
+    },
+    "timeRanges": {
+      "any": "Beliebiger Zeitraum",
+      "day": "Letzter Tag",
+      "month": "Letzter Monat",
+      "year": "Letztes Jahr"
+    },
+    "safeSearch": {
+      "off": "Aus",
+      "moderate": "Moderat",
+      "strict": "Streng"
+    },
+    "themes": {
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
+    "urlFormats": {
+      "pretty": "Lesbar",
+      "full": "Vollständig",
+      "host": "Domain"
+    }
+  },
+  "LanguageSelect": {
+    "label": "Oberflächensprache"
+  },
+  "ThemeToggle": {
+    "light": "Hell",
+    "dark": "Dunkel"
+  },
+  "ThemeLogo": {
+    "alt": "AdminSearch-Logo"
+  },
+  "Header": {
+    "settings": "Einstellungen"
+  },
+  "Footer": {
+    "copyright": "© 2026 AdminSearch",
+    "tagline": "Selbst gehostete Metasuche mit SearXNG.",
+    "sourceCode": "Quellcode",
+    "sourceCodeAria": "Quellcode (öffnet einen neuen Tab)",
+    "privacy": "Datenschutz"
+  },
+  "SearxngVersion": {
+    "unknown": "unbekannt",
+    "checkingLabel": "SearXNG wird geprüft",
+    "latest": "Aktuelle Version.",
+    "updateAvailable": "Update verfügbar: {version}",
+    "checkFailed": "Die aktuelle Upstream-Version konnte nicht geprüft werden",
+    "checking": "Die aktuelle Upstream-Version wird geprüft"
+  },
+  "Home": {
+    "searchPlaceholder": "AdminSearch durchsuchen"
+  },
+  "SearchForm": {
+    "defaultPlaceholder": "Web durchsuchen oder zur Bildersuche wechseln…",
+    "submit": "Suchen"
+  },
+  "SearchInput": {
+    "label": "Suchanfrage",
+    "clear": "Suche löschen"
+  },
+  "SearchTabs": {
+    "all": "Alle",
+    "images": "Bilder",
+    "videos": "Videos",
+    "news": "Nachrichten"
+  },
+  "Filters": {
+    "more": "Mehr",
+    "moreAria": "Weitere Filter",
+    "language": "Sprache",
+    "time": "Zeitraum",
+    "safeSearch": "SafeSearch"
+  },
+  "Search": {
+    "requestFailed": "Die Suchanfrage ist fehlgeschlagen.",
+    "scrollSuggestionsLeft": "Vorschläge nach links scrollen",
+    "scrollSuggestionsRight": "Vorschläge nach rechts scrollen",
+    "quickAnswer": "Schnellantwort",
+    "links": "Links",
+    "searchPlaceholder": "AdminSearch durchsuchen",
+    "resultTypes": {
+      "all": "Ergebnisse",
+      "images": "Bildergebnisse",
+      "videos": "Videoergebnisse",
+      "news": "Nachrichtenergebnisse"
+    },
+    "aboutTotal": "Ungefähr {count, number} {type} insgesamt",
+    "aboutTotalWithDuration": "Ungefähr {count, number} {type} insgesamt ({duration}s)",
+    "showing": "{count, number} {type} werden angezeigt",
+    "errorTitle": "Suchfehler",
+    "readyTitle": "Bereit für deine Suche",
+    "readyDescription": "Starte mit einer Suchanfrage und wechsle dann zwischen Web, Bildern, Videos und Nachrichten, ohne diese Seite zu verlassen.",
+    "tryExample": "Beispiel ausprobieren",
+    "noResults": "Keine Ergebnisse gefunden.",
+    "noResultsDescription": "Versuche eine allgemeinere Suchanfrage, wechsle den Tab oder reduziere deine Filter.",
+    "loadMore": "Weitere Ergebnisse laden",
+    "previewHidden": "Vorschau ausgeblendet",
+    "noPreview": "Keine Vorschau",
+    "noThumbnail": "Kein Vorschaubild",
+    "videoPreviewTitle": "Vorschau für {title}",
+    "untitledImage": "Bild ohne Titel",
+    "untitledResult": "Ergebnis ohne Titel",
+    "instantAnswer": "Sofortantwort {number}"
+  },
+  "Settings": {
+    "title": "Einstellungen",
+    "subtitle": "Passe an, wie AdminSearch sucht, Ergebnisse darstellt und verarbeitet.",
+    "sections": "Bereiche",
+    "sectionsAria": "Einstellungsbereiche",
+    "cookieDefaultsTitle": "Cookie-basierte Standardwerte",
+    "cookieDefaultsDescription": "Gespeicherte Einstellungen bleiben in deinem Browser erhalten. Die bereits von der aktuellen Suchpipeline unterstützten Werte werden als Standardverhalten angewendet.",
+    "unsavedChanges": "Du hast ungespeicherte Änderungen",
+    "discard": "Verwerfen",
+    "saveChanges": "Änderungen speichern",
+    "nav": {
+      "general": {
+        "label": "Allgemein",
+        "description": "Region, Standard-Tab und Ergebnisvorgaben."
+      },
+      "interface": {
+        "label": "Oberfläche",
+        "description": "Design, Dichte und Verhalten von Ergebnislinks."
+      },
+      "privacy": {
+        "label": "Datenschutz",
+        "description": "Proxy, Tracking-Bereinigung und lokaler Speicher."
+      },
+      "engines": {
+        "label": "Suchmaschinen",
+        "description": "Suchmaschinen pro Kategorie auswählen."
+      },
+      "special": {
+        "label": "Spezialanfragen",
+        "description": "Rechner, Umrechner und Schnellantworten."
+      }
+    },
+    "engineGroups": {
+      "general": {
+        "title": "Allgemein",
+        "description": "Websuche und Quellen mit Direktantworten."
+      },
+      "images": {
+        "title": "Bilder",
+        "description": "Anbieter und Alternativen für die Bildersuche."
+      },
+      "videos": {
+        "title": "Videos",
+        "description": "Videoquellen einschließlich optionaler Alternativen."
+      },
+      "news": {
+        "title": "Nachrichten",
+        "description": "Nachrichtenspezifische Suchmaschinen und Anbieter."
+      }
+    },
+    "noEngines": "Keine Suchmaschine entspricht deinem Filter.",
+    "enableEngine": "{engine} aktivieren",
+    "disableEngine": "{engine} deaktivieren",
+    "general": {
+      "searchLocaleLabel": "Suchregion",
+      "searchLocaleDescription": "Regionswerte für Suchmaschinen mit regionaler Unterstützung.",
+      "defaultTabLabel": "Standard-Tab",
+      "defaultTabDescription": "Der anfänglich ausgewählte Tab für eine neue Suche.",
+      "safeSearchLabel": "SafeSearch",
+      "safeSearchDescription": "Standardstufe für die Inhaltsfilterung bei Suchanfragen.",
+      "timeRangeLabel": "Standardzeitraum",
+      "timeRangeDescription": "Wird automatisch angewendet, bis du ihn auf der Suchseite überschreibst.",
+      "autocompleteLabel": "Suchvorschläge",
+      "autocompleteDescription": "Anbieter für Vorschläge während der Eingabe.",
+      "faviconResolverLabel": "Favicon-Anbieter",
+      "faviconResolverDescription": "Der externe Dienst, der Favicons für Ergebniszeilen lädt.",
+      "httpMethodLabel": "HTTP-Methode",
+      "httpMethodDescription": "So sendet AdminSearch Suchanfragen an das SearXNG-Backend.",
+      "loadMoreLabel": "Größe beim Nachladen",
+      "loadMoreDescription": "Anzahl der zusätzlich geladenen Ergebnisse.",
+      "resultCount": "{count, plural, one {# Ergebnis} other {# Ergebnisse}}",
+      "resultReuseLabel": "Ergebnisse wiederverwenden",
+      "resultReuseDescription": "Lege fest, ob eine bereits besuchte Suche erneut abgerufen oder bis zu 30 Minuten aus dem Cache wiederhergestellt wird.",
+      "fetchFresh": "Neue Ergebnisse abrufen",
+      "cacheVisited": "Besuchte Ergebnisse zwischenspeichern",
+      "engineTokensLabel": "Suchmaschinen-Tokens",
+      "engineTokensDescription": "Private Tokens werden aus der Serverumgebung gelesen und nie in den Browsereinstellungen gespeichert.",
+      "engineTokensHint": "SEARXNG_ENGINE_TOKENS auf dem Server konfigurieren."
+    },
+    "interface": {
+      "uiLanguageLabel": "Oberflächensprache",
+      "uiLanguageDescription": "Sprache der AdminSearch-Oberfläche, unabhängig von der Suchregion.",
+      "themeLabel": "Design",
+      "themeDescription": "Steuere das App-Design hier, unabhängig vom nativen SearXNG-Design.",
+      "openNewTabLabel": "Ergebnisse in neuem Tab öffnen",
+      "openNewTabDescription": "Links aus den Ergebnissen werden in einem neuen Browser-Tab geöffnet.",
+      "urlFormattingLabel": "URL-Darstellung",
+      "urlFormattingDescription": "Lege fest, wie Ergebnis-URLs unter dem Titel dargestellt werden.",
+      "infiniteScrollLabel": "Endloses Scrollen",
+      "infiniteScrollDescription": "Weitere Ergebnisse automatisch laden, wenn du das Listenende erreichst.",
+      "showFaviconsLabel": "Favicons anzeigen",
+      "showFaviconsDescription": "Nützlich für Web- und Nachrichtenergebnisse, weniger wichtig für bildlastige Ansichten.",
+      "showThumbnailsLabel": "Vorschaubilder anzeigen",
+      "showThumbnailsDescription": "Medienvorschauen auf Ergebniskarten.",
+      "compactDensityLabel": "Kompakte Dichte",
+      "compactDensityDescription": "Dichtere Ergebnisdarstellung mit kleineren Abständen.",
+      "queryTitleLabel": "Suchanfrage im Tab-Titel",
+      "queryTitleDescription": "Die aktuelle Suchanfrage im Titel des Browser-Tabs anzeigen."
+    },
+    "privacy": {
+      "imageProxyLabel": "Bild-Proxy",
+      "imageProxyDescription": "Externe Ergebnisbilder über das Backend laden statt direkt von den Ursprungsseiten.",
+      "trackerCleanerLabel": "Tracking-Parameter entfernen",
+      "trackerCleanerDescription": "Bekannte Tracking-Parameter aus ausgehenden Ergebnis-URLs entfernen.",
+      "doiRewriteLabel": "Open-Access-DOI umschreiben",
+      "doiRewriteDescription": "Wenn verfügbar, offene DOI-Spiegel bevorzugen.",
+      "storeDefaultsLabel": "Standardwerte lokal speichern",
+      "storeDefaultsDescription": "Einstellungen über Browser-Neustarts hinweg speichern. Deaktiviere dies, um sie nur für die aktuelle Sitzung zu behalten."
+    },
+    "engines": {
+      "title": "Suchmaschinen",
+      "description": "Wähle die Suchmaschinen für jede Kategorie aus. Grundlage sind die in deiner SearXNG-Konfiguration aktivierten Suchmaschinen.",
+      "filterPlaceholder": "Suchmaschinen filtern…",
+      "categoriesAria": "Suchmaschinenkategorien"
+    },
+    "special": {
+      "title": "Spezialanfragen",
+      "description": "Direkte Helfer für einfache Fragen innerhalb der Suchergebnisse.",
+      "calculatorLabel": "Rechner",
+      "calculatorDescription": "Schnelle Rechenergebnisse direkt in der Suche.",
+      "unitConverterLabel": "Einheitenumrechner",
+      "unitConverterDescription": "Einheiten direkt über Suchanfragen umrechnen.",
+      "hashLookupLabel": "Hash-Suche",
+      "hashLookupDescription": "Schnelle Prüfung bekannter Hashwerte.",
+      "selfInfoLabel": "Instanzinformationen",
+      "selfInfoDescription": "Von der Instanz bereitgestellte Informationen und Kurzbefehle.",
+      "timeZoneLabel": "Zeitzone",
+      "timeZoneDescription": "Zeitzonenabhängige Schnellantworten und Umrechnungen."
+    }
+  },
+  "Privacy": {
+    "title": "Datenschutz",
+    "intro": "AdminSearch wurde entwickelt, um die Datenerfassung zu minimieren und Suchanfragen über ein privates SearXNG-Backend bereitzustellen.",
+    "searchRequestsTitle": "Suchanfragen",
+    "searchRequestsBody": "Suchbegriffe und Eingaben für Suchvorschläge werden an den AdminSearch-Server und anschließend an dessen privaten SearXNG-Dienst gesendet. SearXNG fragt die ausgewählten externen Suchanbieter ab und gibt deren Ergebnisse zurück. AdminSearch benötigt kein Benutzerkonto und enthält weder clientseitige Analysen noch Werbetracker.",
+    "browserStorageTitle": "Browserspeicher",
+    "browserStorageBody": "Einstellungen werden bis zu einem Jahr in einem Erstanbieter-Cookie gespeichert oder nur für die aktuelle Sitzung, wenn dauerhafter Speicher deaktiviert ist. Sprache und Speichermodus verwenden lokalen oder Sitzungsspeicher. Wenn die Wiederverwendung von Ergebnissen aktiviert ist, können aktuelle Suchergebnisse bis zu 30 Minuten im Sitzungsspeicher verbleiben. Das Cookie wird nur an AdminSearch gesendet; lokaler und Sitzungsspeicher bleiben auf deinem Gerät. Alle diese Daten können über die Websitedaten-Einstellungen deines Browsers entfernt werden.",
+    "rateLimitingTitle": "Anfragenbegrenzung",
+    "rateLimitingBody": "Der Server kann deine IP-Adresse als Teil eines temporären Redis-/Valkey-Schlüssels zur Anfragenbegrenzung verwenden. Der Schlüssel läuft nach dem konfigurierten Zeitfenster ab, standardmäßig nach einer Minute. AdminSearch führt weder eine separate Kontodatenbank noch einen serverseitigen Suchverlauf.",
+    "externalContentTitle": "Externe Inhalte",
+    "externalContentBody": "Favicons werden vom AdminSearch-Server über Google oder DuckDuckGo abgerufen. Ergebnisvorschaubilder werden von ihrer Quelle geladen. Optionale Videovorschauen können deinen Browser mit Anbietern wie YouTube, Vimeo, Dailymotion oder Odysee verbinden. Favicons und Vorschaubilder können in den Einstellungen deaktiviert werden.",
+    "hostingTitle": "Hosting",
+    "hostingBody": "Die betreute Bereitstellung wird bei Railway in Amsterdam gehostet. Railway verarbeitet die für den Betrieb erforderlichen Netzwerk- und technischen Anfragedaten. Infrastrukturprotokolle können Anfrage-Metadaten enthalten. Selbst gehostete AdminSearch-Instanzen können andere Anbieter sowie andere Protokollierungs- und Aufbewahrungseinstellungen verwenden.",
+    "sourceTitle": "Quellcode und Fragen",
+    "sourceBody": "AdminSearch ist quelloffen. Du kannst den Code einsehen oder den Maintainer über das <link>GitHub-Repository</link> kontaktieren.",
+    "lastUpdated": "Letzte Aktualisierung: 30. Juni 2026"
+  },
+  "ApiErrors": {
+    "tooManySearchRequests": "Zu viele Suchanfragen. Bitte versuche es in Kürze erneut.",
+    "invalidSearchParameters": "Ungültige Suchparameter.",
+    "unexpectedSearchError": "Unerwarteter Suchfehler.",
+    "backendTimedOut": "Zeitüberschreitung beim Such-Backend.",
+    "backendUnavailable": "Das Such-Backend ist nicht verfügbar.",
+    "backendError": "Das Such-Backend hat einen Fehler zurückgegeben.",
+    "backendInvalidJson": "Das Such-Backend hat ungültiges JSON zurückgegeben.",
+    "backendEmptyBody": "Das Such-Backend hat eine leere Antwort zurückgegeben.",
+    "tooManyAutocompleteRequests": "Zu viele Anfragen für Suchvorschläge. Bitte versuche es in Kürze erneut."
+  }
+}

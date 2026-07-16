@@ -7,6 +7,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
+import { useFormatter, useTranslations } from "next-intl";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -71,6 +72,7 @@ async function fetchSearchPageData(
   paramsString: string,
   page: number,
   signal: AbortSignal,
+  fallbackMessage: string,
   cursor?: string,
 ) {
   const params = new URLSearchParams(paramsString);
@@ -101,7 +103,7 @@ async function fetchSearchPageData(
       "message" in payload &&
       typeof payload.message === "string"
         ? payload.message
-        : "Search request failed.";
+        : fallbackMessage;
 
     throw new Error(message);
   }
@@ -215,22 +217,6 @@ function LoadingResults({
   );
 }
 
-function formatResultCount(value?: number) {
-  if (typeof value !== "number") {
-    return undefined;
-  }
-
-  return new Intl.NumberFormat().format(value);
-}
-
-function formatRequestDuration(value?: number) {
-  if (typeof value !== "number") {
-    return undefined;
-  }
-
-  return `${(value / 1000).toFixed(2)}s`;
-}
-
 function searchDataMatchesCurrentView(
   data: SearchResponse,
   tab: SearchTab,
@@ -250,6 +236,7 @@ function ImageSuggestionStrip({
   pathname: string;
   searchParams: ReturnType<typeof useSearchParams>;
 }) {
+  const t = useTranslations("Search");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollLeftButton, setShowScrollLeftButton] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -338,7 +325,7 @@ function ImageSuggestionStrip({
             onClick={() =>
               scrollRef.current?.scrollBy({ left: -300, behavior: "smooth" })
             }
-            aria-label="Scroll suggestions left"
+            aria-label={t("scrollSuggestionsLeft")}
           >
             <ChevronLeft className="size-4" />
           </button>
@@ -353,7 +340,7 @@ function ImageSuggestionStrip({
             onClick={() =>
               scrollRef.current?.scrollBy({ left: 300, behavior: "smooth" })
             }
-            aria-label="Scroll suggestions"
+            aria-label={t("scrollSuggestionsRight")}
           >
             <ChevronRight className="size-4" />
           </button>
@@ -374,6 +361,8 @@ function SearchSidebar({
   pathname: string;
   searchParams: ReturnType<typeof useSearchParams>;
 }) {
+  const t = useTranslations("Search");
+
   if (!data.answers.length && !data.infoboxes.length) {
     return null;
   }
@@ -384,7 +373,7 @@ function SearchSidebar({
         <Card className={sidebarCardClassName}>
           <CardContent className="space-y-3 p-6">
             <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
-              Quick Answer
+              {t("quickAnswer")}
             </p>
             {data.answers.map((answer) => (
               <p
@@ -483,7 +472,7 @@ function SearchSidebar({
             {infobox.urls.length ? (
               <div className="space-y-3 border-t border-border/40 pt-6">
                 <p className="text-xs font-medium tracking-[0.16em] text-[var(--text-soft)] uppercase">
-                  Links
+                  {t("links")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {infobox.urls.map((urlEntry) => (
@@ -541,9 +530,16 @@ export function SearchPageClient({
 }: {
   initialPreferences: PersistedPreferences;
 }) {
+  const t = useTranslations("Search");
+  const metadataT = useTranslations("Metadata");
+  const format = useFormatter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [state, setState] = useState<SearchState>({ status: "idle" });
+  const [state, setState] = useState<SearchState>(() =>
+    searchParams.get("q")?.trim()
+      ? { status: "loading" }
+      : { status: "idle" },
+  );
   const [loadedPage, setLoadedPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
@@ -682,12 +678,12 @@ export function SearchPageClient({
 
   useEffect(() => {
     if (!interfacePreferences.queryInTitle || !currentQuery) {
-      document.title = "AdminSearch - Search";
+      document.title = `AdminSearch - ${metadataT("searchTitle")}`;
       return;
     }
 
     document.title = `AdminSearch - ${currentQuery}`;
-  }, [currentQuery, interfacePreferences.queryInTitle]);
+  }, [currentQuery, interfacePreferences.queryInTitle, metadataT]);
 
   useEffect(() => {
     const params = new URLSearchParams(queryStringWithoutPage);
@@ -744,6 +740,7 @@ export function SearchPageClient({
             params.toString(),
             page,
             controller.signal,
+            t("requestFailed"),
             nextPageCursor,
           );
 
@@ -758,7 +755,7 @@ export function SearchPageClient({
         }
 
         if (!aggregated) {
-          throw new Error("Search request failed.");
+          throw new Error(t("requestFailed"));
         }
 
         setLoadedPage(aggregated.page);
@@ -778,7 +775,7 @@ export function SearchPageClient({
         setState((previous) => ({
           status: "error",
           message:
-            error instanceof Error ? error.message : "Search request failed.",
+            error instanceof Error ? error.message : t("requestFailed"),
           previous:
             previous.status === "success" &&
             searchDataMatchesCurrentView(
@@ -809,6 +806,7 @@ export function SearchPageClient({
     queryStringWithoutPage,
     requestedPage,
     searchCacheKey,
+    t,
   ]);
 
   useEffect(() => {
@@ -847,12 +845,12 @@ export function SearchPageClient({
         : "max-w-[655px]";
   const resultsLabel =
     currentTab === "images"
-      ? "image results"
+      ? t("resultTypes.images")
       : currentTab === "videos"
-        ? "video results"
+        ? t("resultTypes.videos")
         : currentTab === "news"
-          ? "news results"
-          : "results";
+          ? t("resultTypes.news")
+          : t("resultTypes.all");
   const visibleImageSuggestions =
     currentTab === "images" && activeData && activeData.suggestions.length > 0
       ? activeData.suggestions
@@ -874,6 +872,7 @@ export function SearchPageClient({
         queryStringWithoutPage,
         nextPage,
         controller.signal,
+        t("requestFailed"),
         activeData.nextPageCursor,
       );
 
@@ -903,7 +902,7 @@ export function SearchPageClient({
       setState((previous) => ({
         status: "error",
         message:
-          error instanceof Error ? error.message : "Search request failed.",
+          error instanceof Error ? error.message : t("requestFailed"),
         previous:
           previous.status === "success"
             ? previous.data
@@ -922,6 +921,7 @@ export function SearchPageClient({
     canLoadMore,
     queryStringWithoutPage,
     searchCacheKey,
+    t,
   ]);
 
   useEffect(() => {
@@ -1036,7 +1036,7 @@ export function SearchPageClient({
                   safeSearch={currentSafeSearch}
                   size="compact"
                   variant="landing"
-                  placeholder="Search AdminSearch"
+                  placeholder={t("searchPlaceholder")}
                 />
               </div>
 
@@ -1113,22 +1113,29 @@ export function SearchPageClient({
                     >
                       {activeData.totalResults ? (
                         <>
-                          About {formatResultCount(activeData.totalResults)}{" "}
-                          total {resultsLabel}
-                          {activeData.requestDurationMs ? (
-                            <>
-                              {" "}
-                              (
-                              {formatRequestDuration(
-                                activeData.requestDurationMs,
-                              )}
-                              )
-                            </>
-                          ) : null}
+                          {activeData.requestDurationMs
+                            ? t("aboutTotalWithDuration", {
+                                count: activeData.totalResults,
+                                type: resultsLabel,
+                                duration: format.number(
+                                  activeData.requestDurationMs / 1000,
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  },
+                                ),
+                              })
+                            : t("aboutTotal", {
+                                count: activeData.totalResults,
+                                type: resultsLabel,
+                              })}
                         </>
                       ) : (
                         <>
-                          Showing {activeData.results.length} {resultsLabel}
+                          {t("showing", {
+                            count: activeData.results.length,
+                            type: resultsLabel,
+                          })}
                         </>
                       )}
                     </p>
@@ -1145,7 +1152,7 @@ export function SearchPageClient({
                         <AlertTriangle className="mt-0.5 size-4 text-destructive" />
                         <div className="space-y-1">
                           <p className="font-medium text-destructive">
-                            Search error
+                            {t("errorTitle")}
                           </p>
                           <p className="text-sm leading-6 text-muted-foreground">
                             {state.message}
@@ -1163,11 +1170,10 @@ export function SearchPageClient({
                       <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-2">
                           <p className="text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
-                            Ready when you are
+                            {t("readyTitle")}
                           </p>
                           <p className="max-w-xl text-sm leading-7 text-[var(--text-body)]">
-                            Start with a query, then switch between web, images,
-                            videos, and news without leaving this page.
+                            {t("readyDescription")}
                           </p>
                         </div>
                         <Button
@@ -1176,7 +1182,7 @@ export function SearchPageClient({
                           className="rounded-full"
                         >
                           <Link href="/search?q=site%3Agithub.com+searxng+api&tab=all">
-                            Try an example
+                            {t("tryExample")}
                           </Link>
                         </Button>
                       </CardContent>
@@ -1211,10 +1217,9 @@ export function SearchPageClient({
                       )}
                     >
                       <CardContent className="space-y-3 p-6">
-                        <p className="font-medium">No results found.</p>
+                        <p className="font-medium">{t("noResults")}</p>
                         <p className="text-sm leading-7 text-[var(--text-body)]">
-                          Try a broader query, switch to another tab, or reduce
-                          your filters.
+                          {t("noResultsDescription")}
                         </p>
                       </CardContent>
                     </Card>
@@ -1236,7 +1241,7 @@ export function SearchPageClient({
                         className="mx-4 size-10 shrink-0 cursor-pointer rounded-full border-transparent bg-[var(--control-bg)] shadow-none hover:bg-[var(--control-hover)] dark:hover:bg-[var(--control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] dark:focus-visible:bg-[var(--control-active)] focus-visible:ring-0"
                         onClick={handleLoadMore}
                         disabled={isLoadingMore}
-                        aria-label="Load more results"
+                        aria-label={t("loadMore")}
                       >
                         {isLoadingMore ? (
                           <DashRing className="size-5 text-[#fff]" />

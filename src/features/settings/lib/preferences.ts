@@ -2,7 +2,6 @@ import type { SearchTab } from "@/features/search/types";
 
 export const SETTINGS_COOKIE_NAME = "adminsearch-settings";
 export const UI_LANGUAGE_STORAGE_KEY = "adminsearch-language";
-export const UI_LANGUAGE_EVENT = "adminsearch:language-change";
 export const SETTINGS_PERSIST_MODE_STORAGE_KEY = "adminsearch-settings-persist";
 export const SETTINGS_SYNC_EVENT = "adminsearch:settings-sync";
 export const SETTINGS_SYNC_STORAGE_KEY = "adminsearch-settings-sync";

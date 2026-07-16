@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { SearchForm } from "@/features/search/components/search-form";
 import {
@@ -16,6 +17,7 @@ export function HomeSearchFormClient({
 }: {
   initialPreferences: PersistedPreferences;
 }) {
+  const t = useTranslations("Home");
   const [preferences, setPreferences] =
     useState<PersistedPreferences>(initialPreferences);
 
@@ -61,7 +63,7 @@ export function HomeSearchFormClient({
       safeSearch={defaults.safeSearch}
       size="hero"
       variant="landing"
-      placeholder="Search AdminSearch"
+      placeholder={t("searchPlaceholder")}
     />
   );
 }

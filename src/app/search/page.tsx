@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { Footer } from "@/components/site/footer";
@@ -7,9 +8,11 @@ import { SearchPageFallback } from "@/features/search/components/search-page-fal
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: "Search",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Metadata");
+
+  return { title: t("searchTitle") };
+}
 
 export default async function SearchPage() {
   const preferences = await getPersistedPreferences();

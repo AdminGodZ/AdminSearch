@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDownIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import {
@@ -11,91 +12,95 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { UI_LANGUAGE_STORAGE_KEY } from "@/features/settings/lib/preferences";
 import {
-  SETTINGS_SYNC_STORAGE_KEY,
-  UI_LANGUAGE_EVENT,
-  UI_LANGUAGE_STORAGE_KEY,
-} from "@/features/settings/lib/preferences";
-import {
+  broadcastSettingsSync,
   getPersistedSettingsStorageMode,
+  persistPreferencesCookie,
   persistUiLanguagePreference,
+  readPersistedPreferencesFromBrowser,
   readUiLanguagePreference,
 } from "@/features/settings/lib/preferences-client";
+import {
+  defaultLocale,
+  type AppLocale,
+  isAppLocale,
+} from "@/i18n/config";
 import { cn } from "@/lib/utils";
 
-type Language = "en" | "de";
 type LanguageSelectProps = {
   className?: string;
 };
 
+function persistLanguage(next: AppLocale) {
+  const persistent = getPersistedSettingsStorageMode();
+  const preferences = readPersistedPreferencesFromBrowser();
+
+  persistPreferencesCookie(
+    {
+      ...preferences,
+      settings: {
+        ...preferences.settings,
+        uiLanguage: next,
+      },
+    },
+    { persistent },
+  );
+  persistUiLanguagePreference(next, persistent);
+  broadcastSettingsSync();
+}
+
 export function LanguageSelect({ className }: LanguageSelectProps) {
-  const [mounted, setMounted] = useState(false);
-  const [language, setLanguage] = useState<Language>("en");
+  const locale = useLocale();
+  const common = useTranslations("Common");
+  const t = useTranslations("LanguageSelect");
+  const router = useRouter();
+  const activeLocale = isAppLocale(locale) ? locale : defaultLocale;
+  const [language, setLanguage] = useState<AppLocale>(activeLocale);
 
   useEffect(() => {
-    setMounted(true);
+    setLanguage(activeLocale);
+    document.documentElement.lang = activeLocale;
+  }, [activeLocale]);
 
-    function handleLanguageChange(event: Event) {
-      const detail = (event as CustomEvent<{ language?: string }>).detail;
-      const next = detail?.language === "de" ? "de" : "en";
-      setLanguage(next);
-      document.documentElement.lang = next;
-    }
+  useEffect(() => {
+    const saved = readUiLanguagePreference();
 
-    function syncLanguageFromStorage() {
-      const saved = readUiLanguagePreference();
-      const next = saved === "de" ? "de" : "en";
-      setLanguage(next);
-      document.documentElement.lang = next;
+    if (saved && isAppLocale(saved) && saved !== activeLocale) {
+      setLanguage(saved);
+      persistLanguage(saved);
+      document.documentElement.lang = saved;
+      router.refresh();
     }
 
     function handleStorage(event: StorageEvent) {
-      if (
-        event.key === SETTINGS_SYNC_STORAGE_KEY ||
-        event.key === UI_LANGUAGE_STORAGE_KEY
-      ) {
-        syncLanguageFromStorage();
+      if (event.key !== UI_LANGUAGE_STORAGE_KEY) {
+        return;
+      }
+
+      const stored = readUiLanguagePreference();
+
+      if (stored && isAppLocale(stored)) {
+        setLanguage(stored);
+        document.documentElement.lang = stored;
+        router.refresh();
       }
     }
 
-    window.addEventListener(UI_LANGUAGE_EVENT, handleLanguageChange);
     window.addEventListener("storage", handleStorage);
 
-    syncLanguageFromStorage();
-
     return () => {
-      window.removeEventListener(UI_LANGUAGE_EVENT, handleLanguageChange);
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [activeLocale, router]);
 
   function onValueChange(value: string) {
-    const next = value === "de" ? "de" : "en";
-    setLanguage(next);
-    persistUiLanguagePreference(next, getPersistedSettingsStorageMode());
-    document.documentElement.lang = next;
-    window.dispatchEvent(
-      new CustomEvent(UI_LANGUAGE_EVENT, {
-        detail: { language: next },
-      }),
-    );
-  }
+    const next = isAppLocale(value) ? value : defaultLocale;
 
-  if (!mounted) {
-    return (
-      <div
-        className={cn(
-          "flex h-10 min-w-0 items-center justify-center gap-2 rounded-full border border-transparent bg-[var(--header-control-bg)] pl-4 pr-3 text-sm font-normal text-foreground shadow-none",
-          className,
-        )}
-      >
-        <span>English</span>
-        <ChevronDownIcon
-          aria-hidden="true"
-          className="size-4 text-muted-foreground"
-        />
-      </div>
-    );
+    setLanguage(next);
+    persistLanguage(next);
+    document.documentElement.lang = next;
+    router.refresh();
   }
 
   return (
@@ -107,15 +112,16 @@ export function LanguageSelect({ className }: LanguageSelectProps) {
           "w-auto min-w-0 cursor-pointer justify-center gap-2 pl-4 pr-3 text-sm font-normal *:data-[slot=select-value]:flex-none",
           className,
         )}
+        aria-label={t("label")}
       >
-        <SelectValue aria-label={language}>
-          {language === "de" ? "German" : "English"}
+        <SelectValue>
+          {common(`languages.${language}`)}
         </SelectValue>
       </SelectTrigger>
       <SelectContent position="popper" align="center" className="min-w-28 p-1">
         <SelectGroup className="p-0">
-          <SelectItem value="en">English</SelectItem>
-          <SelectItem value="de">German</SelectItem>
+          <SelectItem value="en">{common("languages.en")}</SelectItem>
+          <SelectItem value="de">{common("languages.de")}</SelectItem>
         </SelectGroup>
       </SelectContent>
     </Select>

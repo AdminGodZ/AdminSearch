@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { ZodError } from "zod";
 
 import { parseSearchRequest } from "@/features/search/server/schema";
@@ -17,6 +18,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const t = await getTranslations("ApiErrors");
+  const searchT = await getTranslations("Search");
   const startedAt = performance.now();
   const rateLimit = await checkRateLimit(getClientIp(request));
   const rateLimitHeaders = createRateLimitHeaders(rateLimit);
@@ -24,7 +27,7 @@ export async function GET(request: Request) {
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {
-        message: "Too many search requests. Please try again shortly.",
+        message: t("tooManySearchRequests"),
       },
       {
         status: 429,
@@ -51,6 +54,11 @@ export async function GET(request: Request) {
       searchRequest,
       {
         hasMore: upstreamResponse.hasMore,
+        labels: {
+          instantAnswer: (number) => searchT("instantAnswer", { number }),
+          untitledImage: searchT("untitledImage"),
+          untitledResult: searchT("untitledResult"),
+        },
         nextPageCursor: upstreamResponse.nextPageCursor,
         resultsPerPage: runtimePreferences.resultsPerPage,
       },
@@ -64,7 +72,7 @@ export async function GET(request: Request) {
     if (error instanceof ZodError) {
       return NextResponse.json(
         {
-          message: error.issues[0]?.message ?? "Invalid search parameters.",
+          message: t("invalidSearchParameters"),
         },
         {
           status: 400,
@@ -76,7 +84,7 @@ export async function GET(request: Request) {
     if (error instanceof SearchUpstreamError) {
       return NextResponse.json(
         {
-          message: error.message,
+          message: t(error.code),
         },
         {
           status: error.statusCode,
@@ -87,7 +95,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       {
-        message: "Unexpected search error.",
+        message: t("unexpectedSearchError"),
       },
       {
         status: 500,

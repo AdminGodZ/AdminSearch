@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 import { SearchInput } from "@/features/search/components/search-input";
 import type { SearchTab } from "@/features/search/types";
 import { cn } from "@/lib/utils";
@@ -25,11 +26,13 @@ export function SearchForm({
   safeSearch,
   size = "compact",
   variant = "default",
-  placeholder = "Search the web or switch to images…",
+  placeholder,
   inputClassName,
 }: SearchFormProps) {
+  const t = useTranslations("SearchForm");
   const isHero = size === "hero";
   const isLanding = variant === "landing";
+  const resolvedPlaceholder = placeholder ?? t("defaultPlaceholder");
   const hiddenFields = (
     <>
       {tab ? <input type="hidden" name="tab" value={tab} /> : null}
@@ -51,7 +54,7 @@ export function SearchForm({
         {hiddenFields}
         <SearchInput
           defaultValue={defaultQuery}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           size={size}
           className={inputClassName}
         />
@@ -72,7 +75,7 @@ export function SearchForm({
         <div className="flex-1">
           <SearchInput
             defaultValue={defaultQuery}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             size={size}
             className={inputClassName}
           />
@@ -87,7 +90,7 @@ export function SearchForm({
             isHero ? "h-16 text-base" : "h-12",
           )}
         >
-          Search
+          {t("submit")}
         </Button>
       </div>
     </form>

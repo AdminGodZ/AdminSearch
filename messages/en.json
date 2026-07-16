@@ -1,0 +1,289 @@
+{
+  "Metadata": {
+    "description": "A custom public search frontend powered by a private SearXNG backend.",
+    "searchTitle": "Search",
+    "settingsTitle": "Settings",
+    "privacyTitle": "Privacy"
+  },
+  "Common": {
+    "settings": "Settings",
+    "search": "Search",
+    "languages": {
+      "auto": "Auto",
+      "en": "English",
+      "de": "German",
+      "fr": "French",
+      "es": "Spanish",
+      "it": "Italian",
+      "enUS": "English (US)",
+      "deCH": "German (Switzerland)"
+    },
+    "tabs": {
+      "all": "All",
+      "images": "Images",
+      "videos": "Videos",
+      "news": "News"
+    },
+    "timeRanges": {
+      "any": "Any time",
+      "day": "Past day",
+      "month": "Past month",
+      "year": "Past year"
+    },
+    "safeSearch": {
+      "off": "Off",
+      "moderate": "Moderate",
+      "strict": "Strict"
+    },
+    "themes": {
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "urlFormats": {
+      "pretty": "Pretty",
+      "full": "Full",
+      "host": "Host"
+    }
+  },
+  "LanguageSelect": {
+    "label": "Interface language"
+  },
+  "ThemeToggle": {
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "ThemeLogo": {
+    "alt": "AdminSearch logo"
+  },
+  "Header": {
+    "settings": "Settings"
+  },
+  "Footer": {
+    "copyright": "© 2026 AdminSearch",
+    "tagline": "Self-hosted metasearch powered by SearXNG.",
+    "sourceCode": "Source code",
+    "sourceCodeAria": "Source code (opens in a new tab)",
+    "privacy": "Privacy"
+  },
+  "SearxngVersion": {
+    "unknown": "unknown",
+    "checkingLabel": "SearXNG checking",
+    "latest": "Latest version.",
+    "updateAvailable": "Update available: {version}",
+    "checkFailed": "Could not check latest upstream version",
+    "checking": "Checking latest upstream version"
+  },
+  "Home": {
+    "searchPlaceholder": "Search AdminSearch"
+  },
+  "SearchForm": {
+    "defaultPlaceholder": "Search the web or switch to images…",
+    "submit": "Search"
+  },
+  "SearchInput": {
+    "label": "Search query",
+    "clear": "Clear search"
+  },
+  "SearchTabs": {
+    "all": "All",
+    "images": "Images",
+    "videos": "Videos",
+    "news": "News"
+  },
+  "Filters": {
+    "more": "More",
+    "moreAria": "More filters",
+    "language": "Language",
+    "time": "Time",
+    "safeSearch": "Safe search"
+  },
+  "Search": {
+    "requestFailed": "Search request failed.",
+    "scrollSuggestionsLeft": "Scroll suggestions left",
+    "scrollSuggestionsRight": "Scroll suggestions right",
+    "quickAnswer": "Quick Answer",
+    "links": "Links",
+    "searchPlaceholder": "Search AdminSearch",
+    "resultTypes": {
+      "all": "results",
+      "images": "image results",
+      "videos": "video results",
+      "news": "news results"
+    },
+    "aboutTotal": "About {count, number} total {type}",
+    "aboutTotalWithDuration": "About {count, number} total {type} ({duration}s)",
+    "showing": "Showing {count, number} {type}",
+    "errorTitle": "Search error",
+    "readyTitle": "Ready when you are",
+    "readyDescription": "Start with a query, then switch between web, images, videos, and news without leaving this page.",
+    "tryExample": "Try an example",
+    "noResults": "No results found.",
+    "noResultsDescription": "Try a broader query, switch to another tab, or reduce your filters.",
+    "loadMore": "Load more results",
+    "previewHidden": "Preview hidden",
+    "noPreview": "No preview",
+    "noThumbnail": "No thumbnail",
+    "videoPreviewTitle": "{title} preview",
+    "untitledImage": "Untitled image",
+    "untitledResult": "Untitled result",
+    "instantAnswer": "Instant answer {number}"
+  },
+  "Settings": {
+    "title": "Settings",
+    "subtitle": "Customize how AdminSearch searches, displays, and handles results.",
+    "sections": "Sections",
+    "sectionsAria": "Settings sections",
+    "cookieDefaultsTitle": "Cookie-backed defaults",
+    "cookieDefaultsDescription": "Saved settings are persisted in your browser. The subset already supported by the current search pipeline is applied as default behavior.",
+    "unsavedChanges": "You have unsaved changes",
+    "discard": "Discard",
+    "saveChanges": "Save changes",
+    "nav": {
+      "general": {
+        "label": "General",
+        "description": "Locale, default tab, and result defaults."
+      },
+      "interface": {
+        "label": "Interface",
+        "description": "Theme, density, and result link behavior."
+      },
+      "privacy": {
+        "label": "Privacy",
+        "description": "Proxying, tracker cleaning, and local storage."
+      },
+      "engines": {
+        "label": "Engines",
+        "description": "Per-category engine selection."
+      },
+      "special": {
+        "label": "Special queries",
+        "description": "Calculator, converters, and quick answers."
+      }
+    },
+    "engineGroups": {
+      "general": {
+        "title": "General",
+        "description": "Web search and direct-answer style sources."
+      },
+      "images": {
+        "title": "Images",
+        "description": "Image search providers and alternates."
+      },
+      "videos": {
+        "title": "Videos",
+        "description": "Video result backends, including optional alternates."
+      },
+      "news": {
+        "title": "News",
+        "description": "News-specific engines and publishers."
+      }
+    },
+    "noEngines": "No engines match your filter.",
+    "enableEngine": "Enable {engine}",
+    "disableEngine": "Disable {engine}",
+    "general": {
+      "searchLocaleLabel": "Search locale",
+      "searchLocaleDescription": "Locale-style values so region-aware engines can be added later.",
+      "defaultTabLabel": "Default tab",
+      "defaultTabDescription": "The landing tab for a new search.",
+      "safeSearchLabel": "SafeSearch",
+      "safeSearchDescription": "Default content filtering level for searches.",
+      "timeRangeLabel": "Default time range",
+      "timeRangeDescription": "Applied automatically until you override it from the search page.",
+      "autocompleteLabel": "Autocomplete",
+      "autocompleteDescription": "Suggestion backend used while typing.",
+      "faviconResolverLabel": "Favicon resolver",
+      "faviconResolverDescription": "Which upstream resolver fetches favicons for result rows.",
+      "httpMethodLabel": "HTTP method",
+      "httpMethodDescription": "How AdminSearch sends search requests to the SearXNG backend.",
+      "loadMoreLabel": "Load more size",
+      "loadMoreDescription": "Batch size for appended results when loading more.",
+      "resultCount": "{count, plural, one {# result} other {# results}}",
+      "resultReuseLabel": "Result reuse",
+      "resultReuseDescription": "Choose whether revisiting an already loaded search view fetches again or restores cached results for 30 minutes.",
+      "fetchFresh": "Fetch fresh results",
+      "cacheVisited": "Cache visited results",
+      "engineTokensLabel": "Engine tokens",
+      "engineTokensDescription": "Private engine tokens are read from the server environment and are never stored in browser settings.",
+      "engineTokensHint": "Configure SEARXNG_ENGINE_TOKENS on the server."
+    },
+    "interface": {
+      "uiLanguageLabel": "UI language",
+      "uiLanguageDescription": "AdminSearch interface language, separate from search locale.",
+      "themeLabel": "Theme",
+      "themeDescription": "Control the app theme here instead of mirroring the native SearXNG theme.",
+      "openNewTabLabel": "Open results in new tab",
+      "openNewTabDescription": "Links from results open in a new browser tab.",
+      "urlFormattingLabel": "URL formatting",
+      "urlFormattingDescription": "Choose how result URLs are displayed below each title.",
+      "infiniteScrollLabel": "Infinite scroll",
+      "infiniteScrollDescription": "Automatically load more results when you reach the end of the list.",
+      "showFaviconsLabel": "Show favicons",
+      "showFaviconsDescription": "Useful on web and news results; less important on image-heavy views.",
+      "showThumbnailsLabel": "Show thumbnails",
+      "showThumbnailsDescription": "Media thumbnails on result cards.",
+      "compactDensityLabel": "Compact density",
+      "compactDensityDescription": "Denser results layout with tighter spacing.",
+      "queryTitleLabel": "Query in tab title",
+      "queryTitleDescription": "Include the current search query in the browser tab title."
+    },
+    "privacy": {
+      "imageProxyLabel": "Image proxy",
+      "imageProxyDescription": "Proxy remote result images through the backend instead of loading directly from origin sites.",
+      "trackerCleanerLabel": "Tracker URL cleaner",
+      "trackerCleanerDescription": "Strip known tracking parameters from outgoing result URLs.",
+      "doiRewriteLabel": "Open Access DOI rewrite",
+      "doiRewriteDescription": "Prefer open-access DOI mirrors when available.",
+      "storeDefaultsLabel": "Store defaults locally",
+      "storeDefaultsDescription": "Persist settings across browser restarts. Disable this to keep them only for the current browser session."
+    },
+    "engines": {
+      "title": "Engines",
+      "description": "Pick which engines run for each search category. Based on the engines enabled in your SearXNG config.",
+      "filterPlaceholder": "Filter engines…",
+      "categoriesAria": "Engine categories"
+    },
+    "special": {
+      "title": "Special queries",
+      "description": "Inline helpers that answer simple questions inside search results.",
+      "calculatorLabel": "Calculator",
+      "calculatorDescription": "Quick math answers inside search results.",
+      "unitConverterLabel": "Unit converter",
+      "unitConverterDescription": "Convert between units directly from queries.",
+      "hashLookupLabel": "Hash lookup",
+      "hashLookupDescription": "Useful for known-hash quick checks.",
+      "selfInfoLabel": "Self info",
+      "selfInfoDescription": "Instance-provided helper information and shortcuts.",
+      "timeZoneLabel": "Time zone",
+      "timeZoneDescription": "Timezone-aware quick answers and conversions."
+    }
+  },
+  "Privacy": {
+    "title": "Privacy",
+    "intro": "AdminSearch is designed to minimize data collection while providing search through a private SearXNG backend.",
+    "searchRequestsTitle": "Search requests",
+    "searchRequestsBody": "Search and autocomplete terms are sent to the AdminSearch server and then to its private SearXNG service. SearXNG contacts the selected external search providers and returns their results. AdminSearch does not require an account and does not include client-side analytics or advertising trackers.",
+    "browserStorageTitle": "Browser storage",
+    "browserStorageBody": "Preferences are stored in a first-party cookie for up to one year, or for the current session if persistent storage is disabled. Language and storage choices use local or session storage. If result reuse is enabled, recent search results can be kept in session storage for up to 30 minutes. The cookie is sent only to AdminSearch; local and session storage stay on your device. All of this data can be removed through your browser's site data controls.",
+    "rateLimitingTitle": "Rate limiting",
+    "rateLimitingBody": "The server may use your IP address as part of a temporary Redis/Valkey rate-limit key. The key expires after the configured rate-limit window, which is one minute by default. AdminSearch does not maintain a separate account database or server-side search history.",
+    "externalContentTitle": "External content",
+    "externalContentBody": "Favicons are fetched by the AdminSearch server from Google or DuckDuckGo. Result thumbnails are loaded from their source, and optional video previews can connect your browser to providers such as YouTube, Vimeo, Dailymotion, or Odysee. Favicons and thumbnails can be disabled in settings.",
+    "hostingTitle": "Hosting",
+    "hostingBody": "The maintained deployment is hosted on Railway in Amsterdam. Railway processes the network and technical request data needed to operate the service, and infrastructure logs may include request metadata. Self-hosted AdminSearch instances may use different providers, logging, and retention settings.",
+    "sourceTitle": "Source and questions",
+    "sourceBody": "AdminSearch is open source. You can review the code or contact the maintainer through the <link>GitHub repository</link>.",
+    "lastUpdated": "Last updated: June 30, 2026"
+  },
+  "ApiErrors": {
+    "tooManySearchRequests": "Too many search requests. Please try again shortly.",
+    "invalidSearchParameters": "Invalid search parameters.",
+    "unexpectedSearchError": "Unexpected search error.",
+    "backendTimedOut": "The search backend timed out.",
+    "backendUnavailable": "The search backend is unavailable.",
+    "backendError": "The search backend returned an error.",
+    "backendInvalidJson": "The search backend returned invalid JSON.",
+    "backendEmptyBody": "The search backend returned an empty body.",
+    "tooManyAutocompleteRequests": "Too many autocomplete requests. Please try again shortly."
+  }
+}
