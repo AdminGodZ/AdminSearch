@@ -72,14 +72,13 @@ The main environment variables are:
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 SEARXNG_INTERNAL_URL=http://127.0.0.1:8080
 RATE_LIMIT_REDIS_URL=
-SEARXNG_IMAGE=docker.io/searxng/searxng:latest
 VALKEY_IMAGE=docker.io/valkey/valkey:latest
 SEARXNG_SECRET=
 ```
 
-See `.env.example` for all available settings. The Compose defaults track the
-latest SearXNG and Valkey images. Override the image variables if you want to
-pin a release or digest.
+See `.env.example` for all available settings. SearXNG always uses and pulls
+`docker.io/searxng/searxng:latest` whenever the Compose stack starts; the
+SearXNG production Dockerfile uses the same unpinned image.
 
 ## Self-hosting
 

@@ -6,6 +6,7 @@ use_default_settings:
       - brave
       - duckduckgo
       - google
+      - google cse
       - mojeek
       - qwant
       - startpage
@@ -19,6 +20,7 @@ use_default_settings:
       - bing images
       - brave.images
       - google images
+      - google cse images
       - mojeek images
       - qwant images
       - startpage images
@@ -93,7 +95,11 @@ engines:
     disabled: false
   - name: duckduckgo
     disabled: false
+  # Kept so a future SearXNG release can reactivate the normal Google HTML
+  # engine. It is currently inactive upstream.
   - name: google
+    disabled: false
+  - name: google cse
     disabled: false
   - name: mojeek
     disabled: false
@@ -118,7 +124,10 @@ engines:
     disabled: false
   - name: brave.images
     disabled: false
+  # The normal Google image engine is also inactive upstream for now.
   - name: google images
+    disabled: false
+  - name: google cse images
     disabled: false
   - name: mojeek images
     disabled: false

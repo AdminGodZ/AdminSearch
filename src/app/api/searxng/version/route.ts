@@ -7,10 +7,14 @@ export const runtime = "nodejs";
 
 export async function GET() {
   const status = await getSearxngUpdateStatus();
+  const cacheControl =
+    status.state === "unknown"
+      ? "no-store"
+      : "public, max-age=300, stale-while-revalidate=3600";
 
   return NextResponse.json(status, {
     headers: {
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
+      "Cache-Control": cacheControl,
     },
   });
 }

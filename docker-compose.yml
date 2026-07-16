@@ -7,7 +7,8 @@ x-runtime-hardening: &runtime-hardening
 services:
   searxng-core:
     <<: *runtime-hardening
-    image: ${SEARXNG_IMAGE:-docker.io/searxng/searxng:latest}
+    image: docker.io/searxng/searxng:latest
+    pull_policy: always
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -93,7 +94,6 @@ services:
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://localhost}
       SEARXNG_INTERNAL_URL: http://searxng-core:8080
-      SEARXNG_IMAGE: ${SEARXNG_IMAGE:-docker.io/searxng/searxng:latest}
       SEARXNG_ENGINE_TOKENS: ${SEARXNG_ENGINE_TOKENS:-}
       SEARXNG_UPDATE_CHECK_TTL_MS: ${SEARXNG_UPDATE_CHECK_TTL_MS:-21600000}
       SEARXNG_UPDATE_CHECK_TIMEOUT_MS: ${SEARXNG_UPDATE_CHECK_TIMEOUT_MS:-5000}

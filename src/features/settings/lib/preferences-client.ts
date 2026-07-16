@@ -1,6 +1,7 @@
 import {
   type PersistedPreferences,
   parsePreferencesCookie,
+  preferencesCookieNeedsMigration,
   SETTINGS_COOKIE_NAME,
   SETTINGS_PERSIST_MODE_STORAGE_KEY,
   SETTINGS_SYNC_EVENT,
@@ -97,23 +98,11 @@ function readCookieValue(name: string) {
   return undefined;
 }
 
-function hasLegacyEngineTokens(value: string | undefined) {
-  if (!value) {
-    return false;
-  }
-
-  try {
-    return decodeURIComponent(value).includes('"engineTokens"');
-  } catch {
-    return value.includes("engineTokens");
-  }
-}
-
 export function readPersistedPreferencesFromBrowser() {
   const rawValue = readCookieValue(SETTINGS_COOKIE_NAME);
   const preferences = parsePreferencesCookie(rawValue);
 
-  if (hasLegacyEngineTokens(rawValue)) {
+  if (preferencesCookieNeedsMigration(rawValue)) {
     persistPreferencesCookie(preferences, {
       persistent: getPersistedSettingsStorageMode(),
     });
