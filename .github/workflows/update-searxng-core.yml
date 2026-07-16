@@ -1,0 +1,85 @@
+name: Update SearXNG Core
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+      timezone: "Europe/Zurich"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-searxng-core
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Resolve latest SearXNG Docker image digest
+        id: digest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TOKEN="$(
+            curl -fsSL \
+              "https://auth.docker.io/token?service=registry.docker.io&scope=repository:searxng/searxng:pull" \
+              | jq -r '.token'
+          )"
+
+          DIGEST="$(
+            curl -fsSI \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json" \
+              "https://registry-1.docker.io/v2/searxng/searxng/manifests/latest" \
+              | tr -d '\r' \
+              | awk -F': ' 'tolower($1) == "docker-content-digest" {print $2; exit}'
+          )"
+
+          if [ -z "${DIGEST}" ]; then
+            echo "Could not resolve latest SearXNG digest" >&2
+            exit 1
+          fi
+
+          echo "image=docker.io/searxng/searxng@${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Update searxng-core Dockerfile
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          IMAGE="${{ steps.digest.outputs.image }}"
+
+          sed -i -E \
+            "s|^ARG SEARXNG_IMAGE=.*$|ARG SEARXNG_IMAGE=${IMAGE}|" \
+            searxng/Dockerfile
+
+          grep -Fqx "ARG SEARXNG_IMAGE=${IMAGE}" searxng/Dockerfile
+
+      - name: Test Docker build
+        shell: bash
+        run: |
+          docker build -f searxng/Dockerfile .
+
+      - name: Commit and push if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet; then
+            echo "SearXNG core image already up to date"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add searxng/Dockerfile
+          git commit -m "chore(searxng): update core image"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
