@@ -24,7 +24,7 @@
 
 - <img src="https://cdn.simpleicons.org/nextdotjs/white" alt="" width="18" /> Next.js 16
 - <img src="https://cdn.simpleicons.org/react/61DAFB" alt="" width="18" /> React 19
-- <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="" width="18" /> TypeScript
+- <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="" width="18" /> TypeScript 7
 - <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" alt="" width="18" /> Tailwind CSS
 - <img src="https://cdn.simpleicons.org/shadcnui/white" alt="" width="18" /> shadcn/ui
 - <img src="https://cdn.simpleicons.org/searxng/3050FF" alt="" width="18" /> SearXNG
@@ -135,6 +135,7 @@ private. Caddy is only used by the self-hosted Compose stack.
 
 ```bash
 npm run dev
+npm run typecheck
 npm run build
 npm run start
 npm run lint
