@@ -5,7 +5,8 @@ export const UI_LANGUAGE_STORAGE_KEY = "adminsearch-language";
 export const SETTINGS_PERSIST_MODE_STORAGE_KEY = "adminsearch-settings-persist";
 export const SETTINGS_SYNC_EVENT = "adminsearch:settings-sync";
 export const SETTINGS_SYNC_STORAGE_KEY = "adminsearch-settings-sync";
-const SETTINGS_COOKIE_VERSION = 1;
+const LEGACY_SETTINGS_COOKIE_VERSION = 1;
+const SETTINGS_COOKIE_VERSION = 2;
 
 export type SettingsState = {
   locale: string;
@@ -43,6 +44,16 @@ export type UrlFormattingMode = "pretty" | "full" | "host";
 
 export type EngineGroupKey = "general" | "images" | "videos" | "news";
 export type EngineState = Record<EngineGroupKey, Set<string>>;
+
+const LEGACY_ENGINE_REPLACEMENTS: Record<
+  EngineGroupKey,
+  Record<string, string | null>
+> = {
+  general: { google: "google cse" },
+  images: { "google images": "google cse images" },
+  videos: {},
+  news: {},
+};
 
 type StoredPreferencesPayload = {
   version: number;
@@ -90,6 +101,7 @@ export const engineCatalog: Record<EngineGroupKey, string[]> = {
     "brave",
     "duckduckgo",
     "google",
+    "google cse",
     "mojeek",
     "qwant",
     "startpage",
@@ -104,6 +116,7 @@ export const engineCatalog: Record<EngineGroupKey, string[]> = {
     "bing images",
     "brave.images",
     "google images",
+    "google cse images",
     "mojeek images",
     "qwant images",
     "startpage images",
@@ -138,16 +151,16 @@ export const defaultEngineState: EngineState = {
     "duckduckgo",
     "ddg definitions",
     "brave",
-    "google",
+    "google cse",
     "startpage",
   ]),
   images: new Set([
     "duckduckgo images",
     "brave.images",
-    "google images",
+    "google cse images",
     "startpage images",
   ]),
-  videos: new Set(["youtube", "google videos"]),
+  videos: new Set(["youtube"]),
   news: new Set([
     "google news",
     "startpage news",
@@ -214,6 +227,38 @@ function cloneEngineState(source: EngineState): EngineState {
     videos: new Set(source.videos),
     news: new Set(source.news),
   };
+}
+
+function sanitizeEngineSelection(
+  group: EngineGroupKey,
+  storedValue: unknown,
+  fallback: Set<string>,
+  migrateLegacyEngines: boolean,
+) {
+  if (!Array.isArray(storedValue)) {
+    return new Set(fallback);
+  }
+
+  const replacements = LEGACY_ENGINE_REPLACEMENTS[group];
+  const selected = storedValue.flatMap((engine) => {
+    if (typeof engine !== "string") {
+      return [];
+    }
+
+    const replacement = migrateLegacyEngines
+      ? replacements[engine]
+      : undefined;
+
+    if (replacement === null) {
+      return [];
+    }
+
+    return [replacement ?? engine];
+  });
+
+  return new Set(
+    selected.filter((engine) => engineCatalog[group].includes(engine)),
+  );
 }
 
 function sanitizeStringSetting(
@@ -288,12 +333,17 @@ export function parsePreferencesCookie(
 
   const payload = parsed as StoredPreferencesPayload;
 
-  if (payload.version !== SETTINGS_COOKIE_VERSION) {
+  if (
+    payload.version !== SETTINGS_COOKIE_VERSION &&
+    payload.version !== LEGACY_SETTINGS_COOKIE_VERSION
+  ) {
     return defaults;
   }
 
   const settings = payload.settings ?? {};
   const engines = payload.engines ?? {};
+  const migrateLegacyEngines =
+    payload.version === LEGACY_SETTINGS_COOKIE_VERSION;
 
   return {
     settings: {
@@ -431,34 +481,57 @@ export function parsePreferencesCookie(
       ),
     },
     engines: {
-      general: new Set(
-        Array.isArray(engines.general)
-          ? engines.general.filter((engine) =>
-              engineCatalog.general.includes(engine),
-            )
-          : defaults.engines.general,
+      general: sanitizeEngineSelection(
+        "general",
+        engines.general,
+        defaults.engines.general,
+        migrateLegacyEngines,
       ),
-      images: new Set(
-        Array.isArray(engines.images)
-          ? engines.images.filter((engine) =>
-              engineCatalog.images.includes(engine),
-            )
-          : defaults.engines.images,
+      images: sanitizeEngineSelection(
+        "images",
+        engines.images,
+        defaults.engines.images,
+        migrateLegacyEngines,
       ),
-      videos: new Set(
-        Array.isArray(engines.videos)
-          ? engines.videos.filter((engine) =>
-              engineCatalog.videos.includes(engine),
-            )
-          : defaults.engines.videos,
+      videos: sanitizeEngineSelection(
+        "videos",
+        engines.videos,
+        defaults.engines.videos,
+        migrateLegacyEngines,
       ),
-      news: new Set(
-        Array.isArray(engines.news)
-          ? engines.news.filter((engine) => engineCatalog.news.includes(engine))
-          : defaults.engines.news,
+      news: sanitizeEngineSelection(
+        "news",
+        engines.news,
+        defaults.engines.news,
+        migrateLegacyEngines,
       ),
     },
   };
+}
+
+export function preferencesCookieNeedsMigration(rawValue: string | undefined) {
+  if (!rawValue) {
+    return false;
+  }
+
+  let decoded = rawValue;
+
+  try {
+    decoded = decodeURIComponent(rawValue);
+  } catch {
+    // Keep the raw value so legacy markers can still be detected.
+  }
+
+  if (decoded.includes('"engineTokens"')) {
+    return true;
+  }
+
+  try {
+    const payload = JSON.parse(decoded) as StoredPreferencesPayload;
+    return payload.version === LEGACY_SETTINGS_COOKIE_VERSION;
+  } catch {
+    return false;
+  }
 }
 
 export function serializePreferencesCookie(

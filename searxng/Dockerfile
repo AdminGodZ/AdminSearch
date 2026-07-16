@@ -1,6 +1,4 @@
-ARG SEARXNG_IMAGE=docker.io/searxng/searxng:latest
-
-FROM ${SEARXNG_IMAGE}
+FROM docker.io/searxng/searxng:latest
 
 ENV SEARXNG_PORT=8080
 ENV SEARXNG_BIND_ADDRESS=::

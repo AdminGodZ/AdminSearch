@@ -3,6 +3,7 @@ const DOCKER_AUTH_URL =
   "https://auth.docker.io/token?service=registry.docker.io&scope=repository:searxng/searxng:pull";
 const DOCKER_REGISTRY_URL = "https://registry-1.docker.io/v2/searxng/searxng";
 const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const FAILED_CHECK_CACHE_TTL_MS = 15 * 1000;
 const DEFAULT_FETCH_TIMEOUT_MS = 5000;
 
 const DIGEST_PATTERN = /sha256:[a-f0-9]{64}/i;
@@ -21,7 +22,6 @@ export type SearxngUpdateState = "latest" | "outdated" | "unknown";
 
 export type SearxngUpdateStatus = {
   checkedAt: string;
-  currentDigest: string | null;
   currentVersion: string | null;
   latestDigest: string | null;
   latestVersion: string | null;
@@ -80,7 +80,11 @@ export async function getSearxngUpdateStatus() {
 
   const value = await pendingStatus;
   cachedStatus = {
-    expiresAt: now + getCacheTtlMs(),
+    expiresAt:
+      Date.now() +
+      (value.state === "unknown"
+        ? FAILED_CHECK_CACHE_TTL_MS
+        : getCacheTtlMs()),
     value,
   };
 
@@ -95,7 +99,6 @@ async function readSearxngUpdateStatus(): Promise<SearxngUpdateStatus> {
 
   const currentVersion =
     current.status === "fulfilled" ? current.value.currentVersion : null;
-  const currentDigest = getCurrentSearxngDigest();
   const latestDigest =
     upstream.status === "fulfilled" ? upstream.value.latestDigest : null;
   const latestVersion =
@@ -103,14 +106,11 @@ async function readSearxngUpdateStatus(): Promise<SearxngUpdateStatus> {
 
   return {
     checkedAt: new Date().toISOString(),
-    currentDigest,
     currentVersion,
     latestDigest,
     latestVersion,
     state: getUpdateState({
-      currentDigest,
       currentVersion,
-      latestDigest,
       latestVersion,
     }),
   };
@@ -243,20 +243,12 @@ async function fetchWithTimeout(input: string, init?: RequestInit) {
 }
 
 function getUpdateState({
-  currentDigest,
   currentVersion,
-  latestDigest,
   latestVersion,
 }: {
-  currentDigest: string | null;
   currentVersion: string | null;
-  latestDigest: string | null;
   latestVersion: string | null;
 }): SearxngUpdateState {
-  if (currentDigest && latestDigest) {
-    return currentDigest === latestDigest ? "latest" : "outdated";
-  }
-
   const normalizedCurrentVersion = normalizeVersion(currentVersion);
   const normalizedLatestVersion = normalizeVersion(latestVersion);
 
@@ -267,13 +259,6 @@ function getUpdateState({
   }
 
   return "unknown";
-}
-
-function getCurrentSearxngDigest() {
-  return (
-    normalizeDigest(process.env.SEARXNG_IMAGE) ??
-    normalizeDigest(process.env.SEARXNG_IMAGE_DIGEST)
-  );
 }
 
 function normalizeDigest(value: string | null | undefined) {

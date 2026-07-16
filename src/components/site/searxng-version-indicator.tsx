@@ -26,6 +26,7 @@ const initialStatus: SearxngVersionStatus = {
 
 const SEARXNG_COMMITS_URL = "https://github.com/searxng/searxng/commits/master";
 const SEARXNG_GITHUB_URL = "https://github.com/searxng/searxng";
+const UNKNOWN_RETRY_DELAY_MS = 15_000;
 
 export function SearxngVersionIndicator() {
   const t = useTranslations("SearxngVersion");
@@ -34,42 +35,66 @@ export function SearxngVersionIndicator() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let retryTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    function scheduleRetry() {
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      retryTimeout = setTimeout(() => {
+        void readStatus();
+      }, UNKNOWN_RETRY_DELAY_MS);
+    }
 
     async function readStatus() {
       try {
         const response = await fetch("/api/searxng/version", {
+          cache: "no-store",
           signal: controller.signal,
         });
 
         if (!response.ok) {
           setHasChecked(true);
+          setStatus(initialStatus);
+          scheduleRetry();
           return;
         }
 
         const nextStatus = (await response.json()) as SearxngVersionStatus;
+        const nextState =
+          nextStatus.state === "latest" || nextStatus.state === "outdated"
+            ? nextStatus.state
+            : "unknown";
 
         setHasChecked(true);
         setStatus({
           currentVersion: sanitizeVersion(nextStatus.currentVersion),
           latestVersion: sanitizeVersion(nextStatus.latestVersion),
-          state:
-            nextStatus.state === "latest" ||
-            nextStatus.state === "outdated" ||
-            nextStatus.state === "unknown"
-              ? nextStatus.state
-              : "unknown",
+          state: nextState,
         });
+
+        if (nextState === "unknown") {
+          scheduleRetry();
+        }
       } catch {
         if (!controller.signal.aborted) {
           setHasChecked(true);
           setStatus(initialStatus);
+          scheduleRetry();
         }
       }
     }
 
-    readStatus();
+    void readStatus();
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+    };
   }, []);
 
   const content = useMemo(() => {
