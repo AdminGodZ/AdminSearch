@@ -14,6 +14,7 @@
 
 - Web, image, video, and news search
 - Configurable engines, language, privacy, and result behavior
+- English and German interface localization
 - Server-side SearXNG proxying
 - Redis/Valkey-backed rate limiting
 - Light and dark themes
@@ -23,6 +24,7 @@
 ## Stack
 
 - <img src="https://cdn.simpleicons.org/nextdotjs/white" alt="" width="18" /> Next.js 16
+- next-intl 4
 - <img src="https://cdn.simpleicons.org/react/61DAFB" alt="" width="18" /> React 19
 - <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="" width="18" /> TypeScript 7
 - <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" alt="" width="18" /> Tailwind CSS

@@ -12,6 +12,8 @@ import {
   Sparkles,
   Video,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -36,7 +38,6 @@ import {
   normalizeResultReuseMode,
   normalizeUrlFormattingMode,
   type SettingsState,
-  UI_LANGUAGE_EVENT,
 } from "@/features/settings/lib/preferences";
 import {
   broadcastSettingsSync,
@@ -50,72 +51,40 @@ import { cn } from "@/lib/utils";
 
 type SectionId = "general" | "interface" | "privacy" | "engines" | "special";
 
-const navSections: Array<{
+const navSectionDefinitions: Array<{
   id: SectionId;
-  label: string;
-  description: string;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
   {
     id: "general",
-    label: "General",
-    description: "Locale, default tab, and result defaults.",
     icon: Globe,
   },
   {
     id: "interface",
-    label: "Interface",
-    description: "Theme, density, and result link behavior.",
     icon: Palette,
   },
   {
     id: "privacy",
-    label: "Privacy",
-    description: "Proxying, tracker cleaning, and local storage.",
     icon: ShieldCheck,
   },
   {
     id: "engines",
-    label: "Engines",
-    description: "Per-category engine selection.",
     icon: Monitor,
   },
   {
     id: "special",
-    label: "Special queries",
-    description: "Calculator, converters, and quick answers.",
     icon: Sparkles,
   },
 ];
 
-const engineGroupMeta: Record<
+const engineGroupIcons: Record<
   EngineGroupKey,
-  {
-    title: string;
-    description: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }
+  React.ComponentType<{ className?: string }>
 > = {
-  general: {
-    title: "General",
-    description: "Web search and direct-answer style sources.",
-    icon: Search,
-  },
-  images: {
-    title: "Images",
-    description: "Image search providers and alternates.",
-    icon: ImageIcon,
-  },
-  videos: {
-    title: "Videos",
-    description: "Video result backends, including optional alternates.",
-    icon: Video,
-  },
-  news: {
-    title: "News",
-    description: "News-specific engines and publishers.",
-    icon: Newspaper,
-  },
+  general: Search,
+  images: ImageIcon,
+  videos: Video,
+  news: Newspaper,
 };
 
 const engineGroupOrder: EngineGroupKey[] = [
@@ -226,6 +195,7 @@ type EngineRowsProps = {
 };
 
 function EngineRows({ groupKey, filter, selected, onToggle }: EngineRowsProps) {
+  const t = useTranslations("Settings");
   const allEngines = engineCatalog[groupKey];
   const filtered = filter
     ? allEngines.filter((engine) =>
@@ -237,7 +207,7 @@ function EngineRows({ groupKey, filter, selected, onToggle }: EngineRowsProps) {
     <div className="divide-y divide-[var(--surface-panel-border)]">
       {filtered.length === 0 ? (
         <p className="py-5 text-[13px] text-[var(--text-soft)]">
-          No engines match your filter.
+          {t("noEngines")}
         </p>
       ) : (
         filtered.map((engine) => (
@@ -251,7 +221,10 @@ function EngineRows({ groupKey, filter, selected, onToggle }: EngineRowsProps) {
             <Toggle
               checked={selected.has(engine)}
               onToggle={() => onToggle(engine)}
-              label={`${selected.has(engine) ? "Disable" : "Enable"} ${engine}`}
+              label={t(
+                selected.has(engine) ? "disableEngine" : "enableEngine",
+                { engine },
+              )}
             />
           </div>
         ))
@@ -297,6 +270,9 @@ export function SettingsPagePreview({
   initialEngines,
   initialSettings,
 }: SettingsPagePreviewProps) {
+  const t = useTranslations("Settings");
+  const common = useTranslations("Common");
+  const router = useRouter();
   const { resolvedTheme, setTheme } = useThemeTransition();
   const saveHandlerRef = useRef<() => void>(() => undefined);
   const discardHandlerRef = useRef<() => void>(() => undefined);
@@ -313,6 +289,41 @@ export function SettingsPagePreview({
   const [engineFilter, setEngineFilter] = useState("");
   const [activeEngineGroup, setActiveEngineGroup] =
     useState<EngineGroupKey>("general");
+  const navSections = navSectionDefinitions.map((section) => ({
+    ...section,
+    label: t(`nav.${section.id}.label`),
+    description: t(`nav.${section.id}.description`),
+  }));
+  const engineGroupMeta = Object.fromEntries(
+    engineGroupOrder.map((key) => [
+      key,
+      {
+        title: t(`engineGroups.${key}.title`),
+        description: t(`engineGroups.${key}.description`),
+        icon: engineGroupIcons[key],
+      },
+    ]),
+  ) as Record<
+    EngineGroupKey,
+    {
+      title: string;
+      description: string;
+      icon: React.ComponentType<{ className?: string }>;
+    }
+  >;
+
+  useEffect(() => {
+    setSettings((current) =>
+      current.uiLanguage === initialSettings.uiLanguage
+        ? current
+        : { ...current, uiLanguage: initialSettings.uiLanguage },
+    );
+    setSavedSettings((current) =>
+      current.uiLanguage === initialSettings.uiLanguage
+        ? current
+        : { ...current, uiLanguage: initialSettings.uiLanguage },
+    );
+  }, [initialSettings.uiLanguage]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -406,6 +417,8 @@ export function SettingsPagePreview({
 
     const nextSettings = { ...settings };
     const nextEngines = cloneEngineState(engines);
+    const languageChanged =
+      nextSettings.uiLanguage !== savedSettings.uiLanguage;
 
     persistCookie(
       {
@@ -424,17 +437,16 @@ export function SettingsPagePreview({
       nextSettings.storeDefaultsLocally,
     );
     document.documentElement.lang = nextSettings.uiLanguage;
-    window.dispatchEvent(
-      new CustomEvent(UI_LANGUAGE_EVENT, {
-        detail: { language: nextSettings.uiLanguage },
-      }),
-    );
     broadcastSettingsSync();
 
     void setTheme(nextSettings.theme);
 
     setSavedSettings(nextSettings);
     setSavedEngines(nextEngines);
+
+    if (languageChanged) {
+      router.refresh();
+    }
   }
 
   useEffect(() => {
@@ -457,7 +469,7 @@ export function SettingsPagePreview({
               <span className="relative inline-flex size-2 rounded-full bg-foreground/70" />
             </span>
             <p className="text-[13.5px] font-medium text-[var(--text-strong)]">
-              You have unsaved changes
+              {t("unsavedChanges")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -470,7 +482,7 @@ export function SettingsPagePreview({
               }}
               className="cursor-pointer rounded-full px-4 text-[var(--text-soft)] hover:bg-foreground/[0.06] hover:text-[var(--text-strong)]"
             >
-              Discard
+              {t("discard")}
             </Button>
             <Button
               variant="inverse"
@@ -480,7 +492,7 @@ export function SettingsPagePreview({
               }}
               className="cursor-pointer rounded-full px-5"
             >
-              Save changes
+              {t("saveChanges")}
             </Button>
           </div>
         </div>
@@ -493,7 +505,7 @@ export function SettingsPagePreview({
         unstyled: true,
       },
     );
-  }, [isDirty]);
+  }, [isDirty, t]);
 
   useEffect(() => {
     return () => {
@@ -509,18 +521,21 @@ export function SettingsPagePreview({
         <aside className="lg:sticky lg:top-8 lg:h-fit lg:border-r lg:border-[var(--surface-panel-border)] lg:pr-8 xl:pr-12">
           <div className="mb-8 px-2.5">
             <h1 className="text-[22px] font-semibold tracking-tight text-[var(--text-strong)]">
-              Settings
+              {t("title")}
             </h1>
             <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--text-soft)]">
-              Customize how AdminSearch searches, displays, and handles results.
+              {t("subtitle")}
             </p>
           </div>
 
           <p className="mb-3 px-2.5 text-[11px] font-semibold tracking-[0.08em] text-[var(--text-soft)] uppercase">
-            Sections
+            {t("sections")}
           </p>
 
-          <nav className="flex flex-col gap-0.5" aria-label="Settings sections">
+          <nav
+            className="flex flex-col gap-0.5"
+            aria-label={t("sectionsAria")}
+          >
             {navSections.map((section) => {
               const Icon = section.icon;
               const isActive = section.id === activeSection;
@@ -559,12 +574,10 @@ export function SettingsPagePreview({
           <div className="mt-8 hidden pr-2 lg:block">
             <div className="flex items-center gap-2 px-2.5 text-[12px] font-semibold text-[var(--text-soft)]">
               <Info className="size-3.5" />
-              Cookie-backed defaults
+              {t("cookieDefaultsTitle")}
             </div>
             <p className="mt-1.5 px-2.5 text-[12px] leading-relaxed text-[var(--text-soft)]">
-              Saved settings are persisted in your browser. The subset already
-              supported by the current search pipeline is applied as default
-              behavior.
+              {t("cookieDefaultsDescription")}
             </p>
           </div>
         </aside>
@@ -579,27 +592,27 @@ export function SettingsPagePreview({
 
               <div className="divide-y divide-[var(--surface-panel-border)]">
                 <SettingRow
-                  label="Search locale"
-                  description="Locale-style values so region-aware engines can be added later."
+                  label={t("general.searchLocaleLabel")}
+                  description={t("general.searchLocaleDescription")}
                 >
                   <SettingSelect
                     value={settings.locale}
                     onValueChange={(value) => updateSetting("locale", value)}
                     options={[
-                      { value: "auto", label: "Auto" },
-                      { value: "en", label: "English" },
-                      { value: "de", label: "German" },
-                      { value: "fr", label: "French" },
-                      { value: "es", label: "Spanish" },
-                      { value: "it", label: "Italian" },
-                      { value: "en-US", label: "English (US)" },
-                      { value: "de-CH", label: "German (Switzerland)" },
+                      { value: "auto", label: common("languages.auto") },
+                      { value: "en", label: common("languages.en") },
+                      { value: "de", label: common("languages.de") },
+                      { value: "fr", label: common("languages.fr") },
+                      { value: "es", label: common("languages.es") },
+                      { value: "it", label: common("languages.it") },
+                      { value: "en-US", label: common("languages.enUS") },
+                      { value: "de-CH", label: common("languages.deCH") },
                     ]}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Default tab"
-                  description="The landing tab for a new search."
+                  label={t("general.defaultTabLabel")}
+                  description={t("general.defaultTabDescription")}
                 >
                   <SettingSelect
                     value={settings.defaultTab}
@@ -607,16 +620,16 @@ export function SettingsPagePreview({
                       updateSetting("defaultTab", value)
                     }
                     options={[
-                      { value: "all", label: "All" },
-                      { value: "images", label: "Images" },
-                      { value: "videos", label: "Videos" },
-                      { value: "news", label: "News" },
+                      { value: "all", label: common("tabs.all") },
+                      { value: "images", label: common("tabs.images") },
+                      { value: "videos", label: common("tabs.videos") },
+                      { value: "news", label: common("tabs.news") },
                     ]}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="SafeSearch"
-                  description="Default content filtering level for searches."
+                  label={t("general.safeSearchLabel")}
+                  description={t("general.safeSearchDescription")}
                 >
                   <SettingSelect
                     value={settings.safeSearch}
@@ -624,30 +637,30 @@ export function SettingsPagePreview({
                       updateSetting("safeSearch", value)
                     }
                     options={[
-                      { value: "0", label: "Off" },
-                      { value: "1", label: "Moderate" },
-                      { value: "2", label: "Strict" },
+                      { value: "0", label: common("safeSearch.off") },
+                      { value: "1", label: common("safeSearch.moderate") },
+                      { value: "2", label: common("safeSearch.strict") },
                     ]}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Default time range"
-                  description="Applied automatically until you override it from the search page."
+                  label={t("general.timeRangeLabel")}
+                  description={t("general.timeRangeDescription")}
                 >
                   <SettingSelect
                     value={settings.timeRange}
                     onValueChange={(value) => updateSetting("timeRange", value)}
                     options={[
-                      { value: "any", label: "Any time" },
-                      { value: "day", label: "Past day" },
-                      { value: "month", label: "Past month" },
-                      { value: "year", label: "Past year" },
+                      { value: "any", label: common("timeRanges.any") },
+                      { value: "day", label: common("timeRanges.day") },
+                      { value: "month", label: common("timeRanges.month") },
+                      { value: "year", label: common("timeRanges.year") },
                     ]}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Autocomplete"
-                  description="Suggestion backend used while typing."
+                  label={t("general.autocompleteLabel")}
+                  description={t("general.autocompleteDescription")}
                 >
                   <SettingSelect
                     value={settings.autocomplete}
@@ -666,8 +679,8 @@ export function SettingsPagePreview({
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Favicon resolver"
-                  description="Which upstream resolver fetches favicons for result rows."
+                  label={t("general.faviconResolverLabel")}
+                  description={t("general.faviconResolverDescription")}
                 >
                   <SettingSelect
                     value={settings.faviconResolver}
@@ -681,8 +694,8 @@ export function SettingsPagePreview({
                   />
                 </SettingRow>
                 <SettingRow
-                  label="HTTP method"
-                  description="How AdminSearch sends search requests to the SearXNG backend."
+                  label={t("general.httpMethodLabel")}
+                  description={t("general.httpMethodDescription")}
                 >
                   <SettingSelect
                     value={normalizeHttpMethod(settings.httpMethod)}
@@ -696,25 +709,23 @@ export function SettingsPagePreview({
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Load more size"
-                  description="Batch size for appended results when loading more."
+                  label={t("general.loadMoreLabel")}
+                  description={t("general.loadMoreDescription")}
                 >
                   <SettingSelect
                     value={settings.loadMoreCount}
                     onValueChange={(value) =>
                       updateSetting("loadMoreCount", value)
                     }
-                    options={[
-                      { value: "10", label: "10 results" },
-                      { value: "20", label: "20 results" },
-                      { value: "30", label: "30 results" },
-                      { value: "40", label: "40 results" },
-                    ]}
+                    options={[10, 20, 30, 40].map((count) => ({
+                      value: String(count),
+                      label: t("general.resultCount", { count }),
+                    }))}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Result reuse"
-                  description="Choose whether revisiting an already loaded search view fetches again or restores cached results for 30 minutes."
+                  label={t("general.resultReuseLabel")}
+                  description={t("general.resultReuseDescription")}
                 >
                   <SettingSelect
                     value={normalizeResultReuseMode(settings.resultReuseMode)}
@@ -725,17 +736,17 @@ export function SettingsPagePreview({
                       )
                     }
                     options={[
-                      { value: "fresh", label: "Fetch fresh results" },
-                      { value: "cache", label: "Cache visited results" },
+                      { value: "fresh", label: t("general.fetchFresh") },
+                      { value: "cache", label: t("general.cacheVisited") },
                     ]}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Engine tokens"
-                  description="Private engine tokens are read from the server environment and are never stored in browser settings."
+                  label={t("general.engineTokensLabel")}
+                  description={t("general.engineTokensDescription")}
                 >
                   <p className="max-w-[320px] text-right text-[13px] leading-6 text-[var(--text-soft)]">
-                    Configure SEARXNG_ENGINE_TOKENS on the server.
+                    {t("general.engineTokensHint")}
                   </p>
                 </SettingRow>
               </div>
@@ -750,8 +761,8 @@ export function SettingsPagePreview({
               />
               <div className="divide-y divide-[var(--surface-panel-border)]">
                 <SettingRow
-                  label="UI language"
-                  description="AdminSearch interface language, separate from search locale."
+                  label={t("interface.uiLanguageLabel")}
+                  description={t("interface.uiLanguageDescription")}
                 >
                   <SettingSelect
                     value={settings.uiLanguage}
@@ -759,39 +770,39 @@ export function SettingsPagePreview({
                       updateSetting("uiLanguage", value)
                     }
                     options={[
-                      { value: "en", label: "English" },
-                      { value: "de", label: "German" },
+                      { value: "en", label: common("languages.en") },
+                      { value: "de", label: common("languages.de") },
                     ]}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Theme"
-                  description="Own the app theme here instead of mirroring SearXNG's native UI theme."
+                  label={t("interface.themeLabel")}
+                  description={t("interface.themeDescription")}
                 >
                   <SettingSelect
                     value={settings.theme}
                     onValueChange={(value) => updateSetting("theme", value)}
                     options={[
-                      { value: "light", label: "Light" },
-                      { value: "dark", label: "Dark" },
+                      { value: "light", label: common("themes.light") },
+                      { value: "dark", label: common("themes.dark") },
                     ]}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Open results in new tab"
-                  description="Links from results open in a new browser tab."
+                  label={t("interface.openNewTabLabel")}
+                  description={t("interface.openNewTabDescription")}
                 >
                   <Toggle
                     checked={settings.openInNewTab}
                     onToggle={() =>
                       updateSetting("openInNewTab", !settings.openInNewTab)
                     }
-                    label="Open results in new tab"
+                    label={t("interface.openNewTabLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="URL formatting"
-                  description="Choose how result URLs are displayed below each title."
+                  label={t("interface.urlFormattingLabel")}
+                  description={t("interface.urlFormattingDescription")}
                 >
                   <SettingSelect
                     value={normalizeUrlFormattingMode(settings.urlFormatting)}
@@ -802,70 +813,70 @@ export function SettingsPagePreview({
                       )
                     }
                     options={[
-                      { value: "pretty", label: "Pretty" },
-                      { value: "full", label: "Full" },
-                      { value: "host", label: "Host" },
+                      { value: "pretty", label: common("urlFormats.pretty") },
+                      { value: "full", label: common("urlFormats.full") },
+                      { value: "host", label: common("urlFormats.host") },
                     ]}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Infinite scroll"
-                  description="Automatically load more results when you reach the end of the list."
+                  label={t("interface.infiniteScrollLabel")}
+                  description={t("interface.infiniteScrollDescription")}
                 >
                   <Toggle
                     checked={settings.infiniteScroll}
                     onToggle={() =>
                       updateSetting("infiniteScroll", !settings.infiniteScroll)
                     }
-                    label="Infinite scroll"
+                    label={t("interface.infiniteScrollLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Show favicons"
-                  description="Useful on web and news results; less important on image-heavy views."
+                  label={t("interface.showFaviconsLabel")}
+                  description={t("interface.showFaviconsDescription")}
                 >
                   <Toggle
                     checked={settings.showFavicons}
                     onToggle={() =>
                       updateSetting("showFavicons", !settings.showFavicons)
                     }
-                    label="Show favicons"
+                    label={t("interface.showFaviconsLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Show thumbnails"
-                  description="Media thumbnails on result cards."
+                  label={t("interface.showThumbnailsLabel")}
+                  description={t("interface.showThumbnailsDescription")}
                 >
                   <Toggle
                     checked={settings.showThumbnails}
                     onToggle={() =>
                       updateSetting("showThumbnails", !settings.showThumbnails)
                     }
-                    label="Show thumbnails"
+                    label={t("interface.showThumbnailsLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Compact density"
-                  description="Denser results layout with tighter spacing."
+                  label={t("interface.compactDensityLabel")}
+                  description={t("interface.compactDensityDescription")}
                 >
                   <Toggle
                     checked={settings.compactDensity}
                     onToggle={() =>
                       updateSetting("compactDensity", !settings.compactDensity)
                     }
-                    label="Compact density"
+                    label={t("interface.compactDensityLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Query in tab title"
-                  description="Include the current search query in the browser tab title."
+                  label={t("interface.queryTitleLabel")}
+                  description={t("interface.queryTitleDescription")}
                 >
                   <Toggle
                     checked={settings.queryInTitle}
                     onToggle={() =>
                       updateSetting("queryInTitle", !settings.queryInTitle)
                     }
-                    label="Query in tab title"
+                    label={t("interface.queryTitleLabel")}
                   />
                 </SettingRow>
               </div>
@@ -880,44 +891,44 @@ export function SettingsPagePreview({
               />
               <div className="divide-y divide-[var(--surface-panel-border)]">
                 <SettingRow
-                  label="Image proxy"
-                  description="Proxy remote result images through the backend instead of loading directly from origin sites."
+                  label={t("privacy.imageProxyLabel")}
+                  description={t("privacy.imageProxyDescription")}
                 >
                   <Toggle
                     checked={settings.imageProxy}
                     onToggle={() =>
                       updateSetting("imageProxy", !settings.imageProxy)
                     }
-                    label="Image proxy"
+                    label={t("privacy.imageProxyLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Tracker URL cleaner"
-                  description="Strip known tracking parameters from outgoing result URLs."
+                  label={t("privacy.trackerCleanerLabel")}
+                  description={t("privacy.trackerCleanerDescription")}
                 >
                   <Toggle
                     checked={settings.trackerCleaner}
                     onToggle={() =>
                       updateSetting("trackerCleaner", !settings.trackerCleaner)
                     }
-                    label="Tracker URL cleaner"
+                    label={t("privacy.trackerCleanerLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Open Access DOI rewrite"
-                  description="Prefer open-access DOI mirrors when available."
+                  label={t("privacy.doiRewriteLabel")}
+                  description={t("privacy.doiRewriteDescription")}
                 >
                   <Toggle
                     checked={settings.doiRewrite}
                     onToggle={() =>
                       updateSetting("doiRewrite", !settings.doiRewrite)
                     }
-                    label="Open Access DOI rewrite"
+                    label={t("privacy.doiRewriteLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Store defaults locally"
-                  description="Persist settings across browser restarts. Disable this to keep them only for the current browser session."
+                  label={t("privacy.storeDefaultsLabel")}
+                  description={t("privacy.storeDefaultsDescription")}
                 >
                   <Toggle
                     checked={settings.storeDefaultsLocally}
@@ -927,7 +938,7 @@ export function SettingsPagePreview({
                         !settings.storeDefaultsLocally,
                       )
                     }
-                    label="Store defaults locally"
+                    label={t("privacy.storeDefaultsLabel")}
                   />
                 </SettingRow>
               </div>
@@ -937,8 +948,8 @@ export function SettingsPagePreview({
           {activeSection === "engines" && activeMeta && (
             <div className="space-y-6">
               <SectionHeader
-                title="Engines"
-                description="Pick which engines run for each search category. Based on the engines enabled in your SearXNG config."
+                title={t("engines.title")}
+                description={t("engines.description")}
               />
 
               <div className="relative">
@@ -946,14 +957,14 @@ export function SettingsPagePreview({
                 <Input
                   value={engineFilter}
                   onChange={(event) => setEngineFilter(event.target.value)}
-                  placeholder="Filter engines..."
+                  placeholder={t("engines.filterPlaceholder")}
                   className="h-10 rounded-xl border-[var(--surface-panel-border)] bg-background pl-10 text-[14px] shadow-none hover:border-foreground/20 focus-visible:border-foreground/30 focus-visible:ring-foreground/5"
                 />
               </div>
 
               <div
                 role="tablist"
-                aria-label="Engine categories"
+                aria-label={t("engines.categoriesAria")}
                 className="flex gap-0 overflow-x-auto border-b border-[var(--surface-panel-border)]"
               >
                 {engineGroupOrder.map((key, index) => {
@@ -1003,68 +1014,68 @@ export function SettingsPagePreview({
           {activeSection === "special" && activeMeta && (
             <div className="space-y-8">
               <SectionHeader
-                title="Special queries"
-                description="Inline helpers that answer simple questions inside search results."
+                title={t("special.title")}
+                description={t("special.description")}
               />
               <div className="divide-y divide-[var(--surface-panel-border)]">
                 <SettingRow
-                  label="Calculator"
-                  description="Quick math answers inside search results."
+                  label={t("special.calculatorLabel")}
+                  description={t("special.calculatorDescription")}
                 >
                   <Toggle
                     checked={settings.calculator}
                     onToggle={() =>
                       updateSetting("calculator", !settings.calculator)
                     }
-                    label="Calculator"
+                    label={t("special.calculatorLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Unit converter"
-                  description="Convert between units directly from queries."
+                  label={t("special.unitConverterLabel")}
+                  description={t("special.unitConverterDescription")}
                 >
                   <Toggle
                     checked={settings.unitConverter}
                     onToggle={() =>
                       updateSetting("unitConverter", !settings.unitConverter)
                     }
-                    label="Unit converter"
+                    label={t("special.unitConverterLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Hash lookup"
-                  description="Useful for known-hash quick checks."
+                  label={t("special.hashLookupLabel")}
+                  description={t("special.hashLookupDescription")}
                 >
                   <Toggle
                     checked={settings.hashSearch}
                     onToggle={() =>
                       updateSetting("hashSearch", !settings.hashSearch)
                     }
-                    label="Hash lookup"
+                    label={t("special.hashLookupLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Self info"
-                  description="Instance-provided helper information and shortcuts."
+                  label={t("special.selfInfoLabel")}
+                  description={t("special.selfInfoDescription")}
                 >
                   <Toggle
                     checked={settings.selfInfo}
                     onToggle={() =>
                       updateSetting("selfInfo", !settings.selfInfo)
                     }
-                    label="Self info"
+                    label={t("special.selfInfoLabel")}
                   />
                 </SettingRow>
                 <SettingRow
-                  label="Time zone"
-                  description="Timezone-aware quick answers and conversions."
+                  label={t("special.timeZoneLabel")}
+                  description={t("special.timeZoneDescription")}
                 >
                   <Toggle
                     checked={settings.timeZone}
                     onToggle={() =>
                       updateSetting("timeZone", !settings.timeZone)
                     }
-                    label="Time zone"
+                    label={t("special.timeZoneLabel")}
                   />
                 </SettingRow>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import type { SearchResult } from "@/features/search/types";
@@ -74,6 +75,8 @@ export function ImageGrid({
   showFavicons = true,
   showThumbnails = true,
 }: ImageGridProps) {
+  const t = useTranslations("Search");
+
   return (
     <div
       className={cn(
@@ -92,7 +95,7 @@ export function ImageGrid({
           <div className="aspect-[16/10] overflow-hidden bg-muted">
             {!showThumbnails ? (
               <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                Preview hidden
+                {t("previewHidden")}
               </div>
             ) : result.thumbnailUrl ? (
               // biome-ignore lint/performance/noImgElement: Direct remote thumbnails are an explicit MVP tradeoff for image search.
@@ -105,7 +108,7 @@ export function ImageGrid({
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                No preview
+                {t("noPreview")}
               </div>
             )}
           </div>

@@ -14,12 +14,21 @@ const REQUEST_TIMEOUT_MS = 8_000;
 export const DEFAULT_RESULTS_PER_PAGE = 20;
 const MAX_UPSTREAM_PAGES = SEARCH_MAX_PAGE;
 
+export type SearchUpstreamErrorCode =
+  | "backendTimedOut"
+  | "backendUnavailable"
+  | "backendError"
+  | "backendInvalidJson"
+  | "backendEmptyBody";
+
 export class SearchUpstreamError extends Error {
+  code: SearchUpstreamErrorCode;
   statusCode: number;
 
-  constructor(message: string, statusCode = 503) {
-    super(message);
+  constructor(code: SearchUpstreamErrorCode, statusCode = 503) {
+    super(code);
     this.name = "SearchUpstreamError";
+    this.code = code;
     this.statusCode = statusCode;
   }
 }
@@ -330,14 +339,14 @@ async function fetchSearxPage(
     response = await fetch(url, init);
   } catch (error) {
     if (error instanceof Error && error.name === "TimeoutError") {
-      throw new SearchUpstreamError("The search backend timed out.");
+      throw new SearchUpstreamError("backendTimedOut");
     }
 
-    throw new SearchUpstreamError("The search backend is unavailable.");
+    throw new SearchUpstreamError("backendUnavailable");
   }
 
   if (!response.ok) {
-    throw new SearchUpstreamError("The search backend returned an error.");
+    throw new SearchUpstreamError("backendError");
   }
 
   let payload: unknown;
@@ -345,11 +354,11 @@ async function fetchSearxPage(
   try {
     payload = await response.json();
   } catch {
-    throw new SearchUpstreamError("The search backend returned invalid JSON.");
+    throw new SearchUpstreamError("backendInvalidJson");
   }
 
   if (!payload || typeof payload !== "object") {
-    throw new SearchUpstreamError("The search backend returned an empty body.");
+    throw new SearchUpstreamError("backendEmptyBody");
   }
 
   return payload as SearxResponse;

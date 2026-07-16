@@ -1,6 +1,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { useThemeTransition } from "@/components/providers/use-theme-transition";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ type ThemeToggleProps = {
 };
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
+  const t = useTranslations("ThemeToggle");
   const { resolvedTheme, setTheme } = useThemeTransition();
 
   function toggleTheme() {
@@ -34,8 +36,8 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       <span className="hidden items-center justify-center dark:flex">
         <Moon className="size-4" />
       </span>
-      <span className="dark:hidden">Light</span>
-      <span className="hidden dark:inline">Dark</span>
+      <span className="dark:hidden">{t("light")}</span>
+      <span className="hidden dark:inline">{t("dark")}</span>
     </Button>
   );
 }

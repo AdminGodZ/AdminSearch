@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
 import { SettingsPagePreview } from "@/features/settings/components/settings-page-preview";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 
-export const metadata: Metadata = {
-  title: "Settings",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Metadata");
+
+  return { title: t("settingsTitle") };
+}
 
 export default async function SettingsPage() {
   const preferences = await getPersistedPreferences();

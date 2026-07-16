@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
 import { buildVideoPreviewEmbedUrl } from "@/features/search/lib/video-preview-url";
@@ -101,6 +102,7 @@ export function VideoResultCard({
   showThumbnails = true,
   urlFormatting = "pretty",
 }: VideoResultCardProps) {
+  const t = useTranslations("Search");
   const meta = getResultMeta(result, faviconResolver);
   const formattedUrl = formatResultUrl(result, meta, urlFormatting);
   const [showPreview, setShowPreview] = useState(false);
@@ -167,12 +169,12 @@ export function VideoResultCard({
             <div className="aspect-video overflow-hidden rounded-2xl bg-[var(--surface-panel)]">
               {!showThumbnails ? (
                 <div className="flex h-full items-center justify-center text-sm text-[var(--text-soft-alt)]">
-                  Preview hidden
+                  {t("previewHidden")}
                 </div>
               ) : showPreview && previewSrc ? (
                 <iframe
                   src={previewSrc}
-                  title={`${result.title} preview`}
+                  title={t("videoPreviewTitle", { title: result.title })}
                   allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                   allowFullScreen
                   referrerPolicy="no-referrer"
@@ -190,7 +192,7 @@ export function VideoResultCard({
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-[var(--text-soft-alt)]">
-                  No thumbnail
+                  {t("noThumbnail")}
                 </div>
               )}
             </div>

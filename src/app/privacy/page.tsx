@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
 
-export const metadata: Metadata = {
-  title: "Privacy",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Metadata");
 
-export default function PrivacyPage() {
+  return { title: t("privacyTitle") };
+}
+
+export default async function PrivacyPage() {
+  const t = await getTranslations("Privacy");
+
   return (
     <main className="flex min-h-screen flex-col bg-background">
       <section className="border-b border-border/70 px-6 py-6 sm:px-8 lg:px-10">
@@ -28,101 +33,80 @@ export default function PrivacyPage() {
         <div className="mx-auto max-w-3xl space-y-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-              Privacy
+              {t("title")}
             </h1>
             <p className="text-sm leading-6 text-[var(--text-body)]">
-              AdminSearch is designed to minimize data collection while
-              providing search through a private SearXNG backend.
+              {t("intro")}
             </p>
           </div>
 
           <section className="space-y-3">
             <h2 className="text-lg font-medium text-foreground">
-              Search requests
+              {t("searchRequestsTitle")}
             </h2>
             <p className="text-sm leading-7 text-[var(--text-body)]">
-              Search and autocomplete terms are sent to the AdminSearch server
-              and then to its private SearXNG service. SearXNG contacts the
-              selected external search providers and returns their results.
-              AdminSearch does not require an account and does not include
-              client-side analytics or advertising trackers.
+              {t("searchRequestsBody")}
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-lg font-medium text-foreground">
-              Browser storage
+              {t("browserStorageTitle")}
             </h2>
             <p className="text-sm leading-7 text-[var(--text-body)]">
-              Preferences are stored in a first-party cookie for up to one year,
-              or for the current session if persistent storage is disabled.
-              Language and storage choices use local or session storage. If
-              result reuse is enabled, recent search results can be kept in
-              session storage for up to 30 minutes. The cookie is sent only to
-              AdminSearch; local and session storage stay on your device. All of
-              this data can be removed through your browser&apos;s site data
-              controls.
+              {t("browserStorageBody")}
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-lg font-medium text-foreground">
-              Rate limiting
+              {t("rateLimitingTitle")}
             </h2>
             <p className="text-sm leading-7 text-[var(--text-body)]">
-              The server may use your IP address as part of a temporary
-              Redis/Valkey rate-limit key. The key expires after the configured
-              rate-limit window, which is one minute by default. AdminSearch
-              does not maintain a separate account database or server-side
-              search history.
+              {t("rateLimitingBody")}
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-lg font-medium text-foreground">
-              External content
+              {t("externalContentTitle")}
             </h2>
             <p className="text-sm leading-7 text-[var(--text-body)]">
-              Favicons are fetched by the AdminSearch server from Google or
-              DuckDuckGo. Result thumbnails are loaded from their source, and
-              optional video previews can connect your browser to providers such
-              as YouTube, Vimeo, Dailymotion, or Odysee. Favicons and thumbnails
-              can be disabled in settings.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-lg font-medium text-foreground">Hosting</h2>
-            <p className="text-sm leading-7 text-[var(--text-body)]">
-              The maintained deployment is hosted on Railway in Amsterdam.
-              Railway processes the network and technical request data needed to
-              operate the service, and infrastructure logs may include request
-              metadata. Self-hosted AdminSearch instances may use different
-              providers, logging, and retention settings.
+              {t("externalContentBody")}
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-lg font-medium text-foreground">
-              Source and questions
+              {t("hostingTitle")}
             </h2>
             <p className="text-sm leading-7 text-[var(--text-body)]">
-              AdminSearch is open source. You can review the code or contact the
-              maintainer through the{" "}
-              <a
-                href="https://github.com/AdminGodZ/AdminSearch"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-foreground/70"
-              >
-                GitHub repository
-              </a>
-              .
+              {t("hostingBody")}
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-medium text-foreground">
+              {t("sourceTitle")}
+            </h2>
+            <p className="text-sm leading-7 text-[var(--text-body)]">
+              {t.rich("sourceBody", {
+                link: (chunks) => (
+                  <a
+                    href="https://github.com/AdminGodZ/AdminSearch"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-foreground/70"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
             </p>
           </section>
 
           <p className="text-xs leading-5 text-[var(--text-soft)]">
-            Last updated: June 30, 2026
+            {t("lastUpdated")}
           </p>
         </div>
       </div>

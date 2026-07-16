@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
 
@@ -13,11 +14,13 @@ export function ThemeLogo({
   sizes,
   priority = false,
 }: ThemeLogoProps) {
+  const t = useTranslations("ThemeLogo");
+
   return (
     <>
       <Image
         src="/logo_dark.png"
-        alt="AdminSearch logo"
+        alt={t("alt")}
         fill
         className={cn("dark:hidden", className)}
         sizes={sizes}
@@ -25,7 +28,7 @@ export function ThemeLogo({
       />
       <Image
         src="/logo_white.png"
-        alt="AdminSearch logo"
+        alt={t("alt")}
         fill
         className={cn("hidden dark:block", className)}
         sizes={sizes}

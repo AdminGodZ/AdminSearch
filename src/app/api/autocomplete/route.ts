@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 import { getClientIp } from "@/server/client-ip";
@@ -26,6 +27,7 @@ function getSearxBaseUrl() {
 }
 
 export async function GET(request: Request) {
+  const t = await getTranslations("ApiErrors");
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
   const rateLimit = await checkRateLimit(
     `autocomplete:${getClientIp(request)}`,
@@ -38,7 +40,7 @@ export async function GET(request: Request) {
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
-      { message: "Too many autocomplete requests. Please try again shortly." },
+      { message: t("tooManyAutocompleteRequests") },
       {
         status: 429,
         headers: rateLimitHeaders,
