@@ -17,7 +17,8 @@
 - English and German interface localization
 - Server-side SearXNG proxying
 - Redis/Valkey-backed rate limiting
-- Light and dark themes
+- Light, dark, and system appearance modes with
+  [tracked named themes](./THEMES.md)
 - Docker Compose setup for self-hosting
 - Separate Docker images for Railway and similar platforms
 
