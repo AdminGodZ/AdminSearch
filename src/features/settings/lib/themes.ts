@@ -6,6 +6,14 @@ export const colorThemes = [
     label: "GitHub",
     value: "github",
   },
+  {
+    label: "Codex",
+    value: "codex",
+  },
+  {
+    label: "Vercel",
+    value: "vercel",
+  },
 ] as const;
 
 export type ColorTheme = (typeof colorThemes)[number]["value"];
