@@ -16,7 +16,7 @@ type ViewTransition = {
 };
 
 export function useThemeTransition() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme, theme } = useTheme();
 
   function setThemeWithTransition(nextTheme: string) {
     const transitionDocument = document as ViewTransitionDocument;
@@ -46,5 +46,6 @@ export function useThemeTransition() {
   return {
     resolvedTheme,
     setTheme: setThemeWithTransition,
+    theme,
   };
 }

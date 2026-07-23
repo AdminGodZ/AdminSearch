@@ -37,7 +37,8 @@
     },
     "themes": {
       "light": "Light",
-      "dark": "Dark"
+      "dark": "Dark",
+      "system": "System"
     },
     "urlFormats": {
       "pretty": "Pretty",
@@ -210,8 +211,10 @@
     "interface": {
       "uiLanguageLabel": "UI language",
       "uiLanguageDescription": "AdminSearch interface language, separate from search locale.",
+      "appearanceLabel": "Appearance",
+      "appearanceDescription": "Use light or dark mode, or follow your system preference.",
       "themeLabel": "Theme",
-      "themeDescription": "Control the app theme here instead of mirroring the native SearXNG theme.",
+      "themeDescription": "Choose the color theme used in both light and dark mode.",
       "openNewTabLabel": "Open results in new tab",
       "openNewTabDescription": "Links from results open in a new browser tab.",
       "urlFormattingLabel": "URL formatting",

@@ -3,9 +3,11 @@ import { Geist } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { ThemePreferencesSync } from "@/components/providers/theme-preferences-sync";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { getPersistedPreferences } from "@/features/settings/server/preferences";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -30,11 +32,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = await getLocale();
+  const [locale, preferences] = await Promise.all([
+    getLocale(),
+    getPersistedPreferences(),
+  ]);
 
   return (
     <html
       lang={locale}
+      data-color-theme={preferences.settings.colorTheme}
       suppressHydrationWarning
       className={`min-h-full font-sans ${geist.variable}`}
     >
@@ -42,9 +48,10 @@ export default async function RootLayout({
         <NextIntlClientProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
+            defaultTheme={preferences.settings.theme}
+            enableSystem
           >
+            <ThemePreferencesSync />
             <TooltipProvider>
               {children}
               <Toaster position="bottom-center" visibleToasts={3} />

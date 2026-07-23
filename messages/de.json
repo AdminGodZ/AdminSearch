@@ -37,7 +37,8 @@
     },
     "themes": {
       "light": "Hell",
-      "dark": "Dunkel"
+      "dark": "Dunkel",
+      "system": "System"
     },
     "urlFormats": {
       "pretty": "Lesbar",
@@ -210,8 +211,10 @@
     "interface": {
       "uiLanguageLabel": "Oberflächensprache",
       "uiLanguageDescription": "Sprache der AdminSearch-Oberfläche, unabhängig von der Suchregion.",
-      "themeLabel": "Design",
-      "themeDescription": "Steuere das App-Design hier, unabhängig vom nativen SearXNG-Design.",
+      "appearanceLabel": "Darstellung",
+      "appearanceDescription": "Verwende den hellen oder dunklen Modus oder folge der Systemeinstellung.",
+      "themeLabel": "Farbschema",
+      "themeDescription": "Wähle das Farbschema für den hellen und dunklen Modus.",
       "openNewTabLabel": "Ergebnisse in neuem Tab öffnen",
       "openNewTabDescription": "Links aus den Ergebnissen werden in einem neuen Browser-Tab geöffnet.",
       "urlFormattingLabel": "URL-Darstellung",
