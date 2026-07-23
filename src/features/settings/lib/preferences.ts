@@ -1,4 +1,12 @@
 import type { SearchTab } from "@/features/search/types";
+import {
+  appearanceModes,
+  type AppearanceMode,
+  colorThemes,
+  type ColorTheme,
+  DEFAULT_APPEARANCE_MODE,
+  DEFAULT_COLOR_THEME,
+} from "@/features/settings/lib/themes";
 
 export const SETTINGS_COOKIE_NAME = "adminsearch-settings";
 export const UI_LANGUAGE_STORAGE_KEY = "adminsearch-language";
@@ -6,7 +14,8 @@ export const SETTINGS_PERSIST_MODE_STORAGE_KEY = "adminsearch-settings-persist";
 export const SETTINGS_SYNC_EVENT = "adminsearch:settings-sync";
 export const SETTINGS_SYNC_STORAGE_KEY = "adminsearch-settings-sync";
 const LEGACY_SETTINGS_COOKIE_VERSION = 1;
-const SETTINGS_COOKIE_VERSION = 2;
+const PREVIOUS_SETTINGS_COOKIE_VERSION = 2;
+const SETTINGS_COOKIE_VERSION = 3;
 
 export type SettingsState = {
   locale: string;
@@ -20,7 +29,8 @@ export type SettingsState = {
   resultReuseMode: string;
   urlFormatting: string;
   uiLanguage: string;
-  theme: string;
+  theme: AppearanceMode;
+  colorTheme: ColorTheme;
   openInNewTab: boolean;
   infiniteScroll: boolean;
   showFavicons: boolean;
@@ -77,7 +87,8 @@ export const defaultSettingsState: SettingsState = {
   resultReuseMode: "fresh",
   urlFormatting: "pretty",
   uiLanguage: "en",
-  theme: "light",
+  theme: DEFAULT_APPEARANCE_MODE,
+  colorTheme: DEFAULT_COLOR_THEME,
   openInNewTab: true,
   infiniteScroll: true,
   showFavicons: true,
@@ -335,6 +346,7 @@ export function parsePreferencesCookie(
 
   if (
     payload.version !== SETTINGS_COOKIE_VERSION &&
+    payload.version !== PREVIOUS_SETTINGS_COOKIE_VERSION &&
     payload.version !== LEGACY_SETTINGS_COOKIE_VERSION
   ) {
     return defaults;
@@ -410,10 +422,16 @@ export function parsePreferencesCookie(
         defaults.settings.uiLanguage,
         ["en", "de"],
       ),
-      theme: sanitizeStringSetting(settings.theme, defaults.settings.theme, [
-        "light",
-        "dark",
-      ]),
+      theme: sanitizeStringSetting(
+        settings.theme,
+        defaults.settings.theme,
+        appearanceModes,
+      ) as AppearanceMode,
+      colorTheme: sanitizeStringSetting(
+        settings.colorTheme,
+        defaults.settings.colorTheme,
+        colorThemes.map(({ value }) => value),
+      ) as ColorTheme,
       urlFormatting: sanitizeStringSetting(
         settings.urlFormatting,
         defaults.settings.urlFormatting,
@@ -528,7 +546,10 @@ export function preferencesCookieNeedsMigration(rawValue: string | undefined) {
 
   try {
     const payload = JSON.parse(decoded) as StoredPreferencesPayload;
-    return payload.version === LEGACY_SETTINGS_COOKIE_VERSION;
+    return (
+      payload.version === LEGACY_SETTINGS_COOKIE_VERSION ||
+      payload.version === PREVIOUS_SETTINGS_COOKIE_VERSION
+    );
   } catch {
     return false;
   }

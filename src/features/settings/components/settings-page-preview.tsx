@@ -40,6 +40,13 @@ import {
   type SettingsState,
 } from "@/features/settings/lib/preferences";
 import {
+  appearanceModes,
+  applyColorTheme,
+  colorThemes,
+  isAppearanceMode,
+  isColorTheme,
+} from "@/features/settings/lib/themes";
+import {
   broadcastSettingsSync,
   persistPreferencesCookie as persistCookie,
   persistSettingsStorageMode,
@@ -273,7 +280,7 @@ export function SettingsPagePreview({
   const t = useTranslations("Settings");
   const common = useTranslations("Common");
   const router = useRouter();
-  const { resolvedTheme, setTheme } = useThemeTransition();
+  const { setTheme, theme: activeAppearanceMode } = useThemeTransition();
   const saveHandlerRef = useRef<() => void>(() => undefined);
   const discardHandlerRef = useRef<() => void>(() => undefined);
   const [settings, setSettings] = useState<SettingsState>(initialSettings);
@@ -350,23 +357,23 @@ export function SettingsPagePreview({
 
   useEffect(() => {
     if (
-      !resolvedTheme ||
-      (resolvedTheme !== "light" && resolvedTheme !== "dark")
+      !activeAppearanceMode ||
+      !isAppearanceMode(activeAppearanceMode)
     ) {
       return;
     }
 
     setSettings((current) =>
-      current.theme === resolvedTheme
+      current.theme === activeAppearanceMode
         ? current
-        : { ...current, theme: resolvedTheme },
+        : { ...current, theme: activeAppearanceMode },
     );
     setSavedSettings((current) =>
-      current.theme === resolvedTheme
+      current.theme === activeAppearanceMode
         ? current
-        : { ...current, theme: resolvedTheme },
+        : { ...current, theme: activeAppearanceMode },
     );
-  }, [resolvedTheme]);
+  }, [activeAppearanceMode]);
 
   const isDirty = useMemo(() => {
     const settingsChanged = (
@@ -437,6 +444,7 @@ export function SettingsPagePreview({
       nextSettings.storeDefaultsLocally,
     );
     document.documentElement.lang = nextSettings.uiLanguage;
+    applyColorTheme(nextSettings.colorTheme);
     broadcastSettingsSync();
 
     void setTheme(nextSettings.theme);
@@ -776,16 +784,37 @@ export function SettingsPagePreview({
                   />
                 </SettingRow>
                 <SettingRow
+                  label={t("interface.appearanceLabel")}
+                  description={t("interface.appearanceDescription")}
+                >
+                  <SettingSelect
+                    value={settings.theme}
+                    onValueChange={(value) => {
+                      if (isAppearanceMode(value)) {
+                        updateSetting("theme", value);
+                      }
+                    }}
+                    options={appearanceModes.map((value) => ({
+                      value,
+                      label: common(`themes.${value}`),
+                    }))}
+                  />
+                </SettingRow>
+                <SettingRow
                   label={t("interface.themeLabel")}
                   description={t("interface.themeDescription")}
                 >
                   <SettingSelect
-                    value={settings.theme}
-                    onValueChange={(value) => updateSetting("theme", value)}
-                    options={[
-                      { value: "light", label: common("themes.light") },
-                      { value: "dark", label: common("themes.dark") },
-                    ]}
+                    value={settings.colorTheme}
+                    onValueChange={(value) => {
+                      if (isColorTheme(value)) {
+                        updateSetting("colorTheme", value);
+                      }
+                    }}
+                    options={colorThemes.map(({ label, value }) => ({
+                      label,
+                      value,
+                    }))}
                   />
                 </SettingRow>
                 <SettingRow
