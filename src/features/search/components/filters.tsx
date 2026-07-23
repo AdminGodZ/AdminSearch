@@ -128,7 +128,7 @@ export function Filters({ language, timeRange, safeSearch }: FiltersProps) {
           type="button"
           className={cn(
             searchTabTriggerClassName,
-            "inline-flex items-center justify-center gap-1.5 leading-none data-[state=open]:border-b-transparent data-[state=open]:text-foreground",
+            "inline-flex items-center justify-center gap-1.5 leading-none data-[state=open]:border-b-transparent data-[state=open]:text-foreground dark:data-[state=open]:text-white",
           )}
           aria-label={t("moreAria")}
         >
@@ -144,7 +144,7 @@ export function Filters({ language, timeRange, safeSearch }: FiltersProps) {
       >
         {groups.map((group) => (
           <DropdownMenuSub key={group.key}>
-            <DropdownMenuSubTrigger className="rounded-xl py-2.5 pr-3 pl-3 focus:bg-[#f4f4f5] dark:focus:bg-[#27272a] data-[state=open]:bg-[#f4f4f5] dark:data-[state=open]:bg-[#27272a]">
+            <DropdownMenuSubTrigger className="rounded-xl py-2.5 pr-3 pl-3">
               <div className="min-w-0">
                 <p className="text-sm leading-5">{group.label}</p>
                 <p className="truncate text-sm text-[var(--text-soft-alt)]">
@@ -163,7 +163,7 @@ export function Filters({ language, timeRange, safeSearch }: FiltersProps) {
                     key={option.value}
                     value={option.value}
                     className={cn(
-                      "rounded-xl py-2.5 pr-8 pl-3 focus:bg-[#f4f4f5] dark:focus:bg-[#27272a]",
+                      "rounded-xl py-2.5 pr-8 pl-3",
                       option.value === group.value
                         ? "text-foreground"
                         : "text-[var(--text-body)]",

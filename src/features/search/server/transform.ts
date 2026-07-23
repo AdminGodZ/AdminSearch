@@ -25,6 +25,27 @@ function readString(record: SearxRawResult, keys: string[]) {
   return undefined;
 }
 
+function readStringArray(record: SearxRawResult, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    const strings = value.filter(
+      (item): item is string =>
+        typeof item === "string" && item.trim() !== "",
+    );
+
+    if (strings.length > 0) {
+      return [...new Set(strings)];
+    }
+  }
+
+  return undefined;
+}
+
 function readSnippet(record: SearxRawResult) {
   const value = readString(record, ["content", "snippet", "description"]);
 
@@ -92,6 +113,13 @@ function normalizeResult(
   const author = readString(result, ["author"]);
   const duration = readString(result, ["length"]);
   const publishedAt = readPublishedAt(result);
+  const imageSource = readString(result, ["source"]);
+  const resolution = readString(result, ["resolution"]);
+  const imageFormat = readString(result, ["img_format"]);
+  const fileSize = readString(result, ["filesize", "file_size"]);
+  const metadata = readString(result, ["metadata"]);
+  const views = readString(result, ["views"]);
+  const engines = readStringArray(result, ["engines"]);
 
   return {
     id: `${tab}-${index}-${encodeURIComponent(url)}`,
@@ -107,7 +135,14 @@ function normalizeResult(
     duration,
     publishedAt,
     source: hostname,
+    imageSource,
+    resolution,
+    imageFormat,
+    fileSize,
+    metadata,
+    views,
     engine,
+    engines: engines ?? (engine ? [engine] : undefined),
   };
 }
 
