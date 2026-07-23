@@ -43,12 +43,15 @@ function readThumbnail(result: SearxRawResult) {
   return normalizeWebUrl(
     readString(result, [
       "thumbnail_src",
-      "img_src",
       "thumbnail",
       "thumbnail_url",
       "img",
     ]),
   );
+}
+
+function readImage(result: SearxRawResult) {
+  return normalizeWebUrl(readString(result, ["img_src"]));
 }
 
 function readPreviewUrl(result: SearxRawResult) {
@@ -79,7 +82,8 @@ function normalizeResult(
     hostname ??
     (tab === "images" ? labels.untitledImage : labels.untitledResult);
 
-  const thumbnailUrl = readThumbnail(result);
+  const imageUrl = readImage(result);
+  const thumbnailUrl = readThumbnail(result) ?? imageUrl;
   const previewUrl = readPreviewUrl(result);
   const displayUrl =
     readString(result, ["pretty_url", "parsed_url"]) ?? hostname ?? url;
@@ -96,6 +100,7 @@ function normalizeResult(
     url,
     displayUrl,
     snippet,
+    imageUrl,
     thumbnailUrl,
     previewUrl,
     author,
@@ -302,9 +307,21 @@ function extractInfoboxUrls(rawUrls: unknown) {
     return [];
   }
 
-  return rawUrls
+  const normalizedUrls = rawUrls
     .map((urlEntry) => normalizeInfoboxUrl(urlEntry))
     .filter((urlEntry): urlEntry is SearchInfoboxUrl => urlEntry !== null);
+
+  const uniqueUrls = new Map<string, SearchInfoboxUrl>();
+
+  for (const urlEntry of normalizedUrls) {
+    const existingEntry = uniqueUrls.get(urlEntry.url);
+
+    if (!existingEntry || (urlEntry.official && !existingEntry.official)) {
+      uniqueUrls.set(urlEntry.url, urlEntry);
+    }
+  }
+
+  return [...uniqueUrls.values()];
 }
 
 function normalizeInfoboxRelatedTopic(

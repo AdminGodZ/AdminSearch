@@ -16,6 +16,43 @@ type ImageGridProps = {
   showThumbnails?: boolean;
 };
 
+function ImageResultPreview({
+  imageUrl,
+  thumbnailUrl,
+  title,
+}: Pick<SearchResult, "imageUrl" | "thumbnailUrl" | "title">) {
+  const t = useTranslations("Search");
+  const [source, setSource] = useState(imageUrl ?? thumbnailUrl);
+
+  if (!source) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+        {t("noPreview")}
+      </div>
+    );
+  }
+
+  return (
+    // biome-ignore lint/performance/noImgElement: Image search uses SearXNG's original remote image URL and falls back to its thumbnail.
+    <img
+      src={source}
+      alt={title}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      className="h-full w-full bg-white object-contain"
+      onError={() => {
+        if (thumbnailUrl && source !== thumbnailUrl) {
+          setSource(thumbnailUrl);
+          return;
+        }
+
+        setSource(undefined);
+      }}
+    />
+  );
+}
+
 function ImageFavicon({
   faviconResolver,
   url,
@@ -97,14 +134,11 @@ export function ImageGrid({
               <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
                 {t("previewHidden")}
               </div>
-            ) : result.thumbnailUrl ? (
-              // biome-ignore lint/performance/noImgElement: Direct remote thumbnails are an explicit MVP tradeoff for image search.
-              <img
-                src={result.thumbnailUrl}
-                alt={result.title}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+            ) : result.imageUrl || result.thumbnailUrl ? (
+              <ImageResultPreview
+                imageUrl={result.imageUrl}
+                thumbnailUrl={result.thumbnailUrl}
+                title={result.title}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">

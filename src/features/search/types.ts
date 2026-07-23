@@ -17,6 +17,7 @@ export type SearchResult = {
   url: string;
   displayUrl?: string;
   snippet?: string;
+  imageUrl?: string;
   thumbnailUrl?: string;
   previewUrl?: string;
   author?: string;
