@@ -24,7 +24,14 @@ export type SearchResult = {
   duration?: string;
   publishedAt?: string;
   source?: string;
+  imageSource?: string;
+  resolution?: string;
+  imageFormat?: string;
+  fileSize?: string;
+  metadata?: string;
+  views?: string;
   engine?: string;
+  engines?: string[];
 };
 
 export type SearchInfobox = {
