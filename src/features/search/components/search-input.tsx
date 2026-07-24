@@ -242,11 +242,12 @@ export function SearchInput({
         placeholder={placeholder}
         maxLength={SEARCH_QUERY_MAX_LENGTH}
         className={cn(
-          "rounded-full border-transparent bg-[var(--control-bg)] pr-12 pl-12 text-foreground shadow-none [transition-property:border-color,box-shadow,color,background-color] active:bg-[var(--control-hover)] focus:bg-[var(--control-active)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] focus-visible:ring-0 dark:text-white dark:placeholder:text-white/60",
+          "rounded-full border-transparent bg-[var(--control-bg)] pr-12 pl-12 text-foreground shadow-none [transition-property:border-color,box-shadow,color,background-color] focus-visible:border-transparent focus-visible:ring-0 dark:text-white dark:placeholder:text-white/60",
           inputSizeClasses[size],
           className,
-          isMergedOpen &&
-            "rounded-b-none rounded-t-[1.75rem] border-b border-b-[#ebebeb] bg-[var(--control-active)] dark:border-b-white/10 dark:bg-[var(--control-active)]",
+          isMergedOpen
+            ? "rounded-b-none rounded-t-[1.75rem] border-b border-b-[var(--surface-separator)] [background-image:linear-gradient(var(--control-active),var(--control-active))]"
+            : "active:bg-[var(--control-hover)] focus:bg-[var(--control-active)] focus-visible:bg-[var(--control-active)]",
         )}
         autoComplete="off"
         spellCheck={false}
@@ -278,8 +279,8 @@ export function SearchInput({
       ) : null}
 
       {isMergedOpen ? (
-        <div className="absolute top-[calc(100%-1px)] left-0 z-30 w-full overflow-hidden rounded-b-[1.75rem] bg-[var(--control-active)] shadow-none dark:bg-[var(--control-active)]">
-          <div className="h-px w-full bg-[#dddddd] dark:bg-white/10" />
+        <div className="absolute top-[calc(100%-1px)] left-0 z-30 w-full overflow-hidden rounded-b-[1.75rem] bg-[var(--control-bg)] shadow-none [background-image:linear-gradient(var(--control-active),var(--control-active))]">
+          <div className="h-px w-full bg-[var(--surface-separator)]" />
           <div id={suggestionsId} role="listbox" className="p-2">
             {suggestions.map((suggestion, index) => (
               <div key={suggestion}>
