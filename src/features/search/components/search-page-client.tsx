@@ -390,19 +390,21 @@ function SearchSidebar({
       {data.infoboxes.map((infobox) => (
         <Card
           key={infobox.id}
-          className={cn(sidebarCardClassName, "overflow-hidden")}
+          className={cn(sidebarCardClassName, "overflow-hidden py-0")}
         >
           <CardContent className="space-y-6 p-7">
             {infobox.imageUrl ? (
-              <div className="flex max-h-[240px] min-h-[160px] w-full items-center justify-center overflow-hidden rounded-2xl p-4">
-                {/* biome-ignore lint/performance/noImgElement: Infobox images are remote SearXNG-provided media with dynamic origins. */}
-                <img
-                  src={infobox.imageUrl}
-                  alt={infobox.title}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  className="max-h-[208px] w-full object-contain"
-                />
+              <div className="border-b border-[var(--surface-separator)] pb-6">
+                <div className="flex max-h-[240px] min-h-[160px] w-full items-center justify-center overflow-hidden rounded-2xl bg-white p-4">
+                  {/* biome-ignore lint/performance/noImgElement: Infobox images are remote SearXNG-provided media with dynamic origins. */}
+                  <img
+                    src={infobox.imageUrl}
+                    alt={infobox.title}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    className="max-h-[208px] w-full object-contain"
+                  />
+                </div>
               </div>
             ) : null}
             <div className="space-y-1.5">
@@ -448,14 +450,16 @@ function SearchSidebar({
                     {attribute.image || attribute.value ? (
                       <dd className="min-w-0 space-y-3">
                         {attribute.image ? (
-                          // biome-ignore lint/performance/noImgElement: Infobox attribute images are remote SearXNG-provided media with dynamic origins.
-                          <img
-                            src={attribute.image.src}
-                            alt={attribute.image.alt ?? attribute.label}
-                            loading="lazy"
-                            referrerPolicy="no-referrer"
-                            className="max-h-[152px] max-w-full rounded-xl object-contain"
-                          />
+                          <div className="inline-flex max-w-full items-center justify-center overflow-hidden rounded-xl bg-white p-3">
+                            {/* biome-ignore lint/performance/noImgElement: Infobox attribute images are remote SearXNG-provided media with dynamic origins. */}
+                            <img
+                              src={attribute.image.src}
+                              alt={attribute.image.alt ?? attribute.label}
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                              className="max-h-[152px] max-w-full object-contain"
+                            />
+                          </div>
                         ) : null}
                         {attribute.value ? (
                           <p className="break-words text-[14px] leading-6 text-[var(--text-body)] [overflow-wrap:anywhere]">
@@ -471,7 +475,7 @@ function SearchSidebar({
 
             {infobox.urls.length ? (
               <div className="space-y-3 border-t border-border/40 pt-6">
-                <p className="text-xs font-medium tracking-[0.16em] text-[var(--text-soft)] uppercase">
+                <p className="text-sm font-medium text-[var(--text-strong)]">
                   {t("links")}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -1111,33 +1115,22 @@ export function SearchPageClient({
                         resultsSectionClass,
                       )}
                     >
-                      {activeData.totalResults ? (
-                        <>
-                          {activeData.requestDurationMs
-                            ? t("aboutTotalWithDuration", {
-                                count: activeData.totalResults,
-                                type: resultsLabel,
-                                duration: format.number(
-                                  activeData.requestDurationMs / 1000,
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  },
-                                ),
-                              })
-                            : t("aboutTotal", {
-                                count: activeData.totalResults,
-                                type: resultsLabel,
-                              })}
-                        </>
-                      ) : (
-                        <>
-                          {t("showing", {
+                      {activeData.requestDurationMs
+                        ? t("showingWithDuration", {
+                            count: activeData.results.length,
+                            type: resultsLabel,
+                            duration: format.number(
+                              activeData.requestDurationMs / 1000,
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            ),
+                          })
+                        : t("showing", {
                             count: activeData.results.length,
                             type: resultsLabel,
                           })}
-                        </>
-                      )}
                     </p>
                   ) : null}
 
