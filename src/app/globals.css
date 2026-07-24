@@ -273,6 +273,7 @@
     @apply scroll-smooth font-sans;
     background-color: var(--background);
     overflow-y: auto;
+    scrollbar-gutter: stable;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     scrollbar-width: thin;
   }

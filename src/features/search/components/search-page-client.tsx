@@ -475,7 +475,7 @@ function SearchSidebar({
 
             {infobox.urls.length ? (
               <div className="space-y-3 border-t border-border/40 pt-6">
-                <p className="text-sm font-medium text-[var(--text-strong)]">
+                <p className="text-sm font-medium text-[var(--text-soft)]">
                   {t("links")}
                 </p>
                 <div className="flex flex-wrap gap-2">

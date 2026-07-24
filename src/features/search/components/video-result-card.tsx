@@ -177,7 +177,7 @@ export function VideoResultCard({
                   title={t("videoPreviewTitle", { title: result.title })}
                   allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                   allowFullScreen
-                  referrerPolicy="no-referrer"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   sandbox="allow-same-origin allow-scripts allow-presentation"
                   className="h-full w-full border-0"
                 />
