@@ -111,9 +111,8 @@
       "videos": "Videoergebnisse",
       "news": "Nachrichtenergebnisse"
     },
-    "aboutTotal": "Ungefähr {count, number} {type} insgesamt",
-    "aboutTotalWithDuration": "Ungefähr {count, number} {type} insgesamt ({duration}s)",
     "showing": "{count, number} {type} werden angezeigt",
+    "showingWithDuration": "{count, number} {type} werden angezeigt ({duration}s)",
     "errorTitle": "Suchfehler",
     "readyTitle": "Bereit für deine Suche",
     "readyDescription": "Starte mit einer Suchanfrage und wechsle dann zwischen Web, Bildern, Videos und Nachrichten, ohne diese Seite zu verlassen.",

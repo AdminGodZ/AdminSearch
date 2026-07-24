@@ -111,9 +111,8 @@
       "videos": "video results",
       "news": "news results"
     },
-    "aboutTotal": "About {count, number} total {type}",
-    "aboutTotalWithDuration": "About {count, number} total {type} ({duration}s)",
     "showing": "Showing {count, number} {type}",
+    "showingWithDuration": "Showing {count, number} {type} ({duration}s)",
     "errorTitle": "Search error",
     "readyTitle": "Ready when you are",
     "readyDescription": "Start with a query, then switch between web, images, videos, and news without leaving this page.",
