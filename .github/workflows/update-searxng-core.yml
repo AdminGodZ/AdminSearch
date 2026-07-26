@@ -47,25 +47,31 @@ jobs:
             exit 1
           fi
 
-          echo "image=docker.io/searxng/searxng@${DIGEST}" >> "$GITHUB_OUTPUT"
+          if [[ ! "${DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Docker Hub returned an invalid SearXNG digest: ${DIGEST}" >&2
+            exit 1
+          fi
 
-      - name: Update searxng-core Dockerfile
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Track latest SearXNG digest
         shell: bash
         run: |
           set -euo pipefail
 
-          IMAGE="${{ steps.digest.outputs.image }}"
+          DIGEST="${{ steps.digest.outputs.digest }}"
 
           sed -i -E \
-            "s|^ARG SEARXNG_IMAGE=.*$|ARG SEARXNG_IMAGE=${IMAGE}|" \
+            "s|^# SearXNG latest digest: sha256:[0-9a-f]{64}$|# SearXNG latest digest: ${DIGEST}|" \
             searxng/Dockerfile
 
-          grep -Fqx "ARG SEARXNG_IMAGE=${IMAGE}" searxng/Dockerfile
+          grep -Fqx "# SearXNG latest digest: ${DIGEST}" searxng/Dockerfile
+          grep -Fqx "FROM docker.io/searxng/searxng:latest" searxng/Dockerfile
 
       - name: Test Docker build
         shell: bash
         run: |
-          docker build -f searxng/Dockerfile .
+          docker build --pull -f searxng/Dockerfile .
 
       - name: Commit and push if changed
         shell: bash
