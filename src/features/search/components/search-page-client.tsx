@@ -372,7 +372,7 @@ function SearchSidebar({
       {data.answers.length ? (
         <Card className={sidebarCardClassName}>
           <CardContent className="space-y-3 p-6">
-            <p className="text-xs tracking-[0.24em] text-[var(--text-soft)] uppercase">
+            <p className="text-xs text-[var(--text-soft)]">
               {t("quickAnswer")}
             </p>
             {data.answers.map((answer) => (
@@ -501,7 +501,7 @@ function SearchSidebar({
                     key={`${infobox.id}-${topic.name}`}
                     className="space-y-2.5"
                   >
-                    <p className="text-xs font-medium tracking-[0.16em] text-[var(--text-soft)] uppercase">
+                    <p className="text-xs font-medium text-[var(--text-soft)]">
                       {topic.name}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -1162,7 +1162,7 @@ export function SearchPageClient({
                     >
                       <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-2">
-                          <p className="text-xs tracking-[0.26em] text-[var(--text-soft)] uppercase">
+                          <p className="text-xs text-[var(--text-soft)]">
                             {t("readyTitle")}
                           </p>
                           <p className="max-w-xl text-sm leading-7 text-[var(--text-body)]">

@@ -256,7 +256,10 @@
       "title": "Suchmaschinen",
       "description": "Wähle die Suchmaschinen für jede Kategorie aus. Grundlage sind die in deiner SearXNG-Konfiguration aktivierten Suchmaschinen.",
       "filterPlaceholder": "Suchmaschinen filtern…",
-      "categoriesAria": "Suchmaschinenkategorien"
+      "categoriesAria": "Suchmaschinenkategorien",
+      "unavailable": "Funktioniert derzeit nicht.",
+      "unavailableWithReplacement": "Funktioniert derzeit nicht. Verwende stattdessen {replacement}.",
+      "unavailableToggle": "{engine} ist derzeit nicht verfügbar"
     },
     "special": {
       "title": "Spezialanfragen",

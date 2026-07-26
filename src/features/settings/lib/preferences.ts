@@ -55,15 +55,39 @@ export type UrlFormattingMode = "pretty" | "full" | "host";
 export type EngineGroupKey = "general" | "images" | "videos" | "news";
 export type EngineState = Record<EngineGroupKey, Set<string>>;
 
-const LEGACY_ENGINE_REPLACEMENTS: Record<
+const ENGINE_GROUP_KEYS: EngineGroupKey[] = [
+  "general",
+  "images",
+  "videos",
+  "news",
+];
+
+const UNAVAILABLE_ENGINE_REPLACEMENTS: Record<
   EngineGroupKey,
   Record<string, string | null>
 > = {
   general: { google: "google cse" },
   images: { "google images": "google cse images" },
-  videos: {},
+  videos: { "google videos": null },
   news: {},
 };
+
+export function isEngineUnavailable(
+  group: EngineGroupKey,
+  engine: string,
+) {
+  return Object.prototype.hasOwnProperty.call(
+    UNAVAILABLE_ENGINE_REPLACEMENTS[group],
+    engine,
+  );
+}
+
+export function getUnavailableEngineReplacement(
+  group: EngineGroupKey,
+  engine: string,
+) {
+  return UNAVAILABLE_ENGINE_REPLACEMENTS[group][engine];
+}
 
 type StoredPreferencesPayload = {
   version: number;
@@ -244,27 +268,22 @@ function sanitizeEngineSelection(
   group: EngineGroupKey,
   storedValue: unknown,
   fallback: Set<string>,
-  migrateLegacyEngines: boolean,
 ) {
   if (!Array.isArray(storedValue)) {
     return new Set(fallback);
   }
 
-  const replacements = LEGACY_ENGINE_REPLACEMENTS[group];
   const selected = storedValue.flatMap((engine) => {
     if (typeof engine !== "string") {
       return [];
     }
 
-    const replacement = migrateLegacyEngines
-      ? replacements[engine]
-      : undefined;
-
-    if (replacement === null) {
-      return [];
+    if (isEngineUnavailable(group, engine)) {
+      const replacement = getUnavailableEngineReplacement(group, engine);
+      return replacement ? [replacement] : [];
     }
 
-    return [replacement ?? engine];
+    return [engine];
   });
 
   return new Set(
@@ -354,8 +373,6 @@ export function parsePreferencesCookie(
 
   const settings = payload.settings ?? {};
   const engines = payload.engines ?? {};
-  const migrateLegacyEngines =
-    payload.version === LEGACY_SETTINGS_COOKIE_VERSION;
 
   return {
     settings: {
@@ -503,25 +520,21 @@ export function parsePreferencesCookie(
         "general",
         engines.general,
         defaults.engines.general,
-        migrateLegacyEngines,
       ),
       images: sanitizeEngineSelection(
         "images",
         engines.images,
         defaults.engines.images,
-        migrateLegacyEngines,
       ),
       videos: sanitizeEngineSelection(
         "videos",
         engines.videos,
         defaults.engines.videos,
-        migrateLegacyEngines,
       ),
       news: sanitizeEngineSelection(
         "news",
         engines.news,
         defaults.engines.news,
-        migrateLegacyEngines,
       ),
     },
   };
@@ -546,9 +559,23 @@ export function preferencesCookieNeedsMigration(rawValue: string | undefined) {
 
   try {
     const payload = JSON.parse(decoded) as StoredPreferencesPayload;
+    const hasUnavailableEngine = ENGINE_GROUP_KEYS.some((group) => {
+      const selectedEngines = payload.engines?.[group];
+
+      return (
+        Array.isArray(selectedEngines) &&
+        selectedEngines.some(
+          (engine) =>
+            typeof engine === "string" &&
+            isEngineUnavailable(group, engine),
+        )
+      );
+    });
+
     return (
       payload.version === LEGACY_SETTINGS_COOKIE_VERSION ||
-      payload.version === PREVIOUS_SETTINGS_COOKIE_VERSION
+      payload.version === PREVIOUS_SETTINGS_COOKIE_VERSION ||
+      hasUnavailableEngine
     );
   } catch {
     return false;
