@@ -26,6 +26,18 @@ export const colorThemes = [
     label: "Raycast",
     value: "raycast",
   },
+  {
+    label: "Xcode",
+    value: "xcode",
+  },
+  {
+    label: "Tokyo Night",
+    value: "tokyo-night",
+  },
+  {
+    label: "Material",
+    value: "material",
+  },
 ] as const;
 
 export type ColorTheme = (typeof colorThemes)[number]["value"];
