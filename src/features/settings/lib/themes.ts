@@ -14,6 +14,18 @@ export const colorThemes = [
     label: "Vercel",
     value: "vercel",
   },
+  {
+    label: "Linear",
+    value: "linear",
+  },
+  {
+    label: "Notion",
+    value: "notion",
+  },
+  {
+    label: "Raycast",
+    value: "raycast",
+  },
 ] as const;
 
 export type ColorTheme = (typeof colorThemes)[number]["value"];
