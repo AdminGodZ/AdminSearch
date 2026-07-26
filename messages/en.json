@@ -102,7 +102,7 @@
     "requestFailed": "Search request failed.",
     "scrollSuggestionsLeft": "Scroll suggestions left",
     "scrollSuggestionsRight": "Scroll suggestions right",
-    "quickAnswer": "Quick Answer",
+    "quickAnswer": "Quick answer",
     "links": "Links",
     "searchPlaceholder": "Search AdminSearch",
     "resultTypes": {
@@ -256,7 +256,10 @@
       "title": "Engines",
       "description": "Pick which engines run for each search category. Based on the engines enabled in your SearXNG config.",
       "filterPlaceholder": "Filter engines…",
-      "categoriesAria": "Engine categories"
+      "categoriesAria": "Engine categories",
+      "unavailable": "Currently not working.",
+      "unavailableWithReplacement": "Currently not working. Use {replacement} instead.",
+      "unavailableToggle": "{engine} is currently unavailable"
     },
     "special": {
       "title": "Special queries",

@@ -34,6 +34,8 @@ import {
   type EngineGroupKey,
   type EngineState,
   engineCatalog,
+  getUnavailableEngineReplacement,
+  isEngineUnavailable,
   normalizeHttpMethod,
   normalizeResultReuseMode,
   normalizeUrlFormattingMode,
@@ -132,10 +134,12 @@ function SettingRow({ label, description, children }: SettingRowProps) {
 
 function Toggle({
   checked,
+  disabled = false,
   onToggle,
   label,
 }: {
   checked: boolean;
+  disabled?: boolean;
   onToggle: () => void;
   label: string;
 }) {
@@ -145,12 +149,17 @@ function Toggle({
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={onToggle}
       className={cn(
         "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         checked
           ? "bg-foreground"
-          : "bg-[var(--surface-chip-border)] hover:bg-[var(--surface-chip-border)]/80",
+          : cn(
+              "bg-[var(--surface-chip-border)]",
+              !disabled && "hover:bg-[var(--surface-chip-border)]/80",
+            ),
+        disabled && "cursor-not-allowed opacity-50",
       )}
     >
       <span
@@ -217,24 +226,55 @@ function EngineRows({ groupKey, filter, selected, onToggle }: EngineRowsProps) {
           {t("noEngines")}
         </p>
       ) : (
-        filtered.map((engine) => (
-          <div
-            key={engine}
-            className="flex min-h-14 items-center justify-between gap-4 py-3"
-          >
-            <span className="min-w-0 truncate text-[14.5px] font-medium text-[var(--text-strong)]">
-              {engine}
-            </span>
-            <Toggle
-              checked={selected.has(engine)}
-              onToggle={() => onToggle(engine)}
-              label={t(
-                selected.has(engine) ? "disableEngine" : "enableEngine",
-                { engine },
-              )}
-            />
-          </div>
-        ))
+        filtered.map((engine) => {
+          const unavailable = isEngineUnavailable(groupKey, engine);
+          const replacement = getUnavailableEngineReplacement(
+            groupKey,
+            engine,
+          );
+          const checked = !unavailable && selected.has(engine);
+
+          return (
+            <div
+              key={engine}
+              className="flex min-h-14 items-center justify-between gap-4 py-3"
+            >
+              <div className="min-w-0">
+                <p
+                  className={cn(
+                    "truncate text-[14.5px] font-medium",
+                    unavailable
+                      ? "text-[var(--text-soft)]"
+                      : "text-[var(--text-strong)]",
+                  )}
+                >
+                  {engine}
+                </p>
+                {unavailable ? (
+                  <p className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--text-soft)]">
+                    {replacement
+                      ? t("engines.unavailableWithReplacement", {
+                          replacement,
+                        })
+                      : t("engines.unavailable")}
+                  </p>
+                ) : null}
+              </div>
+              <Toggle
+                checked={checked}
+                disabled={unavailable}
+                onToggle={() => onToggle(engine)}
+                label={
+                  unavailable
+                    ? t("engines.unavailableToggle", { engine })
+                    : t(checked ? "disableEngine" : "enableEngine", {
+                        engine,
+                      })
+                }
+              />
+            </div>
+          );
+        })
       )}
     </div>
   );
@@ -536,7 +576,7 @@ export function SettingsPagePreview({
             </p>
           </div>
 
-          <p className="mb-3 px-2.5 text-[11px] font-semibold tracking-[0.08em] text-[var(--text-soft)] uppercase">
+          <p className="mb-3 px-2.5 text-[11px] font-semibold text-[var(--text-soft)]">
             {t("sections")}
           </p>
 
@@ -1000,6 +1040,12 @@ export function SettingsPagePreview({
                   const meta = engineGroupMeta[key];
                   const Icon = meta.icon;
                   const isActive = activeEngineGroup === key;
+                  const availableEngines = engineCatalog[key].filter(
+                    (engine) => !isEngineUnavailable(key, engine),
+                  );
+                  const selectedEngineCount = availableEngines.filter(
+                    (engine) => engines[key].has(engine),
+                  ).length;
 
                   return (
                     <div key={key} className="flex shrink-0 items-center">
@@ -1021,7 +1067,7 @@ export function SettingsPagePreview({
                         <Icon className="size-4" aria-hidden />
                         <span>{meta.title}</span>
                         <span className="text-[12px] text-[var(--text-soft)]">
-                          {engines[key].size}/{engineCatalog[key].length}
+                          {selectedEngineCount}/{availableEngines.length}
                         </span>
                       </button>
                     </div>

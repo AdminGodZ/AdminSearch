@@ -170,7 +170,7 @@ function ImagePreviewDialog({
                 <dl className="grid w-full grid-cols-2 gap-x-5 gap-y-2.5 rounded-2xl bg-[var(--surface-panel)] px-3.5 py-3 sm:grid-cols-3">
                   {metadataRows.map((item) => (
                     <div key={item.label} className="min-w-0 space-y-0.5">
-                      <dt className="text-[10px] leading-4 font-medium tracking-wide text-[var(--text-soft)] uppercase">
+                      <dt className="text-[10px] leading-4 font-medium text-[var(--text-soft)]">
                         {item.label}
                       </dt>
                       <dd className="break-words text-sm leading-5 text-[var(--text-strong)]">
