@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Filters } from "@/features/search/components/filters";
 import { ResultList } from "@/features/search/components/result-list";
 import { SearchForm } from "@/features/search/components/search-form";
+import { SearchInfoboxCard } from "@/features/search/components/search-infobox-card";
 import { SearchTabs } from "@/features/search/components/search-tabs";
 import { SEARCH_MAX_PAGE } from "@/features/search/lib/limits";
 import {
@@ -388,142 +389,13 @@ function SearchSidebar({
       ) : null}
 
       {data.infoboxes.map((infobox) => (
-        <Card
+        <SearchInfoboxCard
           key={infobox.id}
-          className={cn(sidebarCardClassName, "overflow-hidden py-0")}
-        >
-          <CardContent className="space-y-6 p-7">
-            {infobox.imageUrl ? (
-              <div className="border-b border-[var(--surface-separator)] pb-6">
-                <div className="flex max-h-[240px] min-h-[160px] w-full items-center justify-center overflow-hidden rounded-2xl bg-white p-4">
-                  {/* biome-ignore lint/performance/noImgElement: Infobox images are remote SearXNG-provided media with dynamic origins. */}
-                  <img
-                    src={infobox.imageUrl}
-                    alt={infobox.title}
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    className="max-h-[208px] w-full object-contain"
-                  />
-                </div>
-              </div>
-            ) : null}
-            <div className="space-y-1.5">
-              {infobox.url ? (
-                <a
-                  href={infobox.url}
-                  target={openInNewTab ? "_blank" : undefined}
-                  rel={openInNewTab ? "noreferrer noopener" : undefined}
-                  className="inline-flex hover:underline"
-                >
-                  <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
-                    {infobox.title}
-                  </h2>
-                </a>
-              ) : (
-                <h2 className="text-[26px] leading-tight font-semibold tracking-tight text-[var(--text-strong)]">
-                  {infobox.title}
-                </h2>
-              )}
-              {infobox.source ? (
-                <p className="text-[13px] text-[var(--text-soft)]">
-                  {infobox.source}
-                </p>
-              ) : null}
-            </div>
-
-            {infobox.content ? (
-              <p className="text-[14px] leading-7 text-[var(--text-body)]">
-                {infobox.content}
-              </p>
-            ) : null}
-
-            {infobox.attributes.length ? (
-              <dl className="divide-y divide-[var(--surface-separator)]">
-                {infobox.attributes.map((attribute) => (
-                  <div
-                    key={`${infobox.id}-${attribute.label}`}
-                    className="grid gap-1.5 py-3.5 sm:grid-cols-[112px_minmax(0,1fr)] sm:gap-4"
-                  >
-                    <dt className="text-[13px] leading-6 font-medium text-[var(--text-soft)]">
-                      {attribute.label}
-                    </dt>
-                    {attribute.image || attribute.value ? (
-                      <dd className="min-w-0 space-y-3">
-                        {attribute.image ? (
-                          <div className="inline-flex max-w-full items-center justify-center overflow-hidden rounded-xl bg-white p-3">
-                            {/* biome-ignore lint/performance/noImgElement: Infobox attribute images are remote SearXNG-provided media with dynamic origins. */}
-                            <img
-                              src={attribute.image.src}
-                              alt={attribute.image.alt ?? attribute.label}
-                              loading="lazy"
-                              referrerPolicy="no-referrer"
-                              className="max-h-[152px] max-w-full object-contain"
-                            />
-                          </div>
-                        ) : null}
-                        {attribute.value ? (
-                          <p className="break-words text-[14px] leading-6 text-[var(--text-body)] [overflow-wrap:anywhere]">
-                            {attribute.value}
-                          </p>
-                        ) : null}
-                      </dd>
-                    ) : null}
-                  </div>
-                ))}
-              </dl>
-            ) : null}
-
-            {infobox.urls.length ? (
-              <div className="space-y-3 border-t border-border/40 pt-6">
-                <p className="text-sm font-medium text-[var(--text-soft)]">
-                  {t("links")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {infobox.urls.map((urlEntry) => (
-                    <a
-                      key={`${infobox.id}-${urlEntry.url}`}
-                      href={urlEntry.url}
-                      target={openInNewTab ? "_blank" : undefined}
-                      rel={openInNewTab ? "noreferrer noopener" : undefined}
-                      className="rounded-full border border-[var(--surface-chip-border)] px-3.5 py-1.5 text-sm text-primary transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                      {urlEntry.title}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {infobox.relatedTopics.length ? (
-              <div className="space-y-4 border-t border-border/40 pt-6">
-                {infobox.relatedTopics.map((topic) => (
-                  <div
-                    key={`${infobox.id}-${topic.name}`}
-                    className="space-y-2.5"
-                  >
-                    <p className="text-xs font-medium text-[var(--text-soft)]">
-                      {topic.name}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {topic.suggestions.map((suggestion) => (
-                        <Link
-                          key={`${topic.name}-${suggestion}`}
-                          href={buildHref(pathname, searchParams, {
-                            q: suggestion,
-                            page: null,
-                          })}
-                          className="rounded-full border border-[var(--surface-chip-border)] px-3 py-1.5 text-sm text-[var(--text-body)] transition-colors hover:bg-accent hover:text-foreground"
-                        >
-                          {suggestion}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+          infobox={infobox}
+          openInNewTab={openInNewTab}
+          pathname={pathname}
+          searchParams={searchParams}
+        />
       ))}
     </aside>
   );
