@@ -5,8 +5,8 @@
     SearXNG instance.
   </p>
   <p>
-    <img src="./public/AdminSearch_Home_light.png" alt="AdminSearch home page in light mode" width="49%" />
-    <img src="./public/AdminSearch_Home_dark.png" alt="AdminSearch home page in dark mode" width="49%" />
+    <img src="./public/adminsearch-home-light.png" alt="AdminSearch home page in light mode" width="49%" />
+    <img src="./public/adminsearch-home-dark.png" alt="AdminSearch home page in dark mode" width="49%" />
   </p>
 </div>
 
