@@ -4,6 +4,7 @@ import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { DashRing } from "@/components/loading-ui/dash-ring";
 import { Input } from "@/components/ui/input";
 import { SEARCH_QUERY_MAX_LENGTH } from "@/features/search/lib/limits";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ type SearchInputProps = {
   placeholder: string;
   size?: "hero" | "compact";
   className?: string;
+  pending?: boolean;
 };
 
 const inputSizeClasses = {
@@ -30,6 +32,7 @@ export function SearchInput({
   placeholder,
   size = "compact",
   className,
+  pending = false,
 }: SearchInputProps) {
   const t = useTranslations("SearchInput");
   const inputId = useId();
@@ -150,7 +153,11 @@ export function SearchInput({
       <label htmlFor={inputId} className="sr-only">
         {t("label")}
       </label>
-      <Search className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-muted-foreground dark:text-white" />
+      {pending ? (
+        <DashRing className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-muted-foreground dark:text-white" />
+      ) : (
+        <Search className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-muted-foreground dark:text-white" />
+      )}
       <Input
         ref={inputRef}
         id={inputId}

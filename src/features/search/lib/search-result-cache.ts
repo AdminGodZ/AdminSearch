@@ -1,3 +1,4 @@
+import { SEARCH_CACHE_VERSION } from "@/features/search/lib/request-key";
 import type { SearchResponse } from "@/features/search/types";
 
 type SearchCacheEntry = {
@@ -11,7 +12,6 @@ type SearchCachePayload = {
 };
 
 const SEARCH_CACHE_STORAGE_KEY = "adminsearch-search-results-cache-v4";
-export const SEARCH_CACHE_VERSION = 4;
 const SEARCH_CACHE_TTL_MS = 30 * 60 * 1000;
 const SEARCH_CACHE_MAX_ENTRIES = 20;
 const searchCache = new Map<string, SearchCacheEntry>();

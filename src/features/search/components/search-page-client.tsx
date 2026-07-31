@@ -10,7 +10,15 @@ import {
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { DashRing } from "@/components/loading-ui/dash-ring";
 import { Header } from "@/components/site/header";
@@ -25,12 +33,26 @@ import { SearchInfoboxCard } from "@/features/search/components/search-infobox-c
 import { SearchTabs } from "@/features/search/components/search-tabs";
 import { SEARCH_MAX_PAGE } from "@/features/search/lib/limits";
 import {
+  createSearchRequestKey,
+  createSearchRuntimeKey,
+} from "@/features/search/lib/request-key";
+import { mergeSearchResponses } from "@/features/search/lib/response";
+import {
   readSearchCache,
-  SEARCH_CACHE_VERSION,
   writeSearchCache,
 } from "@/features/search/lib/search-result-cache";
-import { buildHref } from "@/features/search/lib/url-state";
-import type { SearchResponse, SearchTab } from "@/features/search/types";
+import {
+  applySearchPreferenceDefaults,
+  buildHref,
+  normalizeSearchPage,
+  normalizeSearchSafeSearch,
+  normalizeSearchTab,
+} from "@/features/search/lib/url-state";
+import type {
+  InitialSearchResult,
+  SearchResponse,
+  SearchTab,
+} from "@/features/search/types";
 import {
   getSearchInterfacePreferences,
   getSearchPreferenceDefaults,
@@ -100,9 +122,7 @@ async function fetchSearchPageData(
     return (await response.json()) as SearchResponse;
   }
 
-  const errorPayload: unknown = await response
-    .json()
-    .catch(() => undefined);
+  const errorPayload: unknown = await response.json().catch(() => undefined);
   const message =
     errorPayload &&
     typeof errorPayload === "object" &&
@@ -112,65 +132,6 @@ async function fetchSearchPageData(
       : fallbackMessage;
 
   throw new Error(message);
-}
-
-function mergeSearchResponses(current: SearchResponse, next: SearchResponse) {
-  const seen = new Set(
-    current.results.map((result) => result.id || result.url),
-  );
-  const mergedResults = [...current.results];
-
-  for (const result of next.results) {
-    const key = result.id || result.url;
-
-    if (seen.has(key)) {
-      continue;
-    }
-
-    seen.add(key);
-    mergedResults.push(result);
-  }
-
-  return {
-    ...current,
-    page: next.page,
-    nextPageCursor: next.nextPageCursor,
-    totalResults: next.totalResults ?? current.totalResults,
-    results: mergedResults,
-    hasMore: next.hasMore,
-  } satisfies SearchResponse;
-}
-
-function normalizeTab(value: string | null): SearchTab {
-  switch (value) {
-    case "images":
-      return "images";
-    case "videos":
-      return "videos";
-    case "news":
-      return "news";
-    default:
-      return "all";
-  }
-}
-
-function normalizeSafeSearch(value: string | null): 0 | 1 | 2 {
-  if (value === "1") {
-    return 1;
-  }
-
-  if (value === "2") {
-    return 2;
-  }
-
-  return 0;
-}
-
-function normalizePage(value: string | null) {
-  const page = Number(value ?? "1");
-  return Number.isInteger(page) && page > 0
-    ? Math.min(page, SEARCH_MAX_PAGE)
-    : 1;
 }
 
 function LoadingResults({
@@ -297,6 +258,7 @@ function ImageSuggestionStrip({
                   q: suggestion,
                   page: null,
                 })}
+                prefetch={false}
                 className="group flex h-9 min-w-0 max-w-[220px] items-center gap-2 rounded-full border border-[var(--surface-chip-border)] bg-[var(--surface-panel)] pr-3.5 pl-1 text-left transition-colors hover:bg-accent"
               >
                 <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--control-bg)]">
@@ -416,6 +378,9 @@ type UseSearchResultsOptions = {
   resultReuseMode: SearchInterfacePreferences["resultReuseMode"];
   infiniteScroll: boolean;
   requestFailedMessage: string;
+  initialData?: SearchResponse;
+  initialError?: string;
+  initialRequestKey?: string;
 };
 
 function useSearchResults({
@@ -430,13 +395,47 @@ function useSearchResults({
   resultReuseMode,
   infiniteScroll,
   requestFailedMessage,
+  initialData,
+  initialError,
+  initialRequestKey,
 }: UseSearchResultsOptions) {
-  const [state, setState] = useState<SearchState>(() =>
-    currentQuery ? { status: "loading" } : { status: "idle" },
+  const requestKey = useMemo(
+    () =>
+      createSearchRequestKey(
+        queryStringWithoutPage,
+        requestedPage,
+        runtimeRefreshKey,
+      ),
+    [queryStringWithoutPage, requestedPage, runtimeRefreshKey],
   );
-  const [loadedPage, setLoadedPage] = useState(1);
+  const hasMatchingInitialResult = initialRequestKey === requestKey;
+  const [state, setState] = useState<SearchState>(() => {
+    if (!currentQuery) {
+      return { status: "idle" };
+    }
+
+    if (hasMatchingInitialResult && initialData) {
+      return { status: "success", data: initialData };
+    }
+
+    if (hasMatchingInitialResult && initialError) {
+      return { status: "error", message: initialError };
+    }
+
+    return { status: "loading" };
+  });
+  const [loadedPage, setLoadedPage] = useState(() =>
+    hasMatchingInitialResult && initialData ? initialData.page : 1,
+  );
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
+  const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>(
+    () =>
+      hasMatchingInitialResult &&
+      initialData?.tab === "all" &&
+      initialData.suggestions.length > 0
+        ? initialData.suggestions
+        : [],
+  );
   const infiniteScrollSentinelRef = useRef<HTMLDivElement>(null);
   const isLoadingMoreRef = useRef(false);
   const searchCacheKey = useMemo(
@@ -471,6 +470,24 @@ function useSearchResults({
       return;
     }
 
+    if (
+      initialRequestKey === requestKey &&
+      initialData &&
+      searchDataMatchesCurrentView(initialData, currentTab, currentQuery)
+    ) {
+      setLoadedPage(initialData.page);
+      if (initialData.tab === "all" && initialData.suggestions.length > 0) {
+        setImageTabSuggestions(initialData.suggestions);
+      }
+      writeSearchCache(searchCacheKey, initialData);
+      setState((previous) =>
+        previous.status === "success" && previous.data === initialData
+          ? previous
+          : { status: "success", data: initialData },
+      );
+      return;
+    }
+
     if (resultReuseMode === "cache") {
       const cachedData = readSearchCache(searchCacheKey, requestedPage);
 
@@ -485,6 +502,12 @@ function useSearchResults({
         });
         return;
       }
+    }
+
+    if (initialRequestKey === requestKey && initialError) {
+      setLoadedPage(1);
+      setState({ status: "error", message: initialError });
+      return;
     }
 
     const controller = new AbortController();
@@ -586,7 +609,11 @@ function useSearchResults({
   }, [
     currentQuery,
     currentTab,
+    initialData,
+    initialError,
+    initialRequestKey,
     queryStringWithoutPage,
+    requestKey,
     requestedPage,
     requestFailedMessage,
     resultReuseMode,
@@ -652,8 +679,7 @@ function useSearchResults({
     } catch (error: unknown) {
       setState((previous) => ({
         status: "error",
-        message:
-          error instanceof Error ? error.message : requestFailedMessage,
+        message: error instanceof Error ? error.message : requestFailedMessage,
         previous:
           previous.status === "success"
             ? previous.data
@@ -840,6 +866,42 @@ function SearchPageHeader({
   );
 }
 
+function SearchResultsLoadingFallback({
+  currentTab,
+}: {
+  currentTab: SearchTab;
+}) {
+  const resultsSectionClass = currentTab === "images" ? "" : "max-w-[655px]";
+
+  return (
+    <div className="w-full" aria-busy="true" data-search-results-loading="">
+      <div
+        className={cn(
+          "grid gap-7 lg:gap-x-5 lg:gap-y-7",
+          currentTab !== "images" && searchContentColumns,
+        )}
+      >
+        {currentTab !== "images" ? <div className="hidden lg:block" /> : null}
+        <div
+          className={cn(
+            "space-y-7 min-w-0",
+            currentTab === "images" && "overflow-x-hidden",
+          )}
+        >
+          <div className="grid items-start gap-7">
+            <div className="space-y-7 min-w-0">
+              <LoadingResults
+                className={resultsSectionClass}
+                tab={currentTab}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SearchResultsSection({
   calculatorAnswer,
   currentQuery,
@@ -890,9 +952,7 @@ function SearchResultsSection({
           : t("resultTypes.all");
   const visibleImageSuggestions = !currentQuery
     ? []
-    : currentTab === "images" &&
-        activeData &&
-        activeData.suggestions.length > 0
+    : currentTab === "images" && activeData && activeData.suggestions.length > 0
       ? activeData.suggestions
       : imageTabSuggestions;
 
@@ -904,9 +964,7 @@ function SearchResultsSection({
           currentTab !== "images" && searchContentColumns,
         )}
       >
-        {currentTab !== "images" ? (
-          <div className="hidden lg:block" />
-        ) : null}
+        {currentTab !== "images" ? <div className="hidden lg:block" /> : null}
         <div
           className={cn(
             "space-y-7 min-w-0",
@@ -1002,12 +1060,11 @@ function SearchResultsSection({
                         {t("readyDescription")}
                       </p>
                     </div>
-                    <Button
-                      asChild
-                      variant="brand"
-                      className="rounded-full"
-                    >
-                      <Link href="/search?q=site%3Agithub.com+searxng+api&tab=all">
+                    <Button asChild variant="brand" className="rounded-full">
+                      <Link
+                        href="/search?q=site%3Agithub.com+searxng+api&tab=all"
+                        prefetch={false}
+                      >
                         {t("tryExample")}
                       </Link>
                     </Button>
@@ -1041,10 +1098,7 @@ function SearchResultsSection({
               !visibleAnswers.length &&
               !activeData.infoboxes.length ? (
                 <Card
-                  className={cn(
-                    emptyResultsCardClassName,
-                    resultsSectionClass,
-                  )}
+                  className={cn(emptyResultsCardClassName, resultsSectionClass)}
                 >
                   <CardContent className="space-y-3 p-6">
                     <p className="font-medium">{t("noResults")}</p>
@@ -1099,101 +1153,41 @@ function SearchResultsSection({
   );
 }
 
-export function SearchPageClient({
-  initialPreferences,
-}: {
-  initialPreferences: PersistedPreferences;
-}) {
+type SearchPageResultsProps = SearchRouteValues & {
+  initialSearchPromise?: Promise<InitialSearchResult>;
+  interfacePreferences: SearchInterfacePreferences;
+  preferences: PersistedPreferences;
+  queryStringWithoutPage: string;
+  requestedPage: number;
+  runtimeRefreshKey: string;
+};
+
+function SearchPageResults({
+  currentQuery,
+  currentTab,
+  currentLanguage,
+  currentTimeRange,
+  currentSafeSearch,
+  initialSearchPromise,
+  interfacePreferences,
+  preferences,
+  queryStringWithoutPage,
+  requestedPage,
+  runtimeRefreshKey,
+}: SearchPageResultsProps) {
+  const initialSearch = initialSearchPromise
+    ? use(initialSearchPromise)
+    : undefined;
+  const initialData =
+    initialSearch?.status === "success" ? initialSearch.data : undefined;
+  const initialError =
+    initialSearch?.status === "error" ? initialSearch.message : undefined;
+  const initialRequestKey = initialSearch?.requestKey;
   const t = useTranslations("Search");
-  const metadataT = useTranslations("Metadata");
-  const searchParams = useSearchParams();
   const [calculatorResult, setCalculatorResult] = useState<{
     answer?: string;
     query: string;
   }>();
-  const preferences = useSyncedPreferences(initialPreferences);
-
-  const defaults = useMemo<SearchPreferenceDefaults>(
-    () => getSearchPreferenceDefaults(preferences.settings),
-    [preferences.settings],
-  );
-  const interfacePreferences = useMemo<SearchInterfacePreferences>(
-    () => getSearchInterfacePreferences(preferences.settings),
-    [preferences.settings],
-  );
-  const runtimeRefreshKey = useMemo(
-    () =>
-      JSON.stringify({
-        engines: {
-          general: [...preferences.engines.general].sort(),
-          images: [...preferences.engines.images].sort(),
-          videos: [...preferences.engines.videos].sort(),
-          news: [...preferences.engines.news].sort(),
-        },
-        imageProxy: preferences.settings.imageProxy,
-        plugins: {
-          calculator: preferences.settings.calculator,
-          doiRewrite: preferences.settings.doiRewrite,
-          hashSearch: preferences.settings.hashSearch,
-          selfInfo: preferences.settings.selfInfo,
-          timeZone: preferences.settings.timeZone,
-          trackerCleaner: preferences.settings.trackerCleaner,
-          unitConverter: preferences.settings.unitConverter,
-        },
-        resultsPerPage: preferences.settings.loadMoreCount,
-        httpMethod: preferences.settings.httpMethod,
-        searchCacheVersion: SEARCH_CACHE_VERSION,
-      }),
-    [preferences.engines, preferences.settings],
-  );
-
-  const effectiveParams = useMemo(() => {
-    const params = new URLSearchParams(searchParams.toString());
-
-    if (!params.get("tab") && defaults.defaultTab !== "all") {
-      params.set("tab", defaults.defaultTab);
-    }
-
-    if (!params.get("language") && defaults.language) {
-      params.set("language", defaults.language);
-    }
-
-    if (!params.get("timeRange") && defaults.timeRange) {
-      params.set("timeRange", defaults.timeRange);
-    }
-
-    if (!params.has("safeSearch") && defaults.safeSearch !== 0) {
-      params.set("safeSearch", String(defaults.safeSearch));
-    }
-
-    return params;
-  }, [
-    defaults.defaultTab,
-    defaults.language,
-    defaults.safeSearch,
-    defaults.timeRange,
-    searchParams,
-  ]);
-
-  const queryStringWithoutPage = useMemo(() => {
-    const params = new URLSearchParams(effectiveParams.toString());
-    params.delete("page");
-    return params.toString();
-  }, [effectiveParams]);
-
-  const currentQuery = effectiveParams.get("q")?.trim() ?? "";
-  const currentTab = normalizeTab(effectiveParams.get("tab"));
-  const requestedPage = normalizePage(searchParams.get("page"));
-  const currentLanguage = effectiveParams.get("language")?.trim() || undefined;
-  const currentTimeRange = useMemo(() => {
-    const value = effectiveParams.get("timeRange");
-    return value === "day" || value === "month" || value === "year"
-      ? value
-      : undefined;
-  }, [effectiveParams]);
-  const currentSafeSearch = effectiveParams.has("safeSearch")
-    ? normalizeSafeSearch(effectiveParams.get("safeSearch"))
-    : defaults.safeSearch;
   const searchResults = useSearchResults({
     currentQuery,
     currentTab,
@@ -1206,6 +1200,9 @@ export function SearchPageClient({
     resultReuseMode: interfacePreferences.resultReuseMode,
     infiniteScroll: interfacePreferences.infiniteScroll,
     requestFailedMessage: t("requestFailed"),
+    initialData,
+    initialError,
+    initialRequestKey,
   });
 
   useEffect(() => {
@@ -1236,6 +1233,75 @@ export function SearchPageClient({
     };
   }, [currentQuery, preferences.settings.calculator]);
 
+  const calculatorAnswer =
+    preferences.settings.calculator && calculatorResult?.query === currentQuery
+      ? calculatorResult.answer
+      : undefined;
+
+  return (
+    <SearchResultsSection
+      calculatorAnswer={calculatorAnswer}
+      currentQuery={currentQuery}
+      currentTab={currentTab}
+      interfacePreferences={interfacePreferences}
+      searchResults={searchResults}
+    />
+  );
+}
+
+export function SearchPageClient({
+  initialPreferences,
+  initialSearchPromise,
+}: {
+  initialPreferences: PersistedPreferences;
+  initialSearchPromise?: Promise<InitialSearchResult>;
+}) {
+  const metadataT = useTranslations("Metadata");
+  const searchParams = useSearchParams();
+  const preferences = useSyncedPreferences(initialPreferences);
+  const defaults = useMemo<SearchPreferenceDefaults>(
+    () => getSearchPreferenceDefaults(preferences.settings),
+    [preferences.settings],
+  );
+  const interfacePreferences = useMemo<SearchInterfacePreferences>(
+    () => getSearchInterfacePreferences(preferences.settings),
+    [preferences.settings],
+  );
+  const runtimeRefreshKey = useMemo(
+    () => createSearchRuntimeKey(preferences),
+    [preferences],
+  );
+  const effectiveParams = useMemo(() => {
+    return applySearchPreferenceDefaults(searchParams, defaults);
+  }, [defaults, searchParams]);
+  const queryStringWithoutPage = useMemo(() => {
+    const params = new URLSearchParams(effectiveParams.toString());
+    params.delete("page");
+    return params.toString();
+  }, [effectiveParams]);
+  const currentQuery = effectiveParams.get("q")?.trim() ?? "";
+  const currentTab = normalizeSearchTab(effectiveParams.get("tab"));
+  const requestedPage = normalizeSearchPage(searchParams.get("page"));
+  const currentLanguage = effectiveParams.get("language")?.trim() || undefined;
+  const currentTimeRange = useMemo(() => {
+    const value = effectiveParams.get("timeRange");
+    return value === "day" || value === "month" || value === "year"
+      ? value
+      : undefined;
+  }, [effectiveParams]);
+  const currentSafeSearch = effectiveParams.has("safeSearch")
+    ? normalizeSearchSafeSearch(effectiveParams.get("safeSearch"))
+    : defaults.safeSearch;
+  const requestKey = useMemo(
+    () =>
+      createSearchRequestKey(
+        queryStringWithoutPage,
+        requestedPage,
+        runtimeRefreshKey,
+      ),
+    [queryStringWithoutPage, requestedPage, runtimeRefreshKey],
+  );
+
   useEffect(() => {
     if (!interfacePreferences.queryInTitle || !currentQuery) {
       document.title = `AdminSearch - ${metadataT("searchTitle")}`;
@@ -1244,11 +1310,6 @@ export function SearchPageClient({
 
     document.title = `AdminSearch - ${currentQuery}`;
   }, [currentQuery, interfacePreferences.queryInTitle, metadataT]);
-
-  const calculatorAnswer =
-    preferences.settings.calculator && calculatorResult?.query === currentQuery
-      ? calculatorResult.answer
-      : undefined;
 
   return (
     <main className="w-full flex-1 bg-background px-5 py-8 sm:px-8 lg:px-10">
@@ -1260,13 +1321,24 @@ export function SearchPageClient({
           currentTimeRange={currentTimeRange}
           currentSafeSearch={currentSafeSearch}
         />
-        <SearchResultsSection
-          calculatorAnswer={calculatorAnswer}
-          currentQuery={currentQuery}
-          currentTab={currentTab}
-          interfacePreferences={interfacePreferences}
-          searchResults={searchResults}
-        />
+        <Suspense
+          key={requestKey}
+          fallback={<SearchResultsLoadingFallback currentTab={currentTab} />}
+        >
+          <SearchPageResults
+            currentQuery={currentQuery}
+            currentTab={currentTab}
+            currentLanguage={currentLanguage}
+            currentTimeRange={currentTimeRange}
+            currentSafeSearch={currentSafeSearch}
+            initialSearchPromise={initialSearchPromise}
+            interfacePreferences={interfacePreferences}
+            preferences={preferences}
+            queryStringWithoutPage={queryStringWithoutPage}
+            requestedPage={requestedPage}
+            runtimeRefreshKey={runtimeRefreshKey}
+          />
+        </Suspense>
       </div>
     </main>
   );

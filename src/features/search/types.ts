@@ -81,6 +81,18 @@ export type SearchResponse = {
   nextPageCursor?: string;
 };
 
+export type InitialSearchResult =
+  | {
+      status: "success";
+      requestKey: string;
+      data: SearchResponse;
+    }
+  | {
+      status: "error";
+      requestKey: string;
+      message: string;
+    };
+
 export type SearxRawResult = Record<string, unknown>;
 
 export type SearxResponse = {

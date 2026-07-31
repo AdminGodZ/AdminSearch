@@ -107,8 +107,7 @@ function InfoboxOverview({ content }: { content: string }) {
   const t = useTranslations("Search");
   const overviewId = useId();
   const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
-  const overviewIsCollapsible =
-    content.length > COLLAPSIBLE_SUMMARY_LENGTH;
+  const overviewIsCollapsible = content.length > COLLAPSIBLE_SUMMARY_LENGTH;
   const visibleOverview =
     overviewIsCollapsible && !isOverviewExpanded
       ? createOverviewExcerpt(content)
@@ -371,6 +370,7 @@ function InfoboxRelatedTopics({
                     q: suggestion,
                     page: null,
                   })}
+                  prefetch={false}
                   className="rounded-full border border-[var(--surface-chip-border)] px-3 py-1.5 text-[13px] text-[var(--text-body)] transition-colors hover:bg-accent hover:text-foreground"
                 >
                   {suggestion}
@@ -387,9 +387,7 @@ function InfoboxRelatedTopics({
           aria-controls={relatedTopicsId}
           aria-expanded={areRelatedTopicsExpanded}
           className="mt-3 inline-flex cursor-pointer items-center gap-1 text-[13px] font-medium text-primary hover:underline"
-          onClick={() =>
-            setAreRelatedTopicsExpanded((expanded) => !expanded)
-          }
+          onClick={() => setAreRelatedTopicsExpanded((expanded) => !expanded)}
         >
           {areRelatedTopicsExpanded
             ? t("showFewerRelated")

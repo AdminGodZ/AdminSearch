@@ -5,6 +5,8 @@ const DEFAULT_TRUSTED_PROXY_HOPS = 1;
 const MAX_TRUSTED_PROXY_HOPS = 10;
 const MAX_FORWARDED_USER_AGENT_LENGTH = 512;
 
+export type RequestHeaders = Pick<Headers, "get">;
+
 function shouldTrustProxyHeaders() {
   return process.env.RATE_LIMIT_TRUST_PROXY_HEADERS === "true";
 }
@@ -31,12 +33,12 @@ function readHeaderList(value: string | null) {
   );
 }
 
-export function getClientIp(request: Request) {
+export function getClientIpFromHeaders(headers: RequestHeaders) {
   if (!shouldTrustProxyHeaders()) {
     return DEFAULT_RATE_LIMIT_KEY;
   }
 
-  const forwardedFor = readHeaderList(request.headers.get("x-forwarded-for"));
+  const forwardedFor = readHeaderList(headers.get("x-forwarded-for"));
 
   if (forwardedFor.length) {
     const trustedHopIndex = Math.max(
@@ -47,19 +49,27 @@ export function getClientIp(request: Request) {
     return forwardedFor[trustedHopIndex] ?? DEFAULT_RATE_LIMIT_KEY;
   }
 
-  return request.headers.get("x-real-ip")?.trim() || DEFAULT_RATE_LIMIT_KEY;
+  return headers.get("x-real-ip")?.trim() || DEFAULT_RATE_LIMIT_KEY;
+}
+
+export function getClientIp(request: Request) {
+  return getClientIpFromHeaders(request.headers);
 }
 
 export function getForwardableClientIp(clientIp: string) {
   return isIP(clientIp) ? clientIp : undefined;
 }
 
-export function getForwardableUserAgent(request: Request) {
-  const userAgent = request.headers.get("user-agent")?.trim();
+export function getForwardableUserAgentFromHeaders(headers: RequestHeaders) {
+  const userAgent = headers.get("user-agent")?.trim();
 
   if (!userAgent) {
     return undefined;
   }
 
   return userAgent.slice(0, MAX_FORWARDED_USER_AGENT_LENGTH);
+}
+
+export function getForwardableUserAgent(request: Request) {
+  return getForwardableUserAgentFromHeaders(request.headers);
 }

@@ -4,8 +4,11 @@ import test from "node:test";
 import { extractAnswerTexts } from "../src/features/search/lib/answer-texts.ts";
 import { calculateAnswer } from "../src/features/search/lib/calculator.ts";
 import {
+  getClientIp,
+  getClientIpFromHeaders,
   getForwardableClientIp,
   getForwardableUserAgent,
+  getForwardableUserAgentFromHeaders,
 } from "../src/server/client-ip.ts";
 
 test("calculator matches SearXNG's normalized answer format", () => {
@@ -43,8 +46,16 @@ test("self-info forwards only valid, bounded request metadata", () => {
   assert.equal(getForwardableClientIp("not-an-ip"), undefined);
 
   const request = new Request("https://example.test", {
-    headers: { "user-agent": "A".repeat(600) },
+    headers: {
+      "user-agent": "A".repeat(600),
+      "x-forwarded-for": "203.0.113.10",
+    },
   });
 
   assert.equal(getForwardableUserAgent(request)?.length, 512);
+  assert.equal(
+    getForwardableUserAgentFromHeaders(request.headers),
+    getForwardableUserAgent(request),
+  );
+  assert.equal(getClientIpFromHeaders(request.headers), getClientIp(request));
 });

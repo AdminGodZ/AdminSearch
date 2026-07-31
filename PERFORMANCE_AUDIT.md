@@ -198,8 +198,8 @@ Do not blindly parallelize all upstream pages: deduplication, early termination,
 ### PERF-02: Initial search starts after hydration and search forms reload the document
 
 - **Priority:** P0
-- **Status:** OPEN
-- **Evidence:** [`src/app/search/page.tsx`](src/app/search/page.tsx#L17), [`src/features/search/components/search-page-client.tsx`](src/features/search/components/search-page-client.tsx#L462), [`src/features/search/components/search-form.tsx`](src/features/search/components/search-form.tsx#L52)
+- **Status:** DONE
+- **Evidence:** [`src/app/search/page.tsx`](src/app/search/page.tsx#L51), [`src/features/search/server/search-service.ts`](src/features/search/server/search-service.ts#L46), [`src/features/search/components/search-page-client.tsx`](src/features/search/components/search-page-client.tsx#L377), [`src/features/search/components/search-form.tsx`](src/features/search/components/search-form.tsx#L57)
 
 #### Problem
 
@@ -224,19 +224,31 @@ Quick win:
 - Keep native form submission as progressive enhancement.
 - When JavaScript is active, intercept submit and use `router.push` so the already-hydrated application is preserved.
 
+#### Implementation
+
+- The search page now resolves URL defaults, starts its initial search without awaiting it, and streams that promise to the client. React `use()` unwraps the result inside a Suspense boundary keyed by the canonical request identity, so every new query immediately resets to the loading UI while the server search continues.
+- The API route and server-rendered page both call the same search service for validation, rate limiting, persisted runtime preferences, trusted client metadata forwarding, SearXNG access, transformation, and localized errors.
+- Direct later-page loads preserve the existing accumulated-results behavior while advancing with opaque continuation cursors; the shared response merge keeps result ordering and URL deduplication intact.
+- The client initializes from matching server data and treats the canonical URL, requested page, and runtime preferences as the identity, so its effect does not repeat the initial request. URL changes and load-more requests can still use `/api/search`.
+- Search forms retain `method="GET"` and their action for no-JavaScript use, while hydrated same-origin submissions use `router.push` inside `useTransition`. The search icon becomes a spinner immediately, then only the results area switches to its keyed skeleton while the real header and entered query remain visible. Search suggestion links disable automatic prefetch so merely entering the viewport cannot start an upstream search.
+
 #### Acceptance criteria
 
-- [ ] Initial search work begins before search-page hydration completes.
-- [ ] A direct `/search?q=...` load produces no duplicate search request.
-- [ ] Home-to-search navigation is client-side when JavaScript is enabled.
-- [ ] Native GET submission still works when JavaScript is unavailable.
-- [ ] Rate limits and client-IP forwarding are identical for server-started and API searches.
+- [x] Initial search work begins before search-page hydration completes.
+- [x] A direct `/search?q=...` load produces no duplicate search request.
+- [x] Home-to-search navigation is client-side when JavaScript is enabled.
+- [x] Native GET submission still works when JavaScript is unavailable.
+- [x] Rate limits and client-IP forwarding are identical for server-started and API searches.
 
 #### Validation
 
-- Add and compare a `time_to_first_result` metric.
-- Test cold direct load, warm home-to-search, search-to-search, and browser back/forward.
-- Verify streaming behavior on a throttled connection and mobile CPU profile.
+- [x] A headless Brave cold direct load produced zero browser `/api/search` requests and no framework overlay or console errors.
+- [x] The same run observed streamed navigation timing with `responseStart` at about 150 ms and `responseEnd` at about 1.09 s while the local SearXNG search completed.
+- [x] Warm home-to-search and search-to-search submissions produced no document requests. Headless Brave observed the form spinner after about 11-15 ms and the results-only skeleton after about 59-96 ms, with the entered query and search shell retained.
+- [x] Browser back/forward restored both search URLs without an overlay; a JavaScript-disabled submission produced one native `/search` document request with `method="GET"`.
+- [x] Unit tests cover canonical request identities across URL ordering, page and runtime changes, plus server/client-equivalent result aggregation and deduplication.
+- [x] Targeted Biome checks, TypeScript, the production build, and React Doctor pass.
+- [ ] Add production `time_to_first_result` telemetry under PERF-14 and compare cold, warm, throttled, and mobile profiles.
 
 ### PERF-03: Browser cancellation does not stop upstream work
 
