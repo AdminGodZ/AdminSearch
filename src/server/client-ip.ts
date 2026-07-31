@@ -1,6 +1,9 @@
+import { isIP } from "node:net";
+
 const DEFAULT_RATE_LIMIT_KEY = "anonymous";
 const DEFAULT_TRUSTED_PROXY_HOPS = 1;
 const MAX_TRUSTED_PROXY_HOPS = 10;
+const MAX_FORWARDED_USER_AGENT_LENGTH = 512;
 
 function shouldTrustProxyHeaders() {
   return process.env.RATE_LIMIT_TRUST_PROXY_HEADERS === "true";
@@ -45,4 +48,18 @@ export function getClientIp(request: Request) {
   }
 
   return request.headers.get("x-real-ip")?.trim() || DEFAULT_RATE_LIMIT_KEY;
+}
+
+export function getForwardableClientIp(clientIp: string) {
+  return isIP(clientIp) ? clientIp : undefined;
+}
+
+export function getForwardableUserAgent(request: Request) {
+  const userAgent = request.headers.get("user-agent")?.trim();
+
+  if (!userAgent) {
+    return undefined;
+  }
+
+  return userAgent.slice(0, MAX_FORWARDED_USER_AGENT_LENGTH);
 }

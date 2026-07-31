@@ -40,6 +40,7 @@ export type PaginatedSearxResponse = {
 };
 
 export type SearxRuntimeOptions = {
+  clientIp?: string;
   disabledPlugins?: string[];
   enabledEngines?: string[];
   enabledPlugins?: string[];
@@ -47,6 +48,7 @@ export type SearxRuntimeOptions = {
   httpMethod?: "get" | "post";
   imageProxy?: boolean;
   resultsPerPage?: number;
+  userAgent?: string;
 };
 
 type SearxEngineData = Record<string, Record<string, string>>;
@@ -281,6 +283,14 @@ function createSearxFetchRequest({
     accept,
   };
   const url = new URL("/search", getSearxBaseUrl());
+
+  if (options?.clientIp) {
+    headers["x-real-ip"] = options.clientIp;
+  }
+
+  if (options?.userAgent) {
+    headers["user-agent"] = options.userAgent;
+  }
 
   if (options?.engineTokens?.length) {
     headers.cookie = `tokens=${options.engineTokens.join(",")}`;

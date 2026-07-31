@@ -7,8 +7,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import { useFormatter, useTranslations } from "next-intl";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DashRing } from "@/components/loading-ui/dash-ring";
@@ -64,8 +64,8 @@ const resultSkeletonKeys = [
 const panelCardClassName = "rounded-[28px]";
 const emptyResultsCardClassName =
   "rounded-[28px] border border-[var(--surface-panel-border)] bg-[var(--surface-panel)] ring-0 shadow-none";
-const sidebarCardClassName =
-  "rounded-[28px] border-transparent bg-[var(--surface-panel)] ring-0 shadow-none";
+const answerCardClassName =
+  "rounded-2xl border-transparent bg-[var(--surface-panel)] ring-0 shadow-none";
 const searchHeaderColumns = "lg:grid-cols-[132px_725px_minmax(0,1fr)]";
 const searchContentColumns = "lg:grid-cols-[206px_minmax(0,1fr)]";
 
@@ -351,6 +351,27 @@ function ImageSuggestionStrip({
   );
 }
 
+function SearchAnswers({ answers }: { answers: string[] }) {
+  if (!answers.length) {
+    return null;
+  }
+
+  return (
+    <Card className={`${answerCardClassName} gap-0 py-0`}>
+      <CardContent className="space-y-1.5 px-5 py-3">
+        {answers.map((answer) => (
+          <p
+            key={answer}
+            className="text-base leading-6 text-[var(--text-body)]"
+          >
+            {answer}
+          </p>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 function SearchSidebar({
   data,
   openInNewTab,
@@ -362,32 +383,12 @@ function SearchSidebar({
   pathname: string;
   searchParams: ReturnType<typeof useSearchParams>;
 }) {
-  const t = useTranslations("Search");
-
-  if (!data.answers.length && !data.infoboxes.length) {
+  if (!data.infoboxes.length) {
     return null;
   }
 
   return (
     <aside className="space-y-5">
-      {data.answers.length ? (
-        <Card className={sidebarCardClassName}>
-          <CardContent className="space-y-3 p-6">
-            <p className="text-xs text-[var(--text-soft)]">
-              {t("quickAnswer")}
-            </p>
-            {data.answers.map((answer) => (
-              <p
-                key={answer}
-                className="text-sm leading-7 text-[var(--text-body)]"
-              >
-                {answer}
-              </p>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
       {data.infoboxes.map((infobox) => (
         <SearchInfoboxCard
           key={infobox.id}
@@ -412,13 +413,15 @@ export function SearchPageClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [state, setState] = useState<SearchState>(() =>
-    searchParams.get("q")?.trim()
-      ? { status: "loading" }
-      : { status: "idle" },
+    searchParams.get("q")?.trim() ? { status: "loading" } : { status: "idle" },
   );
   const [loadedPage, setLoadedPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
+  const [calculatorResult, setCalculatorResult] = useState<{
+    answer?: string;
+    query: string;
+  }>();
   const infiniteScrollSentinelRef = useRef<HTMLDivElement>(null);
   const isLoadingMoreRef = useRef(false);
   const [preferences, setPreferences] =
@@ -532,6 +535,35 @@ export function SearchPageClient({
   const currentSafeSearch = effectiveParams.has("safeSearch")
     ? normalizeSafeSearch(effectiveParams.get("safeSearch"))
     : defaults.safeSearch;
+
+  useEffect(() => {
+    if (!preferences.settings.calculator || !currentQuery) {
+      setCalculatorResult(undefined);
+      return;
+    }
+
+    let cancelled = false;
+
+    void import("@/features/search/lib/calculator")
+      .then(({ calculateAnswer }) => {
+        if (!cancelled) {
+          setCalculatorResult({
+            answer: calculateAnswer(currentQuery),
+            query: currentQuery,
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCalculatorResult({ query: currentQuery });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentQuery, preferences.settings.calculator]);
+
   const searchCacheKey = useMemo(
     () =>
       JSON.stringify({
@@ -650,8 +682,7 @@ export function SearchPageClient({
 
         setState((previous) => ({
           status: "error",
-          message:
-            error instanceof Error ? error.message : t("requestFailed"),
+          message: error instanceof Error ? error.message : t("requestFailed"),
           previous:
             previous.status === "success" &&
             searchDataMatchesCurrentView(
@@ -706,19 +737,23 @@ export function SearchPageClient({
   );
 
   const hasResults = Boolean(activeData?.results.length);
-  const hasSidebarContent = Boolean(
-    activeData && (activeData.answers.length || activeData.infoboxes.length),
+  const calculatorAnswer =
+    preferences.settings.calculator && calculatorResult?.query === currentQuery
+      ? calculatorResult.answer
+      : undefined;
+  const visibleAnswers = useMemo(
+    () =>
+      [...new Set([calculatorAnswer, ...(activeData?.answers ?? [])])].filter(
+        (answer): answer is string => Boolean(answer),
+      ),
+    [activeData?.answers, calculatorAnswer],
   );
+  const hasSidebarContent = Boolean(activeData?.infoboxes.length);
   const showLoadingFallback =
     currentQuery &&
     !activeData &&
     (state.status === "loading" || state.status === "success");
-  const resultsSectionClass =
-    currentTab === "images"
-      ? ""
-      : hasSidebarContent
-        ? "max-w-[655px]"
-        : "max-w-[655px]";
+  const resultsSectionClass = currentTab === "images" ? "" : "max-w-[655px]";
   const resultsLabel =
     currentTab === "images"
       ? t("resultTypes.images")
@@ -777,8 +812,7 @@ export function SearchPageClient({
     } catch (error: unknown) {
       setState((previous) => ({
         status: "error",
-        message:
-          error instanceof Error ? error.message : t("requestFailed"),
+        message: error instanceof Error ? error.message : t("requestFailed"),
         previous:
           previous.status === "success"
             ? previous.data
@@ -980,6 +1014,12 @@ export function SearchPageClient({
                 )}
               >
                 <div className="space-y-7 min-w-0">
+                  {visibleAnswers.length ? (
+                    <div className={resultsSectionClass}>
+                      <SearchAnswers answers={visibleAnswers} />
+                    </div>
+                  ) : null}
+
                   {activeData ? (
                     <p
                       className={cn(
@@ -1074,7 +1114,11 @@ export function SearchPageClient({
                     </div>
                   ) : null}
 
-                  {currentQuery && activeData && !hasResults ? (
+                  {currentQuery &&
+                  activeData &&
+                  !hasResults &&
+                  !visibleAnswers.length &&
+                  !activeData.infoboxes.length ? (
                     <Card
                       className={cn(
                         emptyResultsCardClassName,

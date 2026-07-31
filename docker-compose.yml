@@ -54,7 +54,7 @@ services:
     tmpfs:
       - /tmp:size=32m,mode=1777
       - /run:size=16m,mode=755
-      - /data:size=64m,mode=700
+      - /data:size=64m,mode=770
     mem_limit: 256m
     pids_limit: 128
     command:

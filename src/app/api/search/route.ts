@@ -11,7 +11,11 @@ import { transformSearxResponse } from "@/features/search/server/transform";
 import { getSearchRuntimePreferences } from "@/features/settings/lib/preferences";
 import { getConfiguredEngineTokens } from "@/features/settings/server/engine-tokens";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
-import { getClientIp } from "@/server/client-ip";
+import {
+  getClientIp,
+  getForwardableClientIp,
+  getForwardableUserAgent,
+} from "@/server/client-ip";
 import { checkRateLimit, createRateLimitHeaders } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +25,8 @@ export async function GET(request: Request) {
   const t = await getTranslations("ApiErrors");
   const searchT = await getTranslations("Search");
   const startedAt = performance.now();
-  const rateLimit = await checkRateLimit(getClientIp(request));
+  const clientIp = getClientIp(request);
+  const rateLimit = await checkRateLimit(clientIp);
   const rateLimitHeaders = createRateLimitHeaders(rateLimit);
 
   if (!rateLimit.allowed) {
@@ -45,9 +50,13 @@ export async function GET(request: Request) {
       searchRequest.tab,
     );
     const engineTokens = getConfiguredEngineTokens();
+    const selfInfoEnabled =
+      runtimePreferences.enabledPlugins.includes("self_info");
     const upstreamResponse = await fetchSearxResponse(searchRequest, {
       ...runtimePreferences,
+      clientIp: selfInfoEnabled ? getForwardableClientIp(clientIp) : undefined,
       engineTokens,
+      userAgent: selfInfoEnabled ? getForwardableUserAgent(request) : undefined,
     });
     const payload = transformSearxResponse(
       upstreamResponse.payload,

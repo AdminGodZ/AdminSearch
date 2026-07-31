@@ -1,7 +1,7 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 import {
@@ -21,11 +21,7 @@ import {
   readPersistedPreferencesFromBrowser,
   readUiLanguagePreference,
 } from "@/features/settings/lib/preferences-client";
-import {
-  defaultLocale,
-  type AppLocale,
-  isAppLocale,
-} from "@/i18n/config";
+import { type AppLocale, defaultLocale, isAppLocale } from "@/i18n/config";
 import { cn } from "@/lib/utils";
 
 type LanguageSelectProps = {
@@ -109,14 +105,12 @@ export function LanguageSelect({ className }: LanguageSelectProps) {
         variant="chrome"
         size="header"
         className={cn(
-          "w-auto min-w-0 cursor-pointer justify-center gap-2 pl-4 pr-3 text-sm font-normal *:data-[slot=select-value]:flex-none",
+          "w-auto min-w-0 cursor-pointer justify-center gap-2 border bg-clip-padding pl-4 pr-3 text-sm font-normal *:data-[slot=select-value]:flex-none",
           className,
         )}
         aria-label={t("label")}
       >
-        <SelectValue>
-          {common(`languages.${language}`)}
-        </SelectValue>
+        <SelectValue>{common(`languages.${language}`)}</SelectValue>
       </SelectTrigger>
       <SelectContent position="popper" align="center" className="min-w-28 p-1">
         <SelectGroup className="p-0">

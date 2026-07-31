@@ -1,3 +1,4 @@
+import { extractAnswerTexts } from "@/features/search/lib/answer-texts";
 import { normalizeWebUrl } from "@/features/search/lib/safe-url";
 import { normalizeVideoPreviewUrl } from "@/features/search/lib/video-preview-url";
 import { DEFAULT_RESULTS_PER_PAGE } from "@/features/search/server/searx-client";
@@ -34,8 +35,7 @@ function readStringArray(record: SearxRawResult, keys: string[]) {
     }
 
     const strings = value.filter(
-      (item): item is string =>
-        typeof item === "string" && item.trim() !== "",
+      (item): item is string => typeof item === "string" && item.trim() !== "",
     );
 
     if (strings.length > 0) {
@@ -62,12 +62,7 @@ function readHostname(url: string) {
 
 function readThumbnail(result: SearxRawResult) {
   return normalizeWebUrl(
-    readString(result, [
-      "thumbnail_src",
-      "thumbnail",
-      "thumbnail_url",
-      "img",
-    ]),
+    readString(result, ["thumbnail_src", "thumbnail", "thumbnail_url", "img"]),
   );
 }
 
@@ -144,14 +139,6 @@ function normalizeResult(
     engine,
     engines: engines ?? (engine ? [engine] : undefined),
   };
-}
-
-function extractAnswers(rawAnswers: unknown[] | undefined) {
-  if (!Array.isArray(rawAnswers)) {
-    return [];
-  }
-
-  return rawAnswers.filter((item): item is string => typeof item === "string");
 }
 
 function extractSuggestions(rawSuggestions: unknown[] | undefined) {
@@ -487,7 +474,7 @@ export function transformSearxResponse(
     totalResults: numberOfResults,
     results,
     suggestions: extractSuggestions(payload.suggestions),
-    answers: extractAnswers(payload.answers),
+    answers: extractAnswerTexts(payload.answers),
     infoboxes: extractInfoboxes(payload.infoboxes, options.labels),
     hasMore,
     nextPageCursor: options?.nextPageCursor,

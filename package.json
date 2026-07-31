@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "npm run typecheck && next build",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "start": "next start",
     "lint": "biome check",
@@ -17,6 +18,7 @@
     "framer-motion": "^12.38.0",
     "ioredis": "^6.0.0",
     "lucide-react": "^1.7.0",
+    "mathjs": "^15.2.0",
     "next": "^16.2.6",
     "next-intl": "^4.13.2",
     "next-themes": "^0.4.6",
