@@ -1,3 +1,4 @@
+// biome-ignore-all lint/performance/noImgElement: Suggestion thumbnails reuse unbounded third-party search-result URLs.
 "use client";
 
 import {
@@ -34,12 +35,10 @@ import {
   getSearchInterfacePreferences,
   getSearchPreferenceDefaults,
   type PersistedPreferences,
-  SETTINGS_SYNC_EVENT,
-  SETTINGS_SYNC_STORAGE_KEY,
   type SearchInterfacePreferences,
   type SearchPreferenceDefaults,
 } from "@/features/settings/lib/preferences";
-import { readPersistedPreferencesFromBrowser } from "@/features/settings/lib/preferences-client";
+import { useSyncedPreferences } from "@/features/settings/lib/preferences-client";
 import { cn } from "@/lib/utils";
 
 type SearchState =
@@ -90,26 +89,29 @@ async function fetchSearchPageData(
     params.delete("cursor");
   }
 
+  // Success and error bodies are consumed only inside explicit response.ok branches.
+  // react-doctor-disable-next-line no-fetch-response-used-without-status-check
   const response = await fetch(`/api/search?${params.toString()}`, {
     signal,
     cache: "no-store",
   });
 
-  const payload: unknown = await response.json();
-
-  if (!response.ok) {
-    const message =
-      payload &&
-      typeof payload === "object" &&
-      "message" in payload &&
-      typeof payload.message === "string"
-        ? payload.message
-        : fallbackMessage;
-
-    throw new Error(message);
+  if (response.ok) {
+    return (await response.json()) as SearchResponse;
   }
 
-  return payload as SearchResponse;
+  const errorPayload: unknown = await response
+    .json()
+    .catch(() => undefined);
+  const message =
+    errorPayload &&
+    typeof errorPayload === "object" &&
+    "message" in errorPayload &&
+    typeof errorPayload.message === "string"
+      ? errorPayload.message
+      : fallbackMessage;
+
+  throw new Error(message);
 }
 
 function mergeSearchResponses(current: SearchResponse, next: SearchResponse) {
@@ -299,7 +301,7 @@ function ImageSuggestionStrip({
               >
                 <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--control-bg)]">
                   {thumbnailUrl ? (
-                    // biome-ignore lint/performance/noImgElement: Suggestion thumbnails intentionally reuse current image search result thumbnails.
+                    // react-doctor-disable-next-line nextjs-no-img-element
                     <img
                       src={thumbnailUrl}
                       alt=""
@@ -402,6 +404,701 @@ function SearchSidebar({
   );
 }
 
+type UseSearchResultsOptions = {
+  currentQuery: string;
+  currentTab: SearchTab;
+  currentLanguage?: string;
+  currentTimeRange?: "day" | "month" | "year";
+  currentSafeSearch: 0 | 1 | 2;
+  runtimeRefreshKey: string;
+  queryStringWithoutPage: string;
+  requestedPage: number;
+  resultReuseMode: SearchInterfacePreferences["resultReuseMode"];
+  infiniteScroll: boolean;
+  requestFailedMessage: string;
+};
+
+function useSearchResults({
+  currentQuery,
+  currentTab,
+  currentLanguage,
+  currentTimeRange,
+  currentSafeSearch,
+  runtimeRefreshKey,
+  queryStringWithoutPage,
+  requestedPage,
+  resultReuseMode,
+  infiniteScroll,
+  requestFailedMessage,
+}: UseSearchResultsOptions) {
+  const [state, setState] = useState<SearchState>(() =>
+    currentQuery ? { status: "loading" } : { status: "idle" },
+  );
+  const [loadedPage, setLoadedPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
+  const infiniteScrollSentinelRef = useRef<HTMLDivElement>(null);
+  const isLoadingMoreRef = useRef(false);
+  const searchCacheKey = useMemo(
+    () =>
+      JSON.stringify({
+        query: currentQuery,
+        tab: currentTab,
+        language: currentLanguage ?? null,
+        timeRange: currentTimeRange ?? null,
+        safeSearch: currentSafeSearch,
+        runtime: runtimeRefreshKey,
+      }),
+    [
+      currentLanguage,
+      currentQuery,
+      currentSafeSearch,
+      currentTab,
+      currentTimeRange,
+      runtimeRefreshKey,
+    ],
+  );
+
+  // URL-driven searches use an abortable request and the user-selected cache policy.
+  // react-doctor-disable-next-line no-fetch-in-effect, react-doctor/no-set-state-after-await-in-effect
+  useEffect(() => {
+    const params = new URLSearchParams(queryStringWithoutPage);
+    const query = params.get("q")?.trim() ?? "";
+
+    if (!query) {
+      setState({ status: "idle" });
+      setLoadedPage(1);
+      return;
+    }
+
+    if (resultReuseMode === "cache") {
+      const cachedData = readSearchCache(searchCacheKey, requestedPage);
+
+      if (cachedData) {
+        setLoadedPage(cachedData.page);
+        if (cachedData.tab === "all" && cachedData.suggestions.length > 0) {
+          setImageTabSuggestions(cachedData.suggestions);
+        }
+        setState({
+          status: "success",
+          data: cachedData,
+        });
+        return;
+      }
+    }
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    setState((previous) => ({
+      status: "loading",
+      previous:
+        previous.status === "success" &&
+        searchDataMatchesCurrentView(previous.data, currentTab, currentQuery)
+          ? previous.data
+          : (previous.status === "loading" || previous.status === "error") &&
+              previous.previous &&
+              searchDataMatchesCurrentView(
+                previous.previous,
+                currentTab,
+                currentQuery,
+              )
+            ? previous.previous
+            : undefined,
+    }));
+
+    void (async () => {
+      try {
+        let aggregated: SearchResponse | null = null;
+        let nextPageCursor: string | undefined;
+
+        for (let page = 1; page <= requestedPage; page += 1) {
+          const payload = await fetchSearchPageData(
+            params.toString(),
+            page,
+            controller.signal,
+            requestFailedMessage,
+            nextPageCursor,
+          );
+
+          aggregated = aggregated
+            ? mergeSearchResponses(aggregated, payload)
+            : payload;
+          nextPageCursor = payload.nextPageCursor;
+
+          if (!payload.hasMore) {
+            break;
+          }
+        }
+
+        if (!aggregated) {
+          throw new Error(requestFailedMessage);
+        }
+
+        if (cancelled || controller.signal.aborted) {
+          return;
+        }
+
+        setLoadedPage(aggregated.page);
+        if (aggregated.tab === "all" && aggregated.suggestions.length > 0) {
+          setImageTabSuggestions(aggregated.suggestions);
+        }
+        writeSearchCache(searchCacheKey, aggregated);
+        setState({
+          status: "success",
+          data: aggregated,
+        });
+      } catch (error: unknown) {
+        if (cancelled || controller.signal.aborted) {
+          return;
+        }
+
+        setState((previous) => ({
+          status: "error",
+          message:
+            error instanceof Error ? error.message : requestFailedMessage,
+          previous:
+            previous.status === "success" &&
+            searchDataMatchesCurrentView(
+              previous.data,
+              currentTab,
+              currentQuery,
+            )
+              ? previous.data
+              : (previous.status === "loading" ||
+                    previous.status === "error") &&
+                  previous.previous &&
+                  searchDataMatchesCurrentView(
+                    previous.previous,
+                    currentTab,
+                    currentQuery,
+                  )
+                ? previous.previous
+                : undefined,
+        }));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [
+    currentQuery,
+    currentTab,
+    queryStringWithoutPage,
+    requestedPage,
+    requestFailedMessage,
+    resultReuseMode,
+    searchCacheKey,
+  ]);
+
+  const activeData =
+    state.status === "success" &&
+    searchDataMatchesCurrentView(state.data, currentTab, currentQuery)
+      ? state.data
+      : (state.status === "loading" || state.status === "error") &&
+          state.previous &&
+          searchDataMatchesCurrentView(state.previous, currentTab, currentQuery)
+        ? state.previous
+        : undefined;
+  const activePage = activeData?.page ?? loadedPage;
+  const canLoadMore = Boolean(
+    activeData?.hasMore && activePage < SEARCH_MAX_PAGE,
+  );
+
+  const handleLoadMore = useCallback(async () => {
+    if (!activeData || !canLoadMore || isLoadingMoreRef.current) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const nextPage = activePage + 1;
+
+    isLoadingMoreRef.current = true;
+    setIsLoadingMore(true);
+
+    try {
+      const nextPayload = await fetchSearchPageData(
+        queryStringWithoutPage,
+        nextPage,
+        controller.signal,
+        requestFailedMessage,
+        activeData.nextPageCursor,
+      );
+
+      setLoadedPage(nextPayload.page);
+      setState((previous) => {
+        const current =
+          previous.status === "success"
+            ? previous.data
+            : previous.status === "loading" || previous.status === "error"
+              ? previous.previous
+              : activeData;
+
+        if (!current) {
+          return previous;
+        }
+
+        const merged = mergeSearchResponses(current, nextPayload);
+
+        writeSearchCache(searchCacheKey, merged);
+
+        return {
+          status: "success",
+          data: merged,
+        };
+      });
+    } catch (error: unknown) {
+      setState((previous) => ({
+        status: "error",
+        message:
+          error instanceof Error ? error.message : requestFailedMessage,
+        previous:
+          previous.status === "success"
+            ? previous.data
+            : previous.status === "loading" || previous.status === "error"
+              ? previous.previous
+              : activeData,
+      }));
+    } finally {
+      isLoadingMoreRef.current = false;
+      setIsLoadingMore(false);
+      controller.abort();
+    }
+  }, [
+    activeData,
+    activePage,
+    canLoadMore,
+    queryStringWithoutPage,
+    requestFailedMessage,
+    searchCacheKey,
+  ]);
+
+  useEffect(() => {
+    if (!infiniteScroll || !canLoadMore || isLoadingMore) {
+      return;
+    }
+
+    const sentinel = infiniteScrollSentinelRef.current;
+
+    if (!sentinel) {
+      return;
+    }
+
+    function maybeLoadMore() {
+      const currentSentinel = infiniteScrollSentinelRef.current;
+
+      if (!currentSentinel || isLoadingMoreRef.current) {
+        return;
+      }
+
+      if (
+        currentSentinel.getBoundingClientRect().top >
+        window.innerHeight + 900
+      ) {
+        return;
+      }
+
+      void handleLoadMore();
+    }
+
+    let animationFrame: number | undefined;
+    const scheduleLoadCheck = () => {
+      if (animationFrame !== undefined) {
+        return;
+      }
+
+      animationFrame = window.requestAnimationFrame(() => {
+        animationFrame = undefined;
+        maybeLoadMore();
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || isLoadingMoreRef.current) {
+          return;
+        }
+
+        observer.disconnect();
+        void handleLoadMore();
+      },
+      {
+        rootMargin: "600px 0px",
+      },
+    );
+
+    observer.observe(sentinel);
+    scheduleLoadCheck();
+    window.addEventListener("scroll", scheduleLoadCheck, { passive: true });
+    window.addEventListener("resize", scheduleLoadCheck);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", scheduleLoadCheck);
+      window.removeEventListener("resize", scheduleLoadCheck);
+
+      if (animationFrame !== undefined) {
+        window.cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [canLoadMore, handleLoadMore, infiniteScroll, isLoadingMore]);
+
+  return {
+    activeData,
+    canLoadMore,
+    handleLoadMore,
+    imageTabSuggestions,
+    infiniteScrollSentinelRef,
+    isLoadingMore,
+    state,
+  };
+}
+
+type SearchRouteValues = {
+  currentQuery: string;
+  currentTab: SearchTab;
+  currentLanguage?: string;
+  currentTimeRange?: "day" | "month" | "year";
+  currentSafeSearch: 0 | 1 | 2;
+};
+
+function SearchPageHeader({
+  currentQuery,
+  currentTab,
+  currentLanguage,
+  currentTimeRange,
+  currentSafeSearch,
+}: SearchRouteValues) {
+  const t = useTranslations("Search");
+
+  return (
+    <section className="-mx-5 border-b border-border/70 px-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
+      <div className="w-full">
+        <div
+          className={cn(
+            "relative flex flex-col gap-5 lg:grid lg:items-center lg:gap-x-5 lg:gap-y-0",
+            searchHeaderColumns,
+          )}
+        >
+          <Link
+            href="/"
+            className="inline-flex h-12 items-center text-[24px] leading-none font-semibold tracking-tight text-foreground select-none sm:h-14 sm:text-[26px] lg:hidden"
+          >
+            AdminSearch
+          </Link>
+
+          <Link
+            href="/"
+            className="hidden lg:inline-flex lg:absolute lg:top-1/2 lg:left-0 lg:h-14 lg:-translate-y-1/2 lg:items-center lg:text-[26px] lg:leading-none lg:font-semibold lg:tracking-tight lg:text-foreground lg:select-none"
+          >
+            AdminSearch
+          </Link>
+
+          <div className="hidden lg:block" />
+
+          <div className="min-w-0 w-full max-w-full lg:ml-[50px] lg:w-[725px]">
+            <SearchForm
+              action="/search"
+              defaultQuery={currentQuery}
+              tab={currentTab}
+              language={currentLanguage}
+              timeRange={currentTimeRange}
+              safeSearch={currentSafeSearch}
+              size="compact"
+              variant="landing"
+              placeholder={t("searchPlaceholder")}
+            />
+          </div>
+
+          <Header className="hidden lg:flex lg:w-auto lg:justify-self-end" />
+        </div>
+
+        <div className="mt-5 w-full">
+          <div
+            className={cn(
+              "grid gap-3 lg:gap-x-5 lg:gap-y-0",
+              searchContentColumns,
+            )}
+          >
+            <div className="hidden lg:block" />
+            <SearchTabs
+              tab={currentTab}
+              trailingContent={
+                <Filters
+                  language={currentLanguage}
+                  timeRange={currentTimeRange}
+                  safeSearch={currentSafeSearch}
+                />
+              }
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SearchResultsSection({
+  calculatorAnswer,
+  currentQuery,
+  currentTab,
+  interfacePreferences,
+  searchResults,
+}: {
+  calculatorAnswer?: string;
+  currentQuery: string;
+  currentTab: SearchTab;
+  interfacePreferences: SearchInterfacePreferences;
+  searchResults: ReturnType<typeof useSearchResults>;
+}) {
+  const t = useTranslations("Search");
+  const format = useFormatter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const {
+    activeData,
+    canLoadMore,
+    handleLoadMore,
+    imageTabSuggestions,
+    infiniteScrollSentinelRef,
+    isLoadingMore,
+    state,
+  } = searchResults;
+  const hasResults = Boolean(activeData?.results.length);
+  const visibleAnswers = useMemo(
+    () =>
+      [...new Set([calculatorAnswer, ...(activeData?.answers ?? [])])].filter(
+        (answer): answer is string => Boolean(answer),
+      ),
+    [activeData?.answers, calculatorAnswer],
+  );
+  const hasSidebarContent = Boolean(activeData?.infoboxes.length);
+  const showLoadingFallback =
+    currentQuery &&
+    !activeData &&
+    (state.status === "loading" || state.status === "success");
+  const resultsSectionClass = currentTab === "images" ? "" : "max-w-[655px]";
+  const resultsLabel =
+    currentTab === "images"
+      ? t("resultTypes.images")
+      : currentTab === "videos"
+        ? t("resultTypes.videos")
+        : currentTab === "news"
+          ? t("resultTypes.news")
+          : t("resultTypes.all");
+  const visibleImageSuggestions = !currentQuery
+    ? []
+    : currentTab === "images" &&
+        activeData &&
+        activeData.suggestions.length > 0
+      ? activeData.suggestions
+      : imageTabSuggestions;
+
+  return (
+    <div className="w-full">
+      <div
+        className={cn(
+          "grid gap-7 lg:gap-x-5 lg:gap-y-7",
+          currentTab !== "images" && searchContentColumns,
+        )}
+      >
+        {currentTab !== "images" ? (
+          <div className="hidden lg:block" />
+        ) : null}
+        <div
+          className={cn(
+            "space-y-7 min-w-0",
+            currentTab === "images" && "overflow-x-hidden",
+          )}
+        >
+          {currentTab === "images" && visibleImageSuggestions.length ? (
+            <div className={cn("space-y-4", resultsSectionClass)}>
+              <ImageSuggestionStrip
+                suggestions={visibleImageSuggestions}
+                thumbnails={(activeData?.results ?? [])
+                  .slice(0, 16)
+                  .map((result) => result.thumbnailUrl)}
+                pathname={pathname}
+                searchParams={searchParams}
+              />
+            </div>
+          ) : null}
+
+          <div
+            className={cn(
+              "grid items-start gap-7",
+              hasSidebarContent &&
+                currentTab !== "images" &&
+                "xl:grid-cols-[minmax(0,882px)_minmax(320px,418px)]",
+            )}
+          >
+            <div className="space-y-7 min-w-0">
+              {visibleAnswers.length ? (
+                <div className={resultsSectionClass}>
+                  <SearchAnswers answers={visibleAnswers} />
+                </div>
+              ) : null}
+
+              {activeData ? (
+                <p
+                  className={cn(
+                    "text-sm text-[var(--text-soft-alt)]",
+                    resultsSectionClass,
+                  )}
+                >
+                  {activeData.requestDurationMs
+                    ? t("showingWithDuration", {
+                        count: activeData.results.length,
+                        type: resultsLabel,
+                        duration: format.number(
+                          activeData.requestDurationMs / 1000,
+                          {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          },
+                        ),
+                      })
+                    : t("showing", {
+                        count: activeData.results.length,
+                        type: resultsLabel,
+                      })}
+                </p>
+              ) : null}
+
+              {state.status === "error" ? (
+                <Card
+                  className={cn(
+                    "rounded-[28px] border-destructive/20 bg-destructive/5 shadow-[0_1px_2px_rgba(28,31,38,0.04)]",
+                    resultsSectionClass,
+                  )}
+                >
+                  <CardContent className="flex items-start gap-3 p-6">
+                    <AlertTriangle className="mt-0.5 size-4 text-destructive" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-destructive">
+                        {t("errorTitle")}
+                      </p>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {state.message}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {!currentQuery ? (
+                <Card
+                  variant="panel"
+                  className={cn("max-w-[882px]", panelCardClassName)}
+                >
+                  <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-2">
+                      <p className="text-xs text-[var(--text-soft)]">
+                        {t("readyTitle")}
+                      </p>
+                      <p className="max-w-xl text-sm leading-7 text-[var(--text-body)]">
+                        {t("readyDescription")}
+                      </p>
+                    </div>
+                    <Button
+                      asChild
+                      variant="brand"
+                      className="rounded-full"
+                    >
+                      <Link href="/search?q=site%3Agithub.com+searxng+api&tab=all">
+                        {t("tryExample")}
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : showLoadingFallback ? (
+                <LoadingResults
+                  className={resultsSectionClass}
+                  tab={currentTab}
+                />
+              ) : null}
+
+              {activeData && hasResults ? (
+                <div className={resultsSectionClass}>
+                  <ResultList
+                    compactDensity={interfacePreferences.compactDensity}
+                    faviconResolver={interfacePreferences.faviconResolver}
+                    openInNewTab={interfacePreferences.openInNewTab}
+                    showFavicons={interfacePreferences.showFavicons}
+                    showThumbnails={interfacePreferences.showThumbnails}
+                    tab={currentTab}
+                    results={activeData.results}
+                    urlFormatting={interfacePreferences.urlFormatting}
+                  />
+                </div>
+              ) : null}
+
+              {currentQuery &&
+              activeData &&
+              !hasResults &&
+              !visibleAnswers.length &&
+              !activeData.infoboxes.length ? (
+                <Card
+                  className={cn(
+                    emptyResultsCardClassName,
+                    resultsSectionClass,
+                  )}
+                >
+                  <CardContent className="space-y-3 p-6">
+                    <p className="font-medium">{t("noResults")}</p>
+                    <p className="text-sm leading-7 text-[var(--text-body)]">
+                      {t("noResultsDescription")}
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {canLoadMore ? (
+                <div
+                  ref={infiniteScrollSentinelRef}
+                  className={cn(
+                    "relative flex items-center",
+                    resultsSectionClass,
+                  )}
+                >
+                  <Separator className="flex-1 bg-[var(--surface-separator)]" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="mx-4 size-10 shrink-0 cursor-pointer rounded-full border-transparent bg-[var(--control-bg)] shadow-none hover:bg-[var(--control-hover)] dark:hover:bg-[var(--control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] dark:focus-visible:bg-[var(--control-active)] focus-visible:ring-0"
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                    aria-label={t("loadMore")}
+                  >
+                    {isLoadingMore ? (
+                      <DashRing className="size-5 text-[#fff]" />
+                    ) : (
+                      <ChevronDown className="size-5" />
+                    )}
+                  </Button>
+                  <Separator className="flex-1 bg-[var(--surface-separator)]" />
+                </div>
+              ) : null}
+            </div>
+
+            {activeData && currentTab !== "images" ? (
+              <SearchSidebar
+                data={activeData}
+                openInNewTab={interfacePreferences.openInNewTab}
+                pathname={pathname}
+                searchParams={searchParams}
+              />
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SearchPageClient({
   initialPreferences,
 }: {
@@ -409,50 +1106,12 @@ export function SearchPageClient({
 }) {
   const t = useTranslations("Search");
   const metadataT = useTranslations("Metadata");
-  const format = useFormatter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [state, setState] = useState<SearchState>(() =>
-    searchParams.get("q")?.trim() ? { status: "loading" } : { status: "idle" },
-  );
-  const [loadedPage, setLoadedPage] = useState(1);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [imageTabSuggestions, setImageTabSuggestions] = useState<string[]>([]);
   const [calculatorResult, setCalculatorResult] = useState<{
     answer?: string;
     query: string;
   }>();
-  const infiniteScrollSentinelRef = useRef<HTMLDivElement>(null);
-  const isLoadingMoreRef = useRef(false);
-  const [preferences, setPreferences] =
-    useState<PersistedPreferences>(initialPreferences);
-
-  useEffect(() => {
-    setPreferences(initialPreferences);
-  }, [initialPreferences]);
-
-  useEffect(() => {
-    function syncPreferencesFromBrowser() {
-      setPreferences(readPersistedPreferencesFromBrowser());
-    }
-
-    function handleStorage(event: StorageEvent) {
-      if (event.key === SETTINGS_SYNC_STORAGE_KEY) {
-        syncPreferencesFromBrowser();
-      }
-    }
-
-    window.addEventListener(SETTINGS_SYNC_EVENT, syncPreferencesFromBrowser);
-    window.addEventListener("storage", handleStorage);
-
-    return () => {
-      window.removeEventListener(
-        SETTINGS_SYNC_EVENT,
-        syncPreferencesFromBrowser,
-      );
-      window.removeEventListener("storage", handleStorage);
-    };
-  }, []);
+  const preferences = useSyncedPreferences(initialPreferences);
 
   const defaults = useMemo<SearchPreferenceDefaults>(
     () => getSearchPreferenceDefaults(preferences.settings),
@@ -535,6 +1194,19 @@ export function SearchPageClient({
   const currentSafeSearch = effectiveParams.has("safeSearch")
     ? normalizeSafeSearch(effectiveParams.get("safeSearch"))
     : defaults.safeSearch;
+  const searchResults = useSearchResults({
+    currentQuery,
+    currentTab,
+    currentLanguage,
+    currentTimeRange,
+    currentSafeSearch,
+    runtimeRefreshKey,
+    queryStringWithoutPage,
+    requestedPage,
+    resultReuseMode: interfacePreferences.resultReuseMode,
+    infiniteScroll: interfacePreferences.infiniteScroll,
+    requestFailedMessage: t("requestFailed"),
+  });
 
   useEffect(() => {
     if (!preferences.settings.calculator || !currentQuery) {
@@ -564,26 +1236,6 @@ export function SearchPageClient({
     };
   }, [currentQuery, preferences.settings.calculator]);
 
-  const searchCacheKey = useMemo(
-    () =>
-      JSON.stringify({
-        query: currentQuery,
-        tab: currentTab,
-        language: currentLanguage ?? null,
-        timeRange: currentTimeRange ?? null,
-        safeSearch: currentSafeSearch,
-        runtime: runtimeRefreshKey,
-      }),
-    [
-      currentLanguage,
-      currentQuery,
-      currentSafeSearch,
-      currentTab,
-      currentTimeRange,
-      runtimeRefreshKey,
-    ],
-  );
-
   useEffect(() => {
     if (!interfacePreferences.queryInTitle || !currentQuery) {
       document.title = `AdminSearch - ${metadataT("searchTitle")}`;
@@ -593,588 +1245,28 @@ export function SearchPageClient({
     document.title = `AdminSearch - ${currentQuery}`;
   }, [currentQuery, interfacePreferences.queryInTitle, metadataT]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(queryStringWithoutPage);
-    const query = params.get("q")?.trim() ?? "";
-
-    if (!query) {
-      setState({ status: "idle" });
-      setLoadedPage(1);
-      return;
-    }
-
-    if (interfacePreferences.resultReuseMode === "cache") {
-      const cachedData = readSearchCache(searchCacheKey, requestedPage);
-
-      if (cachedData) {
-        setLoadedPage(cachedData.page);
-        if (cachedData.tab === "all" && cachedData.suggestions.length > 0) {
-          setImageTabSuggestions(cachedData.suggestions);
-        }
-        setState({
-          status: "success",
-          data: cachedData,
-        });
-        return;
-      }
-    }
-
-    const controller = new AbortController();
-
-    setState((previous) => ({
-      status: "loading",
-      previous:
-        previous.status === "success" &&
-        searchDataMatchesCurrentView(previous.data, currentTab, currentQuery)
-          ? previous.data
-          : (previous.status === "loading" || previous.status === "error") &&
-              previous.previous &&
-              searchDataMatchesCurrentView(
-                previous.previous,
-                currentTab,
-                currentQuery,
-              )
-            ? previous.previous
-            : undefined,
-    }));
-
-    void (async () => {
-      try {
-        let aggregated: SearchResponse | null = null;
-        let nextPageCursor: string | undefined;
-
-        for (let page = 1; page <= requestedPage; page += 1) {
-          const payload = await fetchSearchPageData(
-            params.toString(),
-            page,
-            controller.signal,
-            t("requestFailed"),
-            nextPageCursor,
-          );
-
-          aggregated = aggregated
-            ? mergeSearchResponses(aggregated, payload)
-            : payload;
-          nextPageCursor = payload.nextPageCursor;
-
-          if (!payload.hasMore) {
-            break;
-          }
-        }
-
-        if (!aggregated) {
-          throw new Error(t("requestFailed"));
-        }
-
-        setLoadedPage(aggregated.page);
-        if (aggregated.tab === "all" && aggregated.suggestions.length > 0) {
-          setImageTabSuggestions(aggregated.suggestions);
-        }
-        writeSearchCache(searchCacheKey, aggregated);
-        setState({
-          status: "success",
-          data: aggregated,
-        });
-      } catch (error: unknown) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setState((previous) => ({
-          status: "error",
-          message: error instanceof Error ? error.message : t("requestFailed"),
-          previous:
-            previous.status === "success" &&
-            searchDataMatchesCurrentView(
-              previous.data,
-              currentTab,
-              currentQuery,
-            )
-              ? previous.data
-              : (previous.status === "loading" ||
-                    previous.status === "error") &&
-                  previous.previous &&
-                  searchDataMatchesCurrentView(
-                    previous.previous,
-                    currentTab,
-                    currentQuery,
-                  )
-                ? previous.previous
-                : undefined,
-        }));
-      }
-    })();
-
-    return () => controller.abort();
-  }, [
-    currentQuery,
-    currentTab,
-    interfacePreferences.resultReuseMode,
-    queryStringWithoutPage,
-    requestedPage,
-    searchCacheKey,
-    t,
-  ]);
-
-  useEffect(() => {
-    if (!currentQuery) {
-      setImageTabSuggestions([]);
-    }
-  }, [currentQuery]);
-
-  const activeData =
-    state.status === "success" &&
-    searchDataMatchesCurrentView(state.data, currentTab, currentQuery)
-      ? state.data
-      : (state.status === "loading" || state.status === "error") &&
-          state.previous &&
-          searchDataMatchesCurrentView(state.previous, currentTab, currentQuery)
-        ? state.previous
-        : undefined;
-  const activePage = activeData?.page ?? loadedPage;
-  const canLoadMore = Boolean(
-    activeData?.hasMore && activePage < SEARCH_MAX_PAGE,
-  );
-
-  const hasResults = Boolean(activeData?.results.length);
   const calculatorAnswer =
     preferences.settings.calculator && calculatorResult?.query === currentQuery
       ? calculatorResult.answer
       : undefined;
-  const visibleAnswers = useMemo(
-    () =>
-      [...new Set([calculatorAnswer, ...(activeData?.answers ?? [])])].filter(
-        (answer): answer is string => Boolean(answer),
-      ),
-    [activeData?.answers, calculatorAnswer],
-  );
-  const hasSidebarContent = Boolean(activeData?.infoboxes.length);
-  const showLoadingFallback =
-    currentQuery &&
-    !activeData &&
-    (state.status === "loading" || state.status === "success");
-  const resultsSectionClass = currentTab === "images" ? "" : "max-w-[655px]";
-  const resultsLabel =
-    currentTab === "images"
-      ? t("resultTypes.images")
-      : currentTab === "videos"
-        ? t("resultTypes.videos")
-        : currentTab === "news"
-          ? t("resultTypes.news")
-          : t("resultTypes.all");
-  const visibleImageSuggestions =
-    currentTab === "images" && activeData && activeData.suggestions.length > 0
-      ? activeData.suggestions
-      : imageTabSuggestions;
-
-  const handleLoadMore = useCallback(async () => {
-    if (!activeData || !canLoadMore || isLoadingMoreRef.current) {
-      return;
-    }
-
-    const controller = new AbortController();
-    const nextPage = activePage + 1;
-
-    isLoadingMoreRef.current = true;
-    setIsLoadingMore(true);
-
-    try {
-      const nextPayload = await fetchSearchPageData(
-        queryStringWithoutPage,
-        nextPage,
-        controller.signal,
-        t("requestFailed"),
-        activeData.nextPageCursor,
-      );
-
-      setLoadedPage(nextPayload.page);
-      setState((previous) => {
-        const current =
-          previous.status === "success"
-            ? previous.data
-            : previous.status === "loading" || previous.status === "error"
-              ? previous.previous
-              : activeData;
-
-        if (!current) {
-          return previous;
-        }
-
-        const merged = mergeSearchResponses(current, nextPayload);
-
-        writeSearchCache(searchCacheKey, merged);
-
-        return {
-          status: "success",
-          data: merged,
-        };
-      });
-    } catch (error: unknown) {
-      setState((previous) => ({
-        status: "error",
-        message: error instanceof Error ? error.message : t("requestFailed"),
-        previous:
-          previous.status === "success"
-            ? previous.data
-            : previous.status === "loading" || previous.status === "error"
-              ? previous.previous
-              : activeData,
-      }));
-    } finally {
-      isLoadingMoreRef.current = false;
-      setIsLoadingMore(false);
-      controller.abort();
-    }
-  }, [
-    activeData,
-    activePage,
-    canLoadMore,
-    queryStringWithoutPage,
-    searchCacheKey,
-    t,
-  ]);
-
-  useEffect(() => {
-    if (!interfacePreferences.infiniteScroll || !canLoadMore || isLoadingMore) {
-      return;
-    }
-
-    const sentinel = infiniteScrollSentinelRef.current;
-
-    if (!sentinel) {
-      return;
-    }
-
-    function maybeLoadMore() {
-      const currentSentinel = infiniteScrollSentinelRef.current;
-
-      if (!currentSentinel || isLoadingMoreRef.current) {
-        return;
-      }
-
-      if (
-        currentSentinel.getBoundingClientRect().top >
-        window.innerHeight + 900
-      ) {
-        return;
-      }
-
-      void handleLoadMore();
-    }
-
-    let animationFrame: number | undefined;
-    const scheduleLoadCheck = () => {
-      if (animationFrame !== undefined) {
-        return;
-      }
-
-      animationFrame = window.requestAnimationFrame(() => {
-        animationFrame = undefined;
-        maybeLoadMore();
-      });
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting || isLoadingMoreRef.current) {
-          return;
-        }
-
-        observer.disconnect();
-        void handleLoadMore();
-      },
-      {
-        rootMargin: "600px 0px",
-      },
-    );
-
-    observer.observe(sentinel);
-    scheduleLoadCheck();
-    window.addEventListener("scroll", scheduleLoadCheck, { passive: true });
-    window.addEventListener("resize", scheduleLoadCheck);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("scroll", scheduleLoadCheck);
-      window.removeEventListener("resize", scheduleLoadCheck);
-
-      if (animationFrame !== undefined) {
-        window.cancelAnimationFrame(animationFrame);
-      }
-    };
-  }, [
-    canLoadMore,
-    handleLoadMore,
-    interfacePreferences.infiniteScroll,
-    isLoadingMore,
-  ]);
 
   return (
     <main className="w-full flex-1 bg-background px-5 py-8 sm:px-8 lg:px-10">
       <div className="space-y-8">
-        <section className="-mx-5 border-b border-border/70 px-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-          <div className="w-full">
-            <div
-              className={cn(
-                "relative flex flex-col gap-5 lg:grid lg:items-center lg:gap-x-5 lg:gap-y-0",
-                searchHeaderColumns,
-              )}
-            >
-              <Link
-                href="/"
-                className="inline-flex h-12 items-center text-[24px] leading-none font-semibold tracking-tight text-foreground select-none sm:h-14 sm:text-[26px] lg:hidden"
-              >
-                AdminSearch
-              </Link>
-
-              <Link
-                href="/"
-                className="hidden lg:inline-flex lg:absolute lg:top-1/2 lg:left-0 lg:h-14 lg:-translate-y-1/2 lg:items-center lg:text-[26px] lg:leading-none lg:font-semibold lg:tracking-tight lg:text-foreground lg:select-none"
-              >
-                AdminSearch
-              </Link>
-
-              <div className="hidden lg:block" />
-
-              <div className="min-w-0 w-full max-w-full lg:ml-[50px] lg:w-[725px]">
-                <SearchForm
-                  action="/search"
-                  defaultQuery={currentQuery}
-                  tab={currentTab}
-                  language={currentLanguage}
-                  timeRange={currentTimeRange}
-                  safeSearch={currentSafeSearch}
-                  size="compact"
-                  variant="landing"
-                  placeholder={t("searchPlaceholder")}
-                />
-              </div>
-
-              <Header className="hidden lg:flex lg:w-auto lg:justify-self-end" />
-            </div>
-
-            <div className="mt-5 w-full">
-              <div
-                className={cn(
-                  "grid gap-3 lg:gap-x-5 lg:gap-y-0",
-                  searchContentColumns,
-                )}
-              >
-                <div className="hidden lg:block" />
-                <SearchTabs
-                  tab={currentTab}
-                  trailingContent={
-                    <Filters
-                      language={currentLanguage}
-                      timeRange={currentTimeRange}
-                      safeSearch={currentSafeSearch}
-                    />
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="w-full">
-          <div
-            className={cn(
-              "grid gap-7 lg:gap-x-5 lg:gap-y-7",
-              currentTab !== "images" && searchContentColumns,
-            )}
-          >
-            {currentTab !== "images" ? (
-              <div className="hidden lg:block" />
-            ) : null}
-            <div
-              className={cn(
-                "space-y-7 min-w-0",
-                currentTab === "images" && "overflow-x-hidden",
-              )}
-            >
-              {currentTab === "images" && visibleImageSuggestions.length ? (
-                <div className={cn("space-y-4", resultsSectionClass)}>
-                  <ImageSuggestionStrip
-                    suggestions={visibleImageSuggestions}
-                    thumbnails={(activeData?.results ?? [])
-                      .slice(0, 16)
-                      .map((result) => result.thumbnailUrl)}
-                    pathname={pathname}
-                    searchParams={searchParams}
-                  />
-                </div>
-              ) : null}
-
-              <div
-                className={cn(
-                  "grid items-start gap-7",
-                  hasSidebarContent &&
-                    currentTab !== "images" &&
-                    "xl:grid-cols-[minmax(0,882px)_minmax(320px,418px)]",
-                )}
-              >
-                <div className="space-y-7 min-w-0">
-                  {visibleAnswers.length ? (
-                    <div className={resultsSectionClass}>
-                      <SearchAnswers answers={visibleAnswers} />
-                    </div>
-                  ) : null}
-
-                  {activeData ? (
-                    <p
-                      className={cn(
-                        "text-sm text-[var(--text-soft-alt)]",
-                        resultsSectionClass,
-                      )}
-                    >
-                      {activeData.requestDurationMs
-                        ? t("showingWithDuration", {
-                            count: activeData.results.length,
-                            type: resultsLabel,
-                            duration: format.number(
-                              activeData.requestDurationMs / 1000,
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              },
-                            ),
-                          })
-                        : t("showing", {
-                            count: activeData.results.length,
-                            type: resultsLabel,
-                          })}
-                    </p>
-                  ) : null}
-
-                  {state.status === "error" ? (
-                    <Card
-                      className={cn(
-                        "rounded-[28px] border-destructive/20 bg-destructive/5 shadow-[0_1px_2px_rgba(28,31,38,0.04)]",
-                        resultsSectionClass,
-                      )}
-                    >
-                      <CardContent className="flex items-start gap-3 p-6">
-                        <AlertTriangle className="mt-0.5 size-4 text-destructive" />
-                        <div className="space-y-1">
-                          <p className="font-medium text-destructive">
-                            {t("errorTitle")}
-                          </p>
-                          <p className="text-sm leading-6 text-muted-foreground">
-                            {state.message}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : null}
-
-                  {!currentQuery ? (
-                    <Card
-                      variant="panel"
-                      className={cn("max-w-[882px]", panelCardClassName)}
-                    >
-                      <CardContent className="flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="space-y-2">
-                          <p className="text-xs text-[var(--text-soft)]">
-                            {t("readyTitle")}
-                          </p>
-                          <p className="max-w-xl text-sm leading-7 text-[var(--text-body)]">
-                            {t("readyDescription")}
-                          </p>
-                        </div>
-                        <Button
-                          asChild
-                          variant="brand"
-                          className="rounded-full"
-                        >
-                          <Link href="/search?q=site%3Agithub.com+searxng+api&tab=all">
-                            {t("tryExample")}
-                          </Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ) : showLoadingFallback ? (
-                    <LoadingResults
-                      className={resultsSectionClass}
-                      tab={currentTab}
-                    />
-                  ) : null}
-
-                  {activeData && hasResults ? (
-                    <div className={resultsSectionClass}>
-                      <ResultList
-                        compactDensity={interfacePreferences.compactDensity}
-                        faviconResolver={interfacePreferences.faviconResolver}
-                        openInNewTab={interfacePreferences.openInNewTab}
-                        showFavicons={interfacePreferences.showFavicons}
-                        showThumbnails={interfacePreferences.showThumbnails}
-                        tab={currentTab}
-                        results={activeData.results}
-                        urlFormatting={interfacePreferences.urlFormatting}
-                      />
-                    </div>
-                  ) : null}
-
-                  {currentQuery &&
-                  activeData &&
-                  !hasResults &&
-                  !visibleAnswers.length &&
-                  !activeData.infoboxes.length ? (
-                    <Card
-                      className={cn(
-                        emptyResultsCardClassName,
-                        resultsSectionClass,
-                      )}
-                    >
-                      <CardContent className="space-y-3 p-6">
-                        <p className="font-medium">{t("noResults")}</p>
-                        <p className="text-sm leading-7 text-[var(--text-body)]">
-                          {t("noResultsDescription")}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ) : null}
-
-                  {canLoadMore ? (
-                    <div
-                      ref={infiniteScrollSentinelRef}
-                      className={cn(
-                        "relative flex items-center",
-                        resultsSectionClass,
-                      )}
-                    >
-                      <Separator className="flex-1 bg-[var(--surface-separator)]" />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="mx-4 size-10 shrink-0 cursor-pointer rounded-full border-transparent bg-[var(--control-bg)] shadow-none hover:bg-[var(--control-hover)] dark:hover:bg-[var(--control-hover)] focus-visible:border-transparent focus-visible:bg-[var(--control-active)] dark:focus-visible:bg-[var(--control-active)] focus-visible:ring-0"
-                        onClick={handleLoadMore}
-                        disabled={isLoadingMore}
-                        aria-label={t("loadMore")}
-                      >
-                        {isLoadingMore ? (
-                          <DashRing className="size-5 text-[#fff]" />
-                        ) : (
-                          <ChevronDown className="size-5" />
-                        )}
-                      </Button>
-                      <Separator className="flex-1 bg-[var(--surface-separator)]" />
-                    </div>
-                  ) : null}
-                </div>
-
-                {activeData && currentTab !== "images" ? (
-                  <SearchSidebar
-                    data={activeData}
-                    openInNewTab={interfacePreferences.openInNewTab}
-                    pathname={pathname}
-                    searchParams={searchParams}
-                  />
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
+        <SearchPageHeader
+          currentQuery={currentQuery}
+          currentTab={currentTab}
+          currentLanguage={currentLanguage}
+          currentTimeRange={currentTimeRange}
+          currentSafeSearch={currentSafeSearch}
+        />
+        <SearchResultsSection
+          calculatorAnswer={calculatorAnswer}
+          currentQuery={currentQuery}
+          currentTab={currentTab}
+          interfacePreferences={interfacePreferences}
+          searchResults={searchResults}
+        />
       </div>
     </main>
   );

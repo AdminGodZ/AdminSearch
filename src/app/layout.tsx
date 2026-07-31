@@ -11,14 +11,28 @@ import { getPersistedPreferences } from "@/features/settings/server/preferences"
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
+const DEFAULT_METADATA_BASE = "http://localhost:3000";
+
+function getMetadataBase() {
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? DEFAULT_METADATA_BASE;
+
+  if (!URL.canParse(configuredUrl)) {
+    return new URL(DEFAULT_METADATA_BASE);
+  }
+
+  const metadataBase = new URL(configuredUrl);
+
+  return metadataBase.protocol === "http:" || metadataBase.protocol === "https:"
+    ? metadataBase
+    : new URL(DEFAULT_METADATA_BASE);
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Metadata");
 
   return {
-    metadataBase: new URL(
-      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-    ),
+    metadataBase: getMetadataBase(),
     title: {
       default: "AdminSearch",
       template: "AdminSearch - %s",

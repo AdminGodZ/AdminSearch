@@ -1,5 +1,6 @@
-import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
+
+import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/features/search/components/search-input";
 import type { SearchTab } from "@/features/search/types";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ export function SearchForm({
       <form action={action} method="GET" className="w-full">
         {hiddenFields}
         <SearchInput
+          key={defaultQuery}
           defaultValue={defaultQuery}
           placeholder={resolvedPlaceholder}
           size={size}
@@ -74,6 +76,7 @@ export function SearchForm({
       >
         <div className="flex-1">
           <SearchInput
+            key={defaultQuery}
             defaultValue={defaultQuery}
             placeholder={resolvedPlaceholder}
             size={size}

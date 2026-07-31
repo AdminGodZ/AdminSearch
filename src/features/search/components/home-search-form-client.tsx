@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 
 import { SearchForm } from "@/features/search/components/search-form";
 import {
   getSearchPreferenceDefaults,
   type PersistedPreferences,
-  SETTINGS_SYNC_EVENT,
-  SETTINGS_SYNC_STORAGE_KEY,
 } from "@/features/settings/lib/preferences";
-import { readPersistedPreferencesFromBrowser } from "@/features/settings/lib/preferences-client";
+import { useSyncedPreferences } from "@/features/settings/lib/preferences-client";
 
 export function HomeSearchFormClient({
   initialPreferences,
@@ -18,35 +16,7 @@ export function HomeSearchFormClient({
   initialPreferences: PersistedPreferences;
 }) {
   const t = useTranslations("Home");
-  const [preferences, setPreferences] =
-    useState<PersistedPreferences>(initialPreferences);
-
-  useEffect(() => {
-    setPreferences(initialPreferences);
-  }, [initialPreferences]);
-
-  useEffect(() => {
-    function syncPreferencesFromBrowser() {
-      setPreferences(readPersistedPreferencesFromBrowser());
-    }
-
-    function handleStorage(event: StorageEvent) {
-      if (event.key === SETTINGS_SYNC_STORAGE_KEY) {
-        syncPreferencesFromBrowser();
-      }
-    }
-
-    window.addEventListener(SETTINGS_SYNC_EVENT, syncPreferencesFromBrowser);
-    window.addEventListener("storage", handleStorage);
-
-    return () => {
-      window.removeEventListener(
-        SETTINGS_SYNC_EVENT,
-        syncPreferencesFromBrowser,
-      );
-      window.removeEventListener("storage", handleStorage);
-    };
-  }, []);
+  const preferences = useSyncedPreferences(initialPreferences);
 
   const defaults = useMemo(
     () => getSearchPreferenceDefaults(preferences.settings),

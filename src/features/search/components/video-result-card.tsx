@@ -1,3 +1,4 @@
+// biome-ignore-all lint/performance/noImgElement: Video thumbnails use unbounded third-party URLs supplied by SearXNG.
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -178,11 +179,11 @@ export function VideoResultCard({
                   allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                   allowFullScreen
                   referrerPolicy="strict-origin-when-cross-origin"
-                  sandbox="allow-same-origin allow-scripts allow-presentation"
+                  sandbox="allow-scripts"
                   className="h-full w-full border-0"
                 />
               ) : result.thumbnailUrl ? (
-                // biome-ignore lint/performance/noImgElement: Direct remote thumbnails are already used for image search and video previews.
+                // react-doctor-disable-next-line nextjs-no-img-element
                 <img
                   src={result.thumbnailUrl}
                   alt={result.title}

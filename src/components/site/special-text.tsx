@@ -37,7 +37,6 @@ export function SpecialText({
   const containerRef = useRef<HTMLSpanElement>(null);
   const isInView = useInView(containerRef, { once, margin: "-100px" });
   const shouldAnimate = inView ? isInView : true;
-  const [mounted, setMounted] = useState(false);
   const [hasStarted, setHasStarted] = useState(() => !inView && delay <= 0);
   const [displayText, setDisplayText] = useState(() =>
     " ".repeat(children.length),
@@ -48,10 +47,6 @@ export function SpecialText({
   const [animationStep, setAnimationStep] = useState(0);
   const intervalRef = useRef<number | null>(null);
   const startTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const clearStartTimeout = useCallback(() => {
     if (startTimeoutRef.current === null) {
@@ -205,11 +200,9 @@ export function SpecialText({
       <span aria-hidden className="invisible">
         {children}
       </span>
-      {mounted ? (
-        <span className="absolute inset-0 inline-flex items-center overflow-hidden whitespace-pre">
-          {displayText}
-        </span>
-      ) : null}
+      <span className="absolute inset-0 inline-flex items-center overflow-hidden whitespace-pre">
+        {displayText}
+      </span>
     </span>
   );
 }

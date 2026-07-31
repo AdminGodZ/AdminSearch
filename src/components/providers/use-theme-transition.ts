@@ -1,6 +1,8 @@
 "use client";
 
 import { useTheme } from "next-themes";
+// The native View Transition callback needs the new theme committed before its snapshot.
+// react-doctor-disable-next-line no-flush-sync
 import { flushSync } from "react-dom";
 
 type ViewTransitionDocument = Document & {

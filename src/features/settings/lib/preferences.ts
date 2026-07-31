@@ -1,9 +1,9 @@
 import type { SearchTab } from "@/features/search/types";
 import {
-  appearanceModes,
   type AppearanceMode,
-  colorThemes,
+  appearanceModes,
   type ColorTheme,
+  colorThemes,
   DEFAULT_APPEARANCE_MODE,
   DEFAULT_COLOR_THEME,
 } from "@/features/settings/lib/themes";
@@ -181,6 +181,13 @@ export const engineCatalog: Record<EngineGroupKey, string[]> = {
   ],
 };
 
+const engineCatalogLookup: Record<EngineGroupKey, ReadonlySet<string>> = {
+  general: new Set(engineCatalog.general),
+  images: new Set(engineCatalog.images),
+  videos: new Set(engineCatalog.videos),
+  news: new Set(engineCatalog.news),
+};
+
 export const defaultEngineState: EngineState = {
   general: new Set([
     "duckduckgo",
@@ -287,7 +294,7 @@ function sanitizeEngineSelection(
   });
 
   return new Set(
-    selected.filter((engine) => engineCatalog[group].includes(engine)),
+    selected.filter((engine) => engineCatalogLookup[group].has(engine)),
   );
 }
 

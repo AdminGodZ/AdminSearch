@@ -12,8 +12,8 @@ import {
   Sparkles,
   Video,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -42,13 +42,6 @@ import {
   type SettingsState,
 } from "@/features/settings/lib/preferences";
 import {
-  appearanceModes,
-  applyColorTheme,
-  colorThemes,
-  isAppearanceMode,
-  isColorTheme,
-} from "@/features/settings/lib/themes";
-import {
   broadcastSettingsSync,
   persistPreferencesCookie as persistCookie,
   persistSettingsStorageMode,
@@ -56,6 +49,13 @@ import {
   readPersistedPreferencesFromBrowser,
   readUiLanguagePreference,
 } from "@/features/settings/lib/preferences-client";
+import {
+  appearanceModes,
+  applyColorTheme,
+  colorThemes,
+  isAppearanceMode,
+  isColorTheme,
+} from "@/features/settings/lib/themes";
 import { cn } from "@/lib/utils";
 
 type SectionId = "general" | "interface" | "privacy" | "engines" | "special";
@@ -308,6 +308,664 @@ function cloneEngineState(source: EngineState): EngineState {
   };
 }
 
+type SettingsNavSection = {
+  id: SectionId;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  description: string;
+};
+
+type SettingsSectionMeta = Pick<SettingsNavSection, "label" | "description">;
+
+type EngineGroupMeta = Record<
+  EngineGroupKey,
+  {
+    title: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }
+>;
+
+type UpdateSetting = <K extends keyof SettingsState>(
+  key: K,
+  value: SettingsState[K],
+) => void;
+
+function SettingsSidebar({
+  activeSection,
+  navSections,
+  onSelect,
+}: {
+  activeSection: SectionId;
+  navSections: SettingsNavSection[];
+  onSelect: (section: SectionId) => void;
+}) {
+  const t = useTranslations("Settings");
+
+  return (
+    <aside className="lg:sticky lg:top-8 lg:h-fit lg:border-r lg:border-[var(--surface-panel-border)] lg:pr-8 xl:pr-12">
+      <div className="mb-8 px-2.5">
+        <h1 className="text-[22px] font-semibold tracking-tight text-[var(--text-strong)]">
+          {t("title")}
+        </h1>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--text-soft)]">
+          {t("subtitle")}
+        </p>
+      </div>
+
+      <p className="mb-3 px-2.5 text-[11px] font-semibold text-[var(--text-soft)]">
+        {t("sections")}
+      </p>
+
+      <nav className="flex flex-col gap-0.5" aria-label={t("sectionsAria")}>
+        {navSections.map((section) => {
+          const Icon = section.icon;
+          const isActive = section.id === activeSection;
+
+          return (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => onSelect(section.id)}
+              className={cn(
+                "group/nav relative flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[14px] font-medium transition-colors",
+                isActive
+                  ? "bg-foreground/[0.06] text-[var(--text-strong)]"
+                  : "text-[var(--text-body)] hover:bg-foreground/[0.03] hover:text-[var(--text-strong)]",
+              )}
+            >
+              {isActive ? (
+                <span
+                  className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r-full bg-foreground"
+                  aria-hidden
+                />
+              ) : null}
+              <Icon
+                className={cn(
+                  "size-4 transition-colors",
+                  isActive
+                    ? "text-[var(--text-strong)]"
+                    : "text-[var(--text-soft)] group-hover/nav:text-[var(--text-strong)]",
+                )}
+              />
+              <span className="flex-1">{section.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="mt-8 hidden pr-2 lg:block">
+        <div className="flex items-center gap-2 px-2.5 text-[12px] font-semibold text-[var(--text-soft)]">
+          <Info className="size-3.5" />
+          {t("cookieDefaultsTitle")}
+        </div>
+        <p className="mt-1.5 px-2.5 text-[12px] leading-relaxed text-[var(--text-soft)]">
+          {t("cookieDefaultsDescription")}
+        </p>
+      </div>
+    </aside>
+  );
+}
+
+function GeneralSettingsSection({
+  meta,
+  settings,
+  updateSetting,
+}: {
+  meta: SettingsSectionMeta;
+  settings: SettingsState;
+  updateSetting: UpdateSetting;
+}) {
+  const t = useTranslations("Settings");
+  const common = useTranslations("Common");
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader title={meta.label} description={meta.description} />
+
+      <div className="divide-y divide-[var(--surface-panel-border)]">
+        <SettingRow
+          label={t("general.searchLocaleLabel")}
+          description={t("general.searchLocaleDescription")}
+        >
+          <SettingSelect
+            value={settings.locale}
+            onValueChange={(value) => updateSetting("locale", value)}
+            options={[
+              { value: "auto", label: common("languages.auto") },
+              { value: "en", label: common("languages.en") },
+              { value: "de", label: common("languages.de") },
+              { value: "fr", label: common("languages.fr") },
+              { value: "es", label: common("languages.es") },
+              { value: "it", label: common("languages.it") },
+              { value: "en-US", label: common("languages.enUS") },
+              { value: "de-CH", label: common("languages.deCH") },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.defaultTabLabel")}
+          description={t("general.defaultTabDescription")}
+        >
+          <SettingSelect
+            value={settings.defaultTab}
+            onValueChange={(value) => updateSetting("defaultTab", value)}
+            options={[
+              { value: "all", label: common("tabs.all") },
+              { value: "images", label: common("tabs.images") },
+              { value: "videos", label: common("tabs.videos") },
+              { value: "news", label: common("tabs.news") },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.safeSearchLabel")}
+          description={t("general.safeSearchDescription")}
+        >
+          <SettingSelect
+            value={settings.safeSearch}
+            onValueChange={(value) => updateSetting("safeSearch", value)}
+            options={[
+              { value: "0", label: common("safeSearch.off") },
+              { value: "1", label: common("safeSearch.moderate") },
+              { value: "2", label: common("safeSearch.strict") },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.timeRangeLabel")}
+          description={t("general.timeRangeDescription")}
+        >
+          <SettingSelect
+            value={settings.timeRange}
+            onValueChange={(value) => updateSetting("timeRange", value)}
+            options={[
+              { value: "any", label: common("timeRanges.any") },
+              { value: "day", label: common("timeRanges.day") },
+              { value: "month", label: common("timeRanges.month") },
+              { value: "year", label: common("timeRanges.year") },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.autocompleteLabel")}
+          description={t("general.autocompleteDescription")}
+        >
+          <SettingSelect
+            value={settings.autocomplete}
+            onValueChange={(value) => updateSetting("autocomplete", value)}
+            options={[
+              { value: "google", label: "Google" },
+              { value: "brave", label: "Brave" },
+              { value: "duckduckgo", label: "DuckDuckGo" },
+              { value: "bing", label: "Bing" },
+              { value: "startpage", label: "Startpage" },
+              { value: "qwant", label: "Qwant" },
+              { value: "wikipedia", label: "Wikipedia" },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.faviconResolverLabel")}
+          description={t("general.faviconResolverDescription")}
+        >
+          <SettingSelect
+            value={settings.faviconResolver}
+            onValueChange={(value) => updateSetting("faviconResolver", value)}
+            options={[
+              { value: "google", label: "Google" },
+              { value: "duckduckgo", label: "DuckDuckGo" },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.httpMethodLabel")}
+          description={t("general.httpMethodDescription")}
+        >
+          <SettingSelect
+            value={normalizeHttpMethod(settings.httpMethod)}
+            onValueChange={(value) =>
+              updateSetting("httpMethod", normalizeHttpMethod(value))
+            }
+            options={[
+              { value: "get", label: "GET" },
+              { value: "post", label: "POST" },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.loadMoreLabel")}
+          description={t("general.loadMoreDescription")}
+        >
+          <SettingSelect
+            value={settings.loadMoreCount}
+            onValueChange={(value) => updateSetting("loadMoreCount", value)}
+            options={[10, 20, 30, 40].map((count) => ({
+              value: String(count),
+              label: t("general.resultCount", { count }),
+            }))}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.resultReuseLabel")}
+          description={t("general.resultReuseDescription")}
+        >
+          <SettingSelect
+            value={normalizeResultReuseMode(settings.resultReuseMode)}
+            onValueChange={(value) =>
+              updateSetting("resultReuseMode", normalizeResultReuseMode(value))
+            }
+            options={[
+              { value: "fresh", label: t("general.fetchFresh") },
+              { value: "cache", label: t("general.cacheVisited") },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.engineTokensLabel")}
+          description={t("general.engineTokensDescription")}
+        >
+          <p className="max-w-[320px] text-right text-[13px] leading-6 text-[var(--text-soft)]">
+            {t("general.engineTokensHint")}
+          </p>
+        </SettingRow>
+      </div>
+    </div>
+  );
+}
+
+function InterfaceSettingsSection({
+  meta,
+  settings,
+  updateSetting,
+}: {
+  meta: SettingsSectionMeta;
+  settings: SettingsState;
+  updateSetting: UpdateSetting;
+}) {
+  const t = useTranslations("Settings");
+  const common = useTranslations("Common");
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader title={meta.label} description={meta.description} />
+      <div className="divide-y divide-[var(--surface-panel-border)]">
+        <SettingRow
+          label={t("interface.uiLanguageLabel")}
+          description={t("interface.uiLanguageDescription")}
+        >
+          <SettingSelect
+            value={settings.uiLanguage}
+            onValueChange={(value) => updateSetting("uiLanguage", value)}
+            options={[
+              { value: "en", label: common("languages.en") },
+              { value: "de", label: common("languages.de") },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.appearanceLabel")}
+          description={t("interface.appearanceDescription")}
+        >
+          <SettingSelect
+            value={settings.theme}
+            onValueChange={(value) => {
+              if (isAppearanceMode(value)) {
+                updateSetting("theme", value);
+              }
+            }}
+            options={appearanceModes.map((value) => ({
+              value,
+              label: common(`themes.${value}`),
+            }))}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.themeLabel")}
+          description={t("interface.themeDescription")}
+        >
+          <SettingSelect
+            value={settings.colorTheme}
+            onValueChange={(value) => {
+              if (isColorTheme(value)) {
+                updateSetting("colorTheme", value);
+              }
+            }}
+            options={colorThemes.map(({ label, value }) => ({ label, value }))}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.openNewTabLabel")}
+          description={t("interface.openNewTabDescription")}
+        >
+          <Toggle
+            checked={settings.openInNewTab}
+            onToggle={() =>
+              updateSetting("openInNewTab", !settings.openInNewTab)
+            }
+            label={t("interface.openNewTabLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.urlFormattingLabel")}
+          description={t("interface.urlFormattingDescription")}
+        >
+          <SettingSelect
+            value={normalizeUrlFormattingMode(settings.urlFormatting)}
+            onValueChange={(value) =>
+              updateSetting(
+                "urlFormatting",
+                normalizeUrlFormattingMode(value),
+              )
+            }
+            options={[
+              { value: "pretty", label: common("urlFormats.pretty") },
+              { value: "full", label: common("urlFormats.full") },
+              { value: "host", label: common("urlFormats.host") },
+            ]}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.infiniteScrollLabel")}
+          description={t("interface.infiniteScrollDescription")}
+        >
+          <Toggle
+            checked={settings.infiniteScroll}
+            onToggle={() =>
+              updateSetting("infiniteScroll", !settings.infiniteScroll)
+            }
+            label={t("interface.infiniteScrollLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.showFaviconsLabel")}
+          description={t("interface.showFaviconsDescription")}
+        >
+          <Toggle
+            checked={settings.showFavicons}
+            onToggle={() =>
+              updateSetting("showFavicons", !settings.showFavicons)
+            }
+            label={t("interface.showFaviconsLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.showThumbnailsLabel")}
+          description={t("interface.showThumbnailsDescription")}
+        >
+          <Toggle
+            checked={settings.showThumbnails}
+            onToggle={() =>
+              updateSetting("showThumbnails", !settings.showThumbnails)
+            }
+            label={t("interface.showThumbnailsLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.compactDensityLabel")}
+          description={t("interface.compactDensityDescription")}
+        >
+          <Toggle
+            checked={settings.compactDensity}
+            onToggle={() =>
+              updateSetting("compactDensity", !settings.compactDensity)
+            }
+            label={t("interface.compactDensityLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("interface.queryTitleLabel")}
+          description={t("interface.queryTitleDescription")}
+        >
+          <Toggle
+            checked={settings.queryInTitle}
+            onToggle={() =>
+              updateSetting("queryInTitle", !settings.queryInTitle)
+            }
+            label={t("interface.queryTitleLabel")}
+          />
+        </SettingRow>
+      </div>
+    </div>
+  );
+}
+
+function PrivacySettingsSection({
+  meta,
+  settings,
+  updateSetting,
+}: {
+  meta: SettingsSectionMeta;
+  settings: SettingsState;
+  updateSetting: UpdateSetting;
+}) {
+  const t = useTranslations("Settings");
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader title={meta.label} description={meta.description} />
+      <div className="divide-y divide-[var(--surface-panel-border)]">
+        <SettingRow
+          label={t("privacy.imageProxyLabel")}
+          description={t("privacy.imageProxyDescription")}
+        >
+          <Toggle
+            checked={settings.imageProxy}
+            onToggle={() => updateSetting("imageProxy", !settings.imageProxy)}
+            label={t("privacy.imageProxyLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("privacy.trackerCleanerLabel")}
+          description={t("privacy.trackerCleanerDescription")}
+        >
+          <Toggle
+            checked={settings.trackerCleaner}
+            onToggle={() =>
+              updateSetting("trackerCleaner", !settings.trackerCleaner)
+            }
+            label={t("privacy.trackerCleanerLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("privacy.doiRewriteLabel")}
+          description={t("privacy.doiRewriteDescription")}
+        >
+          <Toggle
+            checked={settings.doiRewrite}
+            onToggle={() =>
+              updateSetting("doiRewrite", !settings.doiRewrite)
+            }
+            label={t("privacy.doiRewriteLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("privacy.storeDefaultsLabel")}
+          description={t("privacy.storeDefaultsDescription")}
+        >
+          <Toggle
+            checked={settings.storeDefaultsLocally}
+            onToggle={() =>
+              updateSetting(
+                "storeDefaultsLocally",
+                !settings.storeDefaultsLocally,
+              )
+            }
+            label={t("privacy.storeDefaultsLabel")}
+          />
+        </SettingRow>
+      </div>
+    </div>
+  );
+}
+
+function EnginesSettingsSection({
+  activeEngineGroup,
+  engineFilter,
+  engineGroupMeta,
+  engines,
+  onActiveGroupChange,
+  onFilterChange,
+  onToggle,
+}: {
+  activeEngineGroup: EngineGroupKey;
+  engineFilter: string;
+  engineGroupMeta: EngineGroupMeta;
+  engines: EngineState;
+  onActiveGroupChange: (group: EngineGroupKey) => void;
+  onFilterChange: (filter: string) => void;
+  onToggle: (group: EngineGroupKey, engine: string) => void;
+}) {
+  const t = useTranslations("Settings");
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        title={t("engines.title")}
+        description={t("engines.description")}
+      />
+
+      <div className="relative">
+        <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--text-soft)]" />
+        <Input
+          value={engineFilter}
+          onChange={(event) => onFilterChange(event.target.value)}
+          placeholder={t("engines.filterPlaceholder")}
+          className="h-10 rounded-xl border-[var(--surface-panel-border)] bg-background pl-10 text-[14px] shadow-none hover:border-foreground/20 focus-visible:border-foreground/30 focus-visible:ring-foreground/5"
+        />
+      </div>
+
+      <div
+        role="tablist"
+        aria-label={t("engines.categoriesAria")}
+        className="flex gap-0 overflow-x-auto border-b border-[var(--surface-panel-border)]"
+      >
+        {engineGroupOrder.map((key, index) => {
+          const meta = engineGroupMeta[key];
+          const Icon = meta.icon;
+          const isActive = activeEngineGroup === key;
+          const availableEngines = engineCatalog[key].filter(
+            (engine) => !isEngineUnavailable(key, engine),
+          );
+          const selectedEngineCount = availableEngines.filter((engine) =>
+            engines[key].has(engine),
+          ).length;
+
+          return (
+            <div key={key} className="flex shrink-0 items-center">
+              {index > 0 ? (
+                <span className="mx-5 h-5 w-px bg-[var(--surface-panel-border)]" />
+              ) : null}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => onActiveGroupChange(key)}
+                className={cn(
+                  "inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 border-b-2 px-0 text-[14px] font-medium transition-colors",
+                  isActive
+                    ? "border-foreground text-[var(--text-strong)]"
+                    : "border-transparent text-[var(--text-soft)] hover:text-[var(--text-strong)]",
+                )}
+              >
+                <Icon className="size-4" aria-hidden />
+                <span>{meta.title}</span>
+                <span className="text-[12px] text-[var(--text-soft)]">
+                  {selectedEngineCount}/{availableEngines.length}
+                </span>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div role="tabpanel">
+        <EngineRows
+          groupKey={activeEngineGroup}
+          filter={engineFilter}
+          selected={engines[activeEngineGroup]}
+          onToggle={(engine) => onToggle(activeEngineGroup, engine)}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SpecialSettingsSection({
+  settings,
+  updateSetting,
+}: {
+  settings: SettingsState;
+  updateSetting: UpdateSetting;
+}) {
+  const t = useTranslations("Settings");
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        title={t("special.title")}
+        description={t("special.description")}
+      />
+      <div className="divide-y divide-[var(--surface-panel-border)]">
+        <SettingRow
+          label={t("special.calculatorLabel")}
+          description={t("special.calculatorDescription")}
+        >
+          <Toggle
+            checked={settings.calculator}
+            onToggle={() =>
+              updateSetting("calculator", !settings.calculator)
+            }
+            label={t("special.calculatorLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("special.unitConverterLabel")}
+          description={t("special.unitConverterDescription")}
+        >
+          <Toggle
+            checked={settings.unitConverter}
+            onToggle={() =>
+              updateSetting("unitConverter", !settings.unitConverter)
+            }
+            label={t("special.unitConverterLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("special.hashLookupLabel")}
+          description={t("special.hashLookupDescription")}
+        >
+          <Toggle
+            checked={settings.hashSearch}
+            onToggle={() => updateSetting("hashSearch", !settings.hashSearch)}
+            label={t("special.hashLookupLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("special.selfInfoLabel")}
+          description={t("special.selfInfoDescription")}
+        >
+          <Toggle
+            checked={settings.selfInfo}
+            onToggle={() => updateSetting("selfInfo", !settings.selfInfo)}
+            label={t("special.selfInfoLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("special.timeZoneLabel")}
+          description={t("special.timeZoneDescription")}
+        >
+          <Toggle
+            checked={settings.timeZone}
+            onToggle={() => updateSetting("timeZone", !settings.timeZone)}
+            label={t("special.timeZoneLabel")}
+          />
+        </SettingRow>
+      </div>
+    </div>
+  );
+}
+
 type SettingsPagePreviewProps = {
   initialEngines: EngineState;
   initialSettings: SettingsState;
@@ -318,7 +976,6 @@ export function SettingsPagePreview({
   initialSettings,
 }: SettingsPagePreviewProps) {
   const t = useTranslations("Settings");
-  const common = useTranslations("Common");
   const router = useRouter();
   const { setTheme, theme: activeAppearanceMode } = useThemeTransition();
   const saveHandlerRef = useRef<() => void>(() => undefined);
@@ -358,19 +1015,6 @@ export function SettingsPagePreview({
       icon: React.ComponentType<{ className?: string }>;
     }
   >;
-
-  useEffect(() => {
-    setSettings((current) =>
-      current.uiLanguage === initialSettings.uiLanguage
-        ? current
-        : { ...current, uiLanguage: initialSettings.uiLanguage },
-    );
-    setSavedSettings((current) =>
-      current.uiLanguage === initialSettings.uiLanguage
-        ? current
-        : { ...current, uiLanguage: initialSettings.uiLanguage },
-    );
-  }, [initialSettings.uiLanguage]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -561,601 +1205,56 @@ export function SettingsPagePreview({
     };
   }, []);
 
-  const activeMeta = navSections.find((s) => s.id === activeSection);
+  const activeMeta = navSections.find((section) => section.id === activeSection);
 
   return (
     <section className="relative mx-auto flex w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-32 sm:px-8 lg:px-10">
       <div className="grid gap-10 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-0">
-        <aside className="lg:sticky lg:top-8 lg:h-fit lg:border-r lg:border-[var(--surface-panel-border)] lg:pr-8 xl:pr-12">
-          <div className="mb-8 px-2.5">
-            <h1 className="text-[22px] font-semibold tracking-tight text-[var(--text-strong)]">
-              {t("title")}
-            </h1>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--text-soft)]">
-              {t("subtitle")}
-            </p>
-          </div>
-
-          <p className="mb-3 px-2.5 text-[11px] font-semibold text-[var(--text-soft)]">
-            {t("sections")}
-          </p>
-
-          <nav
-            className="flex flex-col gap-0.5"
-            aria-label={t("sectionsAria")}
-          >
-            {navSections.map((section) => {
-              const Icon = section.icon;
-              const isActive = section.id === activeSection;
-              return (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    "group/nav relative flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[14px] font-medium transition-colors",
-                    isActive
-                      ? "bg-foreground/[0.06] text-[var(--text-strong)]"
-                      : "text-[var(--text-body)] hover:bg-foreground/[0.03] hover:text-[var(--text-strong)]",
-                  )}
-                >
-                  {isActive && (
-                    <span
-                      className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r-full bg-foreground"
-                      aria-hidden
-                    />
-                  )}
-                  <Icon
-                    className={cn(
-                      "size-4 transition-colors",
-                      isActive
-                        ? "text-[var(--text-strong)]"
-                        : "text-[var(--text-soft)] group-hover/nav:text-[var(--text-strong)]",
-                    )}
-                  />
-                  <span className="flex-1">{section.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="mt-8 hidden pr-2 lg:block">
-            <div className="flex items-center gap-2 px-2.5 text-[12px] font-semibold text-[var(--text-soft)]">
-              <Info className="size-3.5" />
-              {t("cookieDefaultsTitle")}
-            </div>
-            <p className="mt-1.5 px-2.5 text-[12px] leading-relaxed text-[var(--text-soft)]">
-              {t("cookieDefaultsDescription")}
-            </p>
-          </div>
-        </aside>
+        <SettingsSidebar
+          activeSection={activeSection}
+          navSections={navSections}
+          onSelect={setActiveSection}
+        />
 
         <div className="min-w-0 lg:pl-10 xl:pl-14">
-          {activeSection === "general" && activeMeta && (
-            <div className="space-y-8">
-              <SectionHeader
-                title={activeMeta.label}
-                description={activeMeta.description}
-              />
-
-              <div className="divide-y divide-[var(--surface-panel-border)]">
-                <SettingRow
-                  label={t("general.searchLocaleLabel")}
-                  description={t("general.searchLocaleDescription")}
-                >
-                  <SettingSelect
-                    value={settings.locale}
-                    onValueChange={(value) => updateSetting("locale", value)}
-                    options={[
-                      { value: "auto", label: common("languages.auto") },
-                      { value: "en", label: common("languages.en") },
-                      { value: "de", label: common("languages.de") },
-                      { value: "fr", label: common("languages.fr") },
-                      { value: "es", label: common("languages.es") },
-                      { value: "it", label: common("languages.it") },
-                      { value: "en-US", label: common("languages.enUS") },
-                      { value: "de-CH", label: common("languages.deCH") },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.defaultTabLabel")}
-                  description={t("general.defaultTabDescription")}
-                >
-                  <SettingSelect
-                    value={settings.defaultTab}
-                    onValueChange={(value) =>
-                      updateSetting("defaultTab", value)
-                    }
-                    options={[
-                      { value: "all", label: common("tabs.all") },
-                      { value: "images", label: common("tabs.images") },
-                      { value: "videos", label: common("tabs.videos") },
-                      { value: "news", label: common("tabs.news") },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.safeSearchLabel")}
-                  description={t("general.safeSearchDescription")}
-                >
-                  <SettingSelect
-                    value={settings.safeSearch}
-                    onValueChange={(value) =>
-                      updateSetting("safeSearch", value)
-                    }
-                    options={[
-                      { value: "0", label: common("safeSearch.off") },
-                      { value: "1", label: common("safeSearch.moderate") },
-                      { value: "2", label: common("safeSearch.strict") },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.timeRangeLabel")}
-                  description={t("general.timeRangeDescription")}
-                >
-                  <SettingSelect
-                    value={settings.timeRange}
-                    onValueChange={(value) => updateSetting("timeRange", value)}
-                    options={[
-                      { value: "any", label: common("timeRanges.any") },
-                      { value: "day", label: common("timeRanges.day") },
-                      { value: "month", label: common("timeRanges.month") },
-                      { value: "year", label: common("timeRanges.year") },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.autocompleteLabel")}
-                  description={t("general.autocompleteDescription")}
-                >
-                  <SettingSelect
-                    value={settings.autocomplete}
-                    onValueChange={(value) =>
-                      updateSetting("autocomplete", value)
-                    }
-                    options={[
-                      { value: "google", label: "Google" },
-                      { value: "brave", label: "Brave" },
-                      { value: "duckduckgo", label: "DuckDuckGo" },
-                      { value: "bing", label: "Bing" },
-                      { value: "startpage", label: "Startpage" },
-                      { value: "qwant", label: "Qwant" },
-                      { value: "wikipedia", label: "Wikipedia" },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.faviconResolverLabel")}
-                  description={t("general.faviconResolverDescription")}
-                >
-                  <SettingSelect
-                    value={settings.faviconResolver}
-                    onValueChange={(value) =>
-                      updateSetting("faviconResolver", value)
-                    }
-                    options={[
-                      { value: "google", label: "Google" },
-                      { value: "duckduckgo", label: "DuckDuckGo" },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.httpMethodLabel")}
-                  description={t("general.httpMethodDescription")}
-                >
-                  <SettingSelect
-                    value={normalizeHttpMethod(settings.httpMethod)}
-                    onValueChange={(value) =>
-                      updateSetting("httpMethod", normalizeHttpMethod(value))
-                    }
-                    options={[
-                      { value: "get", label: "GET" },
-                      { value: "post", label: "POST" },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.loadMoreLabel")}
-                  description={t("general.loadMoreDescription")}
-                >
-                  <SettingSelect
-                    value={settings.loadMoreCount}
-                    onValueChange={(value) =>
-                      updateSetting("loadMoreCount", value)
-                    }
-                    options={[10, 20, 30, 40].map((count) => ({
-                      value: String(count),
-                      label: t("general.resultCount", { count }),
-                    }))}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.resultReuseLabel")}
-                  description={t("general.resultReuseDescription")}
-                >
-                  <SettingSelect
-                    value={normalizeResultReuseMode(settings.resultReuseMode)}
-                    onValueChange={(value) =>
-                      updateSetting(
-                        "resultReuseMode",
-                        normalizeResultReuseMode(value),
-                      )
-                    }
-                    options={[
-                      { value: "fresh", label: t("general.fetchFresh") },
-                      { value: "cache", label: t("general.cacheVisited") },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("general.engineTokensLabel")}
-                  description={t("general.engineTokensDescription")}
-                >
-                  <p className="max-w-[320px] text-right text-[13px] leading-6 text-[var(--text-soft)]">
-                    {t("general.engineTokensHint")}
-                  </p>
-                </SettingRow>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "interface" && activeMeta && (
-            <div className="space-y-8">
-              <SectionHeader
-                title={activeMeta.label}
-                description={activeMeta.description}
-              />
-              <div className="divide-y divide-[var(--surface-panel-border)]">
-                <SettingRow
-                  label={t("interface.uiLanguageLabel")}
-                  description={t("interface.uiLanguageDescription")}
-                >
-                  <SettingSelect
-                    value={settings.uiLanguage}
-                    onValueChange={(value) =>
-                      updateSetting("uiLanguage", value)
-                    }
-                    options={[
-                      { value: "en", label: common("languages.en") },
-                      { value: "de", label: common("languages.de") },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.appearanceLabel")}
-                  description={t("interface.appearanceDescription")}
-                >
-                  <SettingSelect
-                    value={settings.theme}
-                    onValueChange={(value) => {
-                      if (isAppearanceMode(value)) {
-                        updateSetting("theme", value);
-                      }
-                    }}
-                    options={appearanceModes.map((value) => ({
-                      value,
-                      label: common(`themes.${value}`),
-                    }))}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.themeLabel")}
-                  description={t("interface.themeDescription")}
-                >
-                  <SettingSelect
-                    value={settings.colorTheme}
-                    onValueChange={(value) => {
-                      if (isColorTheme(value)) {
-                        updateSetting("colorTheme", value);
-                      }
-                    }}
-                    options={colorThemes.map(({ label, value }) => ({
-                      label,
-                      value,
-                    }))}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.openNewTabLabel")}
-                  description={t("interface.openNewTabDescription")}
-                >
-                  <Toggle
-                    checked={settings.openInNewTab}
-                    onToggle={() =>
-                      updateSetting("openInNewTab", !settings.openInNewTab)
-                    }
-                    label={t("interface.openNewTabLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.urlFormattingLabel")}
-                  description={t("interface.urlFormattingDescription")}
-                >
-                  <SettingSelect
-                    value={normalizeUrlFormattingMode(settings.urlFormatting)}
-                    onValueChange={(value) =>
-                      updateSetting(
-                        "urlFormatting",
-                        normalizeUrlFormattingMode(value),
-                      )
-                    }
-                    options={[
-                      { value: "pretty", label: common("urlFormats.pretty") },
-                      { value: "full", label: common("urlFormats.full") },
-                      { value: "host", label: common("urlFormats.host") },
-                    ]}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.infiniteScrollLabel")}
-                  description={t("interface.infiniteScrollDescription")}
-                >
-                  <Toggle
-                    checked={settings.infiniteScroll}
-                    onToggle={() =>
-                      updateSetting("infiniteScroll", !settings.infiniteScroll)
-                    }
-                    label={t("interface.infiniteScrollLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.showFaviconsLabel")}
-                  description={t("interface.showFaviconsDescription")}
-                >
-                  <Toggle
-                    checked={settings.showFavicons}
-                    onToggle={() =>
-                      updateSetting("showFavicons", !settings.showFavicons)
-                    }
-                    label={t("interface.showFaviconsLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.showThumbnailsLabel")}
-                  description={t("interface.showThumbnailsDescription")}
-                >
-                  <Toggle
-                    checked={settings.showThumbnails}
-                    onToggle={() =>
-                      updateSetting("showThumbnails", !settings.showThumbnails)
-                    }
-                    label={t("interface.showThumbnailsLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.compactDensityLabel")}
-                  description={t("interface.compactDensityDescription")}
-                >
-                  <Toggle
-                    checked={settings.compactDensity}
-                    onToggle={() =>
-                      updateSetting("compactDensity", !settings.compactDensity)
-                    }
-                    label={t("interface.compactDensityLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("interface.queryTitleLabel")}
-                  description={t("interface.queryTitleDescription")}
-                >
-                  <Toggle
-                    checked={settings.queryInTitle}
-                    onToggle={() =>
-                      updateSetting("queryInTitle", !settings.queryInTitle)
-                    }
-                    label={t("interface.queryTitleLabel")}
-                  />
-                </SettingRow>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "privacy" && activeMeta && (
-            <div className="space-y-8">
-              <SectionHeader
-                title={activeMeta.label}
-                description={activeMeta.description}
-              />
-              <div className="divide-y divide-[var(--surface-panel-border)]">
-                <SettingRow
-                  label={t("privacy.imageProxyLabel")}
-                  description={t("privacy.imageProxyDescription")}
-                >
-                  <Toggle
-                    checked={settings.imageProxy}
-                    onToggle={() =>
-                      updateSetting("imageProxy", !settings.imageProxy)
-                    }
-                    label={t("privacy.imageProxyLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("privacy.trackerCleanerLabel")}
-                  description={t("privacy.trackerCleanerDescription")}
-                >
-                  <Toggle
-                    checked={settings.trackerCleaner}
-                    onToggle={() =>
-                      updateSetting("trackerCleaner", !settings.trackerCleaner)
-                    }
-                    label={t("privacy.trackerCleanerLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("privacy.doiRewriteLabel")}
-                  description={t("privacy.doiRewriteDescription")}
-                >
-                  <Toggle
-                    checked={settings.doiRewrite}
-                    onToggle={() =>
-                      updateSetting("doiRewrite", !settings.doiRewrite)
-                    }
-                    label={t("privacy.doiRewriteLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("privacy.storeDefaultsLabel")}
-                  description={t("privacy.storeDefaultsDescription")}
-                >
-                  <Toggle
-                    checked={settings.storeDefaultsLocally}
-                    onToggle={() =>
-                      updateSetting(
-                        "storeDefaultsLocally",
-                        !settings.storeDefaultsLocally,
-                      )
-                    }
-                    label={t("privacy.storeDefaultsLabel")}
-                  />
-                </SettingRow>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "engines" && activeMeta && (
-            <div className="space-y-6">
-              <SectionHeader
-                title={t("engines.title")}
-                description={t("engines.description")}
-              />
-
-              <div className="relative">
-                <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--text-soft)]" />
-                <Input
-                  value={engineFilter}
-                  onChange={(event) => setEngineFilter(event.target.value)}
-                  placeholder={t("engines.filterPlaceholder")}
-                  className="h-10 rounded-xl border-[var(--surface-panel-border)] bg-background pl-10 text-[14px] shadow-none hover:border-foreground/20 focus-visible:border-foreground/30 focus-visible:ring-foreground/5"
-                />
-              </div>
-
-              <div
-                role="tablist"
-                aria-label={t("engines.categoriesAria")}
-                className="flex gap-0 overflow-x-auto border-b border-[var(--surface-panel-border)]"
-              >
-                {engineGroupOrder.map((key, index) => {
-                  const meta = engineGroupMeta[key];
-                  const Icon = meta.icon;
-                  const isActive = activeEngineGroup === key;
-                  const availableEngines = engineCatalog[key].filter(
-                    (engine) => !isEngineUnavailable(key, engine),
-                  );
-                  const selectedEngineCount = availableEngines.filter(
-                    (engine) => engines[key].has(engine),
-                  ).length;
-
-                  return (
-                    <div key={key} className="flex shrink-0 items-center">
-                      {index > 0 ? (
-                        <span className="mx-5 h-5 w-px bg-[var(--surface-panel-border)]" />
-                      ) : null}
-                      <button
-                        type="button"
-                        role="tab"
-                        aria-selected={isActive}
-                        onClick={() => setActiveEngineGroup(key)}
-                        className={cn(
-                          "inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 border-b-2 px-0 text-[14px] font-medium transition-colors",
-                          isActive
-                            ? "border-foreground text-[var(--text-strong)]"
-                            : "border-transparent text-[var(--text-soft)] hover:text-[var(--text-strong)]",
-                        )}
-                      >
-                        <Icon className="size-4" aria-hidden />
-                        <span>{meta.title}</span>
-                        <span className="text-[12px] text-[var(--text-soft)]">
-                          {selectedEngineCount}/{availableEngines.length}
-                        </span>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div role="tabpanel">
-                <EngineRows
-                  groupKey={activeEngineGroup}
-                  filter={engineFilter}
-                  selected={engines[activeEngineGroup]}
-                  onToggle={(engine) => toggleEngine(activeEngineGroup, engine)}
-                />
-              </div>
-            </div>
-          )}
-
-          {activeSection === "special" && activeMeta && (
-            <div className="space-y-8">
-              <SectionHeader
-                title={t("special.title")}
-                description={t("special.description")}
-              />
-              <div className="divide-y divide-[var(--surface-panel-border)]">
-                <SettingRow
-                  label={t("special.calculatorLabel")}
-                  description={t("special.calculatorDescription")}
-                >
-                  <Toggle
-                    checked={settings.calculator}
-                    onToggle={() =>
-                      updateSetting("calculator", !settings.calculator)
-                    }
-                    label={t("special.calculatorLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("special.unitConverterLabel")}
-                  description={t("special.unitConverterDescription")}
-                >
-                  <Toggle
-                    checked={settings.unitConverter}
-                    onToggle={() =>
-                      updateSetting("unitConverter", !settings.unitConverter)
-                    }
-                    label={t("special.unitConverterLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("special.hashLookupLabel")}
-                  description={t("special.hashLookupDescription")}
-                >
-                  <Toggle
-                    checked={settings.hashSearch}
-                    onToggle={() =>
-                      updateSetting("hashSearch", !settings.hashSearch)
-                    }
-                    label={t("special.hashLookupLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("special.selfInfoLabel")}
-                  description={t("special.selfInfoDescription")}
-                >
-                  <Toggle
-                    checked={settings.selfInfo}
-                    onToggle={() =>
-                      updateSetting("selfInfo", !settings.selfInfo)
-                    }
-                    label={t("special.selfInfoLabel")}
-                  />
-                </SettingRow>
-                <SettingRow
-                  label={t("special.timeZoneLabel")}
-                  description={t("special.timeZoneDescription")}
-                >
-                  <Toggle
-                    checked={settings.timeZone}
-                    onToggle={() =>
-                      updateSetting("timeZone", !settings.timeZone)
-                    }
-                    label={t("special.timeZoneLabel")}
-                  />
-                </SettingRow>
-              </div>
-            </div>
-          )}
+          {activeSection === "general" && activeMeta ? (
+            <GeneralSettingsSection
+              meta={activeMeta}
+              settings={settings}
+              updateSetting={updateSetting}
+            />
+          ) : null}
+          {activeSection === "interface" && activeMeta ? (
+            <InterfaceSettingsSection
+              meta={activeMeta}
+              settings={settings}
+              updateSetting={updateSetting}
+            />
+          ) : null}
+          {activeSection === "privacy" && activeMeta ? (
+            <PrivacySettingsSection
+              meta={activeMeta}
+              settings={settings}
+              updateSetting={updateSetting}
+            />
+          ) : null}
+          {activeSection === "engines" ? (
+            <EnginesSettingsSection
+              activeEngineGroup={activeEngineGroup}
+              engineFilter={engineFilter}
+              engineGroupMeta={engineGroupMeta}
+              engines={engines}
+              onActiveGroupChange={setActiveEngineGroup}
+              onFilterChange={setEngineFilter}
+              onToggle={toggleEngine}
+            />
+          ) : null}
+          {activeSection === "special" ? (
+            <SpecialSettingsSection
+              settings={settings}
+              updateSetting={updateSetting}
+            />
+          ) : null}
         </div>
       </div>
     </section>

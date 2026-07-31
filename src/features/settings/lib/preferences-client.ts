@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import {
   type PersistedPreferences,
   parsePreferencesCookie,
@@ -109,6 +113,36 @@ export function readPersistedPreferencesFromBrowser() {
   }
 
   return preferences;
+}
+
+export function useSyncedPreferences(initialPreferences: PersistedPreferences) {
+  const [browserPreferences, setBrowserPreferences] =
+    useState<PersistedPreferences>();
+
+  useEffect(() => {
+    function syncPreferencesFromBrowser() {
+      setBrowserPreferences(readPersistedPreferencesFromBrowser());
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === SETTINGS_SYNC_STORAGE_KEY) {
+        syncPreferencesFromBrowser();
+      }
+    }
+
+    window.addEventListener(SETTINGS_SYNC_EVENT, syncPreferencesFromBrowser);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        SETTINGS_SYNC_EVENT,
+        syncPreferencesFromBrowser,
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
+  return browserPreferences ?? initialPreferences;
 }
 
 export function broadcastSettingsSync() {

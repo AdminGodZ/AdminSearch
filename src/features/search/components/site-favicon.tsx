@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 type SiteFaviconProps = {
@@ -21,10 +22,11 @@ export function SiteFavicon({ hostname, src }: SiteFaviconProps) {
 
   return (
     <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] dark:border-transparent dark:bg-white">
-      {/* biome-ignore lint/performance/noImgElement: Favicons are remote site assets with dynamic origins. */}
-      <img
+      <Image
         src={src}
         alt={`${hostname} favicon`}
+        width={23}
+        height={23}
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"

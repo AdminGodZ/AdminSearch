@@ -1,6 +1,8 @@
+// biome-ignore-all lint/performance/noImgElement: Remaining native images load unbounded third-party result URLs directly.
 "use client";
 
 import { ExternalLink, Globe, X } from "lucide-react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { useRef, useState } from "react";
@@ -37,7 +39,8 @@ function ImageResultPreview({
   }
 
   return (
-    // biome-ignore lint/performance/noImgElement: Image search uses SearXNG's original remote image URL and falls back to its thumbnail.
+    // Runtime search-result hosts cannot be safely allowlisted for next/image.
+    // react-doctor-disable-next-line nextjs-no-img-element
     <img
       src={source}
       alt={title}
@@ -222,10 +225,11 @@ function ImageFavicon({
 
   return (
     <>
-      {/* biome-ignore lint/performance/noImgElement: Favicons are remote site assets with dynamic origins. */}
-      <img
+      <Image
         src={faviconUrl}
         alt=""
+        width={12}
+        height={12}
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"

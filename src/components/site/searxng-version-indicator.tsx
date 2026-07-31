@@ -1,7 +1,7 @@
 "use client";
 
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 
 import {
   Tooltip,
@@ -33,6 +33,8 @@ export function SearxngVersionIndicator() {
   const [hasChecked, setHasChecked] = useState(false);
   const [status, setStatus] = useState<SearxngVersionStatus>(initialStatus);
 
+  // The abort guard prevents post-unmount retries; cleanup owns both resources.
+  // react-doctor-disable-next-line effect-needs-cleanup
   useEffect(() => {
     const controller = new AbortController();
     let retryTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -91,7 +93,7 @@ export function SearxngVersionIndicator() {
     return () => {
       controller.abort();
 
-      if (retryTimeout) {
+      if (retryTimeout !== undefined) {
         clearTimeout(retryTimeout);
       }
     };

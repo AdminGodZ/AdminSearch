@@ -41,19 +41,7 @@ export function SearchInput({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [hasMounted, setHasMounted] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  useEffect(() => {
-    setValue(defaultValue);
-    setIsOpen(false);
-    setSuggestions([]);
-    setHighlightedIndex(-1);
-  }, [defaultValue]);
 
   useEffect(() => {
     if (value.trim().length < AUTOCOMPLETE_MIN_QUERY_LENGTH) {
@@ -142,9 +130,11 @@ export function SearchInput({
     }
   }
 
-  const showValueActions = hasMounted && value.length > 0;
+  const showValueActions = value.length > 0;
   const isMergedOpen = isOpen && suggestions.length > 0;
 
+  // Scrolling the committed option is DOM synchronization, not derived state.
+  // react-doctor-disable-next-line no-effect-chain
   useEffect(() => {
     if (!isMergedOpen || highlightedIndex < 0) {
       return;
@@ -206,6 +196,10 @@ export function SearchInput({
           setIsFocused(false);
         }}
         onKeyDown={(event) => {
+          if (event.nativeEvent.isComposing) {
+            return;
+          }
+
           if (!suggestions.length) {
             return;
           }

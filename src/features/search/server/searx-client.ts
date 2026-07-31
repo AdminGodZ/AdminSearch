@@ -91,10 +91,15 @@ function getDisabledEnginesForSelection(
   selectedEngines: string[],
 ) {
   const selected = new Set(selectedEngines);
+  const disabledEngines: string[] = [];
 
-  return engineCatalog[group]
-    .filter((engine) => !selected.has(engine))
-    .map((engine) => `${engine}__${group}`);
+  for (const engine of engineCatalog[group]) {
+    if (!selected.has(engine)) {
+      disabledEngines.push(`${engine}__${group}`);
+    }
+  }
+
+  return disabledEngines;
 }
 
 function readRawResultUrl(result: SearxRawResult) {
@@ -413,18 +418,10 @@ async function fetchSearxVideoResponse(
   const engineData = decodeEngineDataCursor(request.cursor);
   const hasCursor = hasEngineData(engineData);
   const upstreamPage = hasCursor ? Math.max(request.page, 2) : 1;
-  const payload = await fetchSearxPage(
-    request,
-    upstreamPage,
-    options,
-    engineData,
-  );
-  const nextEngineData = await fetchSearxEngineData(
-    request,
-    upstreamPage,
-    options,
-    engineData,
-  );
+  const [payload, nextEngineData] = await Promise.all([
+    fetchSearxPage(request, upstreamPage, options, engineData),
+    fetchSearxEngineData(request, upstreamPage, options, engineData),
+  ]);
   const pageResults = Array.isArray(payload.results) ? payload.results : [];
   const totalAvailable =
     typeof payload.number_of_results === "number" &&
