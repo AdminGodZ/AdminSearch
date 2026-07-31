@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 
+import { AUTOCOMPLETE_MAX_SUGGESTIONS } from "@/features/search/lib/limits";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 import { getClientIp } from "@/server/client-ip";
 import { checkRateLimit, createRateLimitHeaders } from "@/server/rate-limit";
@@ -110,10 +111,12 @@ export async function GET(request: Request) {
     );
   }
 
-  const suggestions = payload[1].filter(
-    (value): value is string =>
-      typeof value === "string" && value.trim() !== "",
-  );
+  const suggestions = payload[1]
+    .filter(
+      (value): value is string =>
+        typeof value === "string" && value.trim() !== "",
+    )
+    .slice(0, AUTOCOMPLETE_MAX_SUGGESTIONS);
 
   return NextResponse.json({ suggestions }, { headers: rateLimitHeaders });
 }

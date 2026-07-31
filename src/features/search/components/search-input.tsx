@@ -2,11 +2,14 @@
 
 import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import { DashRing } from "@/components/loading-ui/dash-ring";
 import { Input } from "@/components/ui/input";
-import { SEARCH_QUERY_MAX_LENGTH } from "@/features/search/lib/limits";
+import {
+  AUTOCOMPLETE_MAX_SUGGESTIONS,
+  SEARCH_QUERY_MAX_LENGTH,
+} from "@/features/search/lib/limits";
 import { cn } from "@/lib/utils";
 
 type SearchInputProps = {
@@ -26,6 +29,7 @@ const suggestionItemClassName =
   "flex w-full cursor-pointer items-center rounded-[1.1rem] px-4 py-3 text-left text-[15px] text-foreground transition-colors hover:bg-[var(--suggestion-hover)]";
 const AUTOCOMPLETE_DEBOUNCE_MS = 0;
 const AUTOCOMPLETE_MIN_QUERY_LENGTH = 2;
+const SUGGESTIONS_VIEWPORT_GUTTER_PX = 12;
 
 export function SearchInput({
   defaultValue,
@@ -39,6 +43,7 @@ export function SearchInput({
   const suggestionsId = `${inputId}-suggestions`;
   const formRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsPanelRef = useRef<HTMLDivElement>(null);
   const suggestionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [value, setValue] = useState(defaultValue);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -84,10 +89,12 @@ export function SearchInput({
             return;
           }
 
-          const nextSuggestions = payload.suggestions.filter(
-            (item): item is string =>
-              typeof item === "string" && item.trim() !== "",
-          );
+          const nextSuggestions = payload.suggestions
+            .filter(
+              (item): item is string =>
+                typeof item === "string" && item.trim() !== "",
+            )
+            .slice(0, AUTOCOMPLETE_MAX_SUGGESTIONS);
 
           setSuggestions(nextSuggestions);
           setIsOpen(isFocused && nextSuggestions.length > 0);
@@ -135,6 +142,58 @@ export function SearchInput({
 
   const showValueActions = value.length > 0;
   const isMergedOpen = isOpen && suggestions.length > 0;
+
+  useLayoutEffect(() => {
+    if (!isMergedOpen) {
+      return;
+    }
+
+    const updateAvailableHeight = () => {
+      const input = inputRef.current;
+      const panel = suggestionsPanelRef.current;
+
+      if (!input || !panel) {
+        return;
+      }
+
+      const visualViewport = window.visualViewport;
+      const viewportBottom = visualViewport
+        ? visualViewport.offsetTop + visualViewport.height
+        : window.innerHeight;
+      const availableHeight = Math.max(
+        0,
+        Math.floor(
+          viewportBottom -
+            input.getBoundingClientRect().bottom -
+            SUGGESTIONS_VIEWPORT_GUTTER_PX,
+        ),
+      );
+
+      panel.style.setProperty(
+        "--suggestions-available-height",
+        `${availableHeight}px`,
+      );
+    };
+
+    updateAvailableHeight();
+    window.addEventListener("resize", updateAvailableHeight);
+    window.addEventListener("scroll", updateAvailableHeight, true);
+    window.visualViewport?.addEventListener("resize", updateAvailableHeight);
+    window.visualViewport?.addEventListener("scroll", updateAvailableHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateAvailableHeight);
+      window.removeEventListener("scroll", updateAvailableHeight, true);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        updateAvailableHeight,
+      );
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        updateAvailableHeight,
+      );
+    };
+  }, [isMergedOpen]);
 
   // Scrolling the committed option is DOM synchronization, not derived state.
   // react-doctor-disable-next-line no-effect-chain
@@ -280,9 +339,16 @@ export function SearchInput({
       ) : null}
 
       {isMergedOpen ? (
-        <div className="absolute top-[calc(100%-1px)] left-0 z-30 w-full overflow-hidden rounded-b-[1.75rem] bg-[var(--control-bg)] shadow-none [background-image:linear-gradient(var(--control-active),var(--control-active))]">
-          <div className="h-px w-full bg-[var(--surface-separator)]" />
-          <div id={suggestionsId} role="listbox" className="p-2">
+        <div
+          ref={suggestionsPanelRef}
+          className="absolute top-[calc(100%-1px)] left-0 z-30 flex max-h-[var(--suggestions-available-height,24rem)] w-full flex-col overflow-hidden rounded-b-[1.75rem] bg-[var(--control-bg)] shadow-none [background-image:linear-gradient(var(--control-active),var(--control-active))]"
+        >
+          <div className="h-px w-full shrink-0 bg-[var(--surface-separator)]" />
+          <div
+            id={suggestionsId}
+            role="listbox"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
+          >
             {suggestions.map((suggestion, index) => (
               <div key={suggestion}>
                 <button
