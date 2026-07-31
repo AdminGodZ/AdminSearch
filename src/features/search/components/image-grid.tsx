@@ -230,6 +230,7 @@ function ImageFavicon({
         alt=""
         width={12}
         height={12}
+        unoptimized
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"

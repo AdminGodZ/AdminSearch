@@ -1,13 +1,21 @@
 import { SEARCH_MAX_PAGE } from "@/features/search/lib/limits";
-import type {
-  SearchRequest,
-  SearxRawResult,
-  SearxResponse,
-} from "@/features/search/types";
+import type { SearchRequest, SearxResponse } from "@/features/search/types";
 import {
   type EngineGroupKey,
   engineCatalog,
 } from "@/features/settings/lib/preferences";
+import {
+  createSearchContinuationFingerprint,
+  loadSearchContinuation,
+  type SearchContinuationState,
+  saveSearchContinuation,
+  shortenSearchContinuation,
+} from "./search-continuation-store";
+import {
+  type ConsumedSearxResultPage,
+  consumeSearxResultPage,
+  createSearxPaginationState,
+} from "./search-pagination";
 
 const DEFAULT_SEARXNG_URL = "http://127.0.0.1:8080";
 const REQUEST_TIMEOUT_MS = 8_000;
@@ -102,20 +110,6 @@ function getDisabledEnginesForSelection(
   return disabledEngines;
 }
 
-function readRawResultUrl(result: SearxRawResult) {
-  const keys = ["url", "img_src", "thumbnail_src"] as const;
-
-  for (const key of keys) {
-    const value = result[key];
-
-    if (typeof value === "string" && value.trim() !== "") {
-      return value;
-    }
-  }
-
-  return undefined;
-}
-
 function createSearxSearchParams(
   request: SearchRequest,
   upstreamPage: number,
@@ -206,25 +200,46 @@ function sanitizeEngineData(value: unknown): SearxEngineData {
   return engineData;
 }
 
-function encodeEngineDataCursor(engineData: SearxEngineData) {
-  if (!hasEngineData(engineData)) {
+function decodeLegacyVideoCursor(
+  cursor: string | undefined,
+  fingerprint: string,
+  nextClientPage: number,
+) {
+  if (!cursor) {
     return undefined;
   }
 
-  return Buffer.from(JSON.stringify(engineData), "utf8").toString("base64url");
-}
-
-function decodeEngineDataCursor(cursor: string | undefined) {
-  if (!cursor) {
-    return {};
-  }
-
   try {
-    return sanitizeEngineData(
-      JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")),
+    const value: unknown = JSON.parse(
+      Buffer.from(cursor, "base64url").toString("utf8"),
     );
+
+    if (
+      value &&
+      typeof value === "object" &&
+      "version" in value &&
+      value.version === 1
+    ) {
+      const storedCursor = value as {
+        fingerprint?: string;
+        nextClientPage?: number;
+        engineData?: unknown;
+      };
+
+      if (
+        storedCursor.fingerprint !== fingerprint ||
+        storedCursor.nextClientPage !== nextClientPage
+      ) {
+        return undefined;
+      }
+
+      return sanitizeEngineData(storedCursor.engineData);
+    }
+
+    const legacyEngineData = sanitizeEngineData(value);
+    return hasEngineData(legacyEngineData) ? legacyEngineData : undefined;
   } catch {
-    return {};
+    return undefined;
   }
 }
 
@@ -415,38 +430,181 @@ async function fetchSearxVideoResponse(
   options?: SearxRuntimeOptions,
 ): Promise<PaginatedSearxResponse> {
   const resultsPerPage = options?.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE;
-  const engineData = decodeEngineDataCursor(request.cursor);
-  const hasCursor = hasEngineData(engineData);
-  const upstreamPage = hasCursor ? Math.max(request.page, 2) : 1;
-  const [payload, nextEngineData] = await Promise.all([
-    fetchSearxPage(request, upstreamPage, options, engineData),
-    fetchSearxEngineData(request, upstreamPage, options, engineData),
+  const fingerprint = getSearchContinuationFingerprint(request, options);
+  let continuation: SearchContinuationState | undefined;
+  let usedCursor: string | undefined;
+
+  if (request.page > 1 && request.cursor) {
+    const loadedContinuation = await loadSearchContinuation(request.cursor);
+
+    if (
+      loadedContinuation?.fingerprint === fingerprint &&
+      loadedContinuation.nextClientPage === request.page &&
+      loadedContinuation.videoEngineData !== undefined
+    ) {
+      continuation = loadedContinuation;
+      usedCursor = request.cursor;
+    } else {
+      const legacyEngineData = decodeLegacyVideoCursor(
+        request.cursor,
+        fingerprint,
+        request.page,
+      );
+
+      if (legacyEngineData) {
+        const pagination = createSearxPaginationState();
+        pagination.nextUpstreamPage = request.page;
+        continuation = {
+          version: 1,
+          fingerprint,
+          nextClientPage: request.page,
+          pagination,
+          videoEngineData: legacyEngineData,
+        };
+      }
+    }
+  }
+
+  let consumedPage: ConsumedSearxResultPage | undefined;
+  let paginationState =
+    continuation?.pagination ?? createSearxPaginationState();
+  let engineData = continuation?.videoEngineData ?? {};
+  const firstClientPage = continuation?.nextClientPage ?? 1;
+
+  for (
+    let clientPage = firstClientPage;
+    clientPage <= request.page;
+    clientPage += 1
+  ) {
+    let nextEngineData = engineData;
+    consumedPage = await consumeSearxResultPage({
+      fetchPage: async (upstreamPage) => {
+        const [payload, fetchedEngineData] = await Promise.all([
+          fetchSearxPage(request, upstreamPage, options, engineData),
+          fetchSearxEngineData(request, upstreamPage, options, engineData),
+        ]);
+        nextEngineData = fetchedEngineData;
+        return payload;
+      },
+      maxPageFetches: 1,
+      maxUpstreamPages: MAX_UPSTREAM_PAGES,
+      resultsPerPage,
+      state: paginationState,
+    });
+    paginationState = consumedPage.state;
+    engineData = nextEngineData;
+  }
+
+  if (!consumedPage) {
+    return {
+      payload: {
+        number_of_results: 0,
+        results: [],
+        suggestions: [],
+        answers: [],
+        infoboxes: [],
+      },
+      hasMore: false,
+    };
+  }
+
+  const canContinue = request.page < SEARCH_MAX_PAGE && consumedPage.hasMore;
+  const [nextPageCursor] = await Promise.all([
+    canContinue
+      ? saveSearchContinuation({
+          version: 1,
+          fingerprint,
+          nextClientPage: request.page + 1,
+          pagination: consumedPage.state,
+          videoEngineData: engineData,
+        })
+      : Promise.resolve(undefined),
+    usedCursor
+      ? shortenSearchContinuation(usedCursor)
+      : Promise.resolve(undefined),
   ]);
-  const pageResults = Array.isArray(payload.results) ? payload.results : [];
-  const totalAvailable =
-    typeof payload.number_of_results === "number" &&
-    payload.number_of_results > 0
-      ? payload.number_of_results
-      : undefined;
-  const nextPageCursor = encodeEngineDataCursor(nextEngineData);
-  const hasMore =
-    request.page < SEARCH_MAX_PAGE &&
-    (Boolean(nextPageCursor) ||
-      (totalAvailable !== undefined &&
-        totalAvailable > request.page * resultsPerPage));
+  const basePayload =
+    request.page === 1 ? (consumedPage.firstPayload ?? {}) : {};
 
   return {
     payload: {
-      ...payload,
-      results: pageResults.slice(0, resultsPerPage),
-      number_of_results: totalAvailable,
-      suggestions: hasCursor ? [] : payload.suggestions,
-      answers: hasCursor ? [] : payload.answers,
-      infoboxes: hasCursor ? [] : payload.infoboxes,
+      ...basePayload,
+      results: consumedPage.results,
+      number_of_results: consumedPage.numberOfResults,
+      suggestions: request.page === 1 ? basePayload.suggestions : [],
+      answers: request.page === 1 ? basePayload.answers : [],
+      infoboxes: request.page === 1 ? basePayload.infoboxes : [],
     },
-    hasMore,
+    hasMore: Boolean(nextPageCursor),
     nextPageCursor,
   };
+}
+
+function sortValues(values: string[] | undefined) {
+  return values ? [...values].sort() : null;
+}
+
+function getSearchContinuationFingerprint(
+  request: SearchRequest,
+  options?: SearxRuntimeOptions,
+) {
+  return createSearchContinuationFingerprint({
+    query: request.q,
+    tab: request.tab,
+    language: request.language ?? null,
+    timeRange: request.timeRange ?? null,
+    safeSearch: request.safeSearch ?? 0,
+    runtime: {
+      clientIp: options?.clientIp ?? null,
+      disabledPlugins: sortValues(options?.disabledPlugins),
+      enabledEngines: sortValues(options?.enabledEngines),
+      enabledPlugins: sortValues(options?.enabledPlugins),
+      engineTokens:
+        options?.engineTokens && options.engineTokens.length > 0
+          ? createSearchContinuationFingerprint(
+              sortValues(options.engineTokens),
+            )
+          : null,
+      httpMethod: options?.httpMethod ?? "get",
+      imageProxy: options?.imageProxy ?? null,
+      resultsPerPage: options?.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE,
+      userAgent: options?.userAgent ?? null,
+    },
+  });
+}
+
+async function consumeRequestedResultPage({
+  continuation,
+  options,
+  request,
+  resultsPerPage,
+}: {
+  continuation?: SearchContinuationState;
+  options?: SearxRuntimeOptions;
+  request: SearchRequest;
+  resultsPerPage: number;
+}) {
+  let consumedPage: ConsumedSearxResultPage | undefined;
+  let paginationState =
+    continuation?.pagination ?? createSearxPaginationState();
+  const firstClientPage = continuation?.nextClientPage ?? 1;
+
+  for (
+    let clientPage = firstClientPage;
+    clientPage <= request.page;
+    clientPage += 1
+  ) {
+    consumedPage = await consumeSearxResultPage({
+      fetchPage: (upstreamPage) =>
+        fetchSearxPage(request, upstreamPage, options),
+      maxUpstreamPages: MAX_UPSTREAM_PAGES,
+      resultsPerPage,
+      state: paginationState,
+    });
+    paginationState = consumedPage.state;
+  }
+
+  return consumedPage;
 }
 
 export async function fetchSearxResponse(
@@ -456,15 +614,6 @@ export async function fetchSearxResponse(
   if (shouldFetchEngineData(request, options)) {
     return fetchSearxVideoResponse(request, options);
   }
-
-  const resultsPerPage = options?.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE;
-  const startIndex = (request.page - 1) * resultsPerPage;
-  const endIndex = startIndex + resultsPerPage;
-  const targetResultCount = endIndex + 1;
-  const aggregatedResults: SearxRawResult[] = [];
-  const seenUrls = new Set<string>();
-  let firstPayload: SearxResponse | null = null;
-  let totalAvailable: number | undefined;
 
   if (options?.enabledEngines && options.enabledEngines.length === 0) {
     return {
@@ -479,79 +628,70 @@ export async function fetchSearxResponse(
     };
   }
 
-  for (
-    let upstreamPage = 1;
-    upstreamPage <= MAX_UPSTREAM_PAGES &&
-    aggregatedResults.length < targetResultCount;
-    upstreamPage += 1
-  ) {
-    const payload = await fetchSearxPage(request, upstreamPage, options);
+  const resultsPerPage = options?.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE;
+  const fingerprint = getSearchContinuationFingerprint(request, options);
+  let continuation: SearchContinuationState | undefined;
+  let usedCursor: string | undefined;
 
-    if (upstreamPage === 1) {
-      firstPayload = payload;
-    }
-
-    if (typeof payload.number_of_results === "number") {
-      totalAvailable = payload.number_of_results;
-    }
-
-    const pageResults = Array.isArray(payload.results) ? payload.results : [];
-
-    if (pageResults.length === 0) {
-      break;
-    }
-
-    let addedResults = 0;
-
-    for (const result of pageResults) {
-      const url = readRawResultUrl(result);
-
-      if (url) {
-        if (seenUrls.has(url)) {
-          continue;
-        }
-
-        seenUrls.add(url);
-      }
-
-      aggregatedResults.push(result);
-      addedResults += 1;
-    }
-
-    if (addedResults === 0) {
-      break;
-    }
+  if (request.page > 1 && request.cursor) {
+    const loadedContinuation = await loadSearchContinuation(request.cursor);
 
     if (
-      totalAvailable !== undefined &&
-      totalAvailable > 0 &&
-      aggregatedResults.length >= totalAvailable
+      loadedContinuation?.fingerprint === fingerprint &&
+      loadedContinuation.nextClientPage === request.page
     ) {
-      break;
+      continuation = loadedContinuation;
+      usedCursor = request.cursor;
     }
   }
 
-  const basePayload = firstPayload ?? {};
-  const slicedResults = aggregatedResults.slice(startIndex, endIndex);
-  const hasMore =
-    request.page < SEARCH_MAX_PAGE &&
-    (aggregatedResults.length > endIndex ||
-      (totalAvailable !== undefined &&
-        totalAvailable > 0 &&
-        totalAvailable > endIndex));
+  const consumedPage = await consumeRequestedResultPage({
+    continuation,
+    options,
+    request,
+    resultsPerPage,
+  });
+
+  if (!consumedPage) {
+    return {
+      payload: {
+        number_of_results: 0,
+        results: [],
+        suggestions: [],
+        answers: [],
+        infoboxes: [],
+      },
+      hasMore: false,
+    };
+  }
+
+  const canContinue = request.page < SEARCH_MAX_PAGE && consumedPage.hasMore;
+  const [nextPageCursor] = await Promise.all([
+    canContinue
+      ? saveSearchContinuation({
+          version: 1,
+          fingerprint,
+          nextClientPage: request.page + 1,
+          pagination: consumedPage.state,
+        })
+      : Promise.resolve(undefined),
+    usedCursor
+      ? shortenSearchContinuation(usedCursor)
+      : Promise.resolve(undefined),
+  ]);
+  const basePayload =
+    request.page === 1 ? (consumedPage.firstPayload ?? {}) : {};
 
   return {
     payload: {
       ...basePayload,
-      results: slicedResults,
-      number_of_results:
-        totalAvailable !== undefined && totalAvailable > 0
-          ? totalAvailable
-          : aggregatedResults.length,
+      results: consumedPage.results,
+      number_of_results: consumedPage.numberOfResults,
       suggestions: request.page === 1 ? basePayload.suggestions : [],
       answers: request.page === 1 ? basePayload.answers : [],
       infoboxes: request.page === 1 ? basePayload.infoboxes : [],
     },
-    hasMore,
+    hasMore: Boolean(nextPageCursor),
+    nextPageCursor,
   };
 }

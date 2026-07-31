@@ -73,6 +73,7 @@ The main environment variables are:
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 SEARXNG_INTERNAL_URL=http://127.0.0.1:8080
 RATE_LIMIT_REDIS_URL=
+SEARCH_CONTINUATION_REDIS_URL=
 VALKEY_IMAGE=docker.io/valkey/valkey:latest
 SEARXNG_SECRET=
 ```
@@ -80,6 +81,11 @@ SEARXNG_SECRET=
 See `.env.example` for all available settings. SearXNG always uses and pulls
 `docker.io/searxng/searxng:latest` whenever the Compose stack starts; the
 SearXNG production Dockerfile uses the same unpinned image.
+
+`SEARCH_CONTINUATION_REDIS_URL` stores opaque pagination continuations in a
+shared Redis/Valkey instance. When it is empty, AdminSearch reuses
+`RATE_LIMIT_REDIS_URL`; when neither value is configured, a bounded
+process-local store keeps single-instance development working.
 
 ## Self-hosting
 

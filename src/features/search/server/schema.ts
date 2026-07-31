@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  SEARCH_CURSOR_MAX_LENGTH,
   SEARCH_MAX_PAGE,
   SEARCH_QUERY_MAX_LENGTH,
 } from "@/features/search/lib/limits";
@@ -13,7 +14,7 @@ const positiveInteger = z
   .max(SEARCH_MAX_PAGE, `page must be at most ${SEARCH_MAX_PAGE}`);
 
 export const searchRequestSchema = z.object({
-  cursor: z.string().max(4096).optional(),
+  cursor: z.string().max(SEARCH_CURSOR_MAX_LENGTH).optional(),
   q: z
     .string()
     .trim()

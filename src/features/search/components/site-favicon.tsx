@@ -27,6 +27,7 @@ export function SiteFavicon({ hostname, src }: SiteFaviconProps) {
         alt={`${hostname} favicon`}
         width={23}
         height={23}
+        unoptimized
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"

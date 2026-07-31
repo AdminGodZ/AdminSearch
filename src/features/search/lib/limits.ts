@@ -1,2 +1,3 @@
 export const SEARCH_QUERY_MAX_LENGTH = 512;
+export const SEARCH_CURSOR_MAX_LENGTH = 4096;
 export const SEARCH_MAX_PAGE = 12;

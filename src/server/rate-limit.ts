@@ -1,4 +1,4 @@
-import Redis from "ioredis";
+import { getRedisClient } from "@/server/redis";
 
 type RateLimitResult = {
   allowed: boolean;
@@ -21,11 +21,6 @@ const MEMORY_STORE_MAX_ENTRIES = 10_000;
 const MEMORY_STORE_PRUNE_INTERVAL_MS = 60_000;
 const memoryStore = new Map<string, MemoryEntry>();
 let lastMemoryStorePruneAt = 0;
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __adminsearchRedis: Redis | null | undefined;
-}
 
 function getWindowMs(options?: RateLimitOptions) {
   return (
@@ -66,49 +61,6 @@ function pruneMemoryStore(now: number, force = false) {
 
     memoryStore.delete(oldestKey.value);
   }
-}
-
-function getRedisClient() {
-  if (global.__adminsearchRedis !== undefined) {
-    return global.__adminsearchRedis;
-  }
-
-  const redisUrl = process.env.RATE_LIMIT_REDIS_URL;
-
-  if (!redisUrl) {
-    global.__adminsearchRedis = null;
-    return global.__adminsearchRedis;
-  }
-
-  global.__adminsearchRedis = new Redis(normalizeRedisUrl(redisUrl), {
-    lazyConnect: true,
-    maxRetriesPerRequest: 1,
-    enableReadyCheck: false,
-  });
-
-  global.__adminsearchRedis.on("error", () => {
-    // Fall back to the in-memory limiter when Redis is unavailable.
-  });
-
-  return global.__adminsearchRedis;
-}
-
-function normalizeRedisUrl(redisUrl: string) {
-  try {
-    const url = new URL(redisUrl);
-
-    if (
-      (url.protocol === "redis:" || url.protocol === "rediss:") &&
-      !url.searchParams.has("family")
-    ) {
-      url.searchParams.set("family", "0");
-      return url.toString();
-    }
-  } catch {
-    return redisUrl;
-  }
-
-  return redisUrl;
 }
 
 async function checkMemoryRateLimit(
