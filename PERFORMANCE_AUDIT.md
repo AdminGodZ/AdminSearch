@@ -47,7 +47,7 @@ The warmed Next.js layer is already fast locally. Search latency is dominated by
 | PERF-02 | P0 | Initial search starts after hydration and native form reload | High time-to-first-result improvement | Medium | High | DONE |
 | PERF-03 | P0 | Browser aborts do not cancel upstream work | High capacity and tail-latency improvement | Low-medium | High | DONE |
 | PERF-04 | P0 | Autocomplete has zero debounce and fetches while unfocused | High request-volume reduction | Low | High | DONE |
-| PERF-05 | P1 | Fresh-result mode still serializes the full session cache | Medium-high INP/main-thread improvement | Low-medium | High | IN PROGRESS |
+| PERF-05 | P1 | Fresh-result mode still serializes the full session cache | Medium-high INP/main-thread improvement | Low-medium | High | DONE |
 | PERF-06 | P1 | Every non-empty query loads mathjs | Medium download/parse improvement | Low | High | OPEN |
 | PERF-07 | P1 | Load-more rerenders the accumulated result list | Medium long-session rendering improvement | Low-medium | High | OPEN |
 | PERF-08 | P1 | Favicon URLs fail through `next/image` and are not server-cached | Correctness plus medium request-fan-out improvement | Low-medium | High | IN PROGRESS |
@@ -350,7 +350,7 @@ React Doctor 0.9.3 also flags the 382-line `SearchInput` file as a valid maintai
 ### PERF-05: Fresh-result mode still serializes the full cache
 
 - **Priority:** P1
-- **Status:** IN PROGRESS
+- **Status:** DONE
 - **Evidence:** [`src/features/settings/lib/preferences.ts`](src/features/settings/lib/preferences.ts#L102), [`src/features/search/components/search-page-client.tsx`](src/features/search/components/search-page-client.tsx#L474), [`src/features/search/lib/search-result-cache.ts`](src/features/search/lib/search-result-cache.ts#L78)
 
 #### Problem
@@ -370,10 +370,25 @@ Every write prunes and sorts all entries, stringifies all result payloads, synch
 
 #### Acceptance criteria
 
-- [ ] Fresh mode performs no result serialization or session-storage writes.
-- [ ] Cache mode remains functional across route transitions.
-- [ ] Long result sessions do not create visible input or scroll stalls.
-- [ ] Storage remains bounded and stale entries are removed.
+- [x] Fresh mode performs no result serialization or session-storage writes.
+- [x] Cache mode remains functional across route transitions.
+- [x] Long result sessions do not create visible input or scroll stalls.
+- [x] Storage remains bounded and stale entries are removed.
+
+#### Implementation (2026-08-01)
+
+- Every initial-result, fetched-result, and load-more cache write is gated by `resultReuseMode === "cache"`. The cache API also rejects fresh-mode reads and writes before loading its index, scheduling work, or touching `sessionStorage`.
+- Cache-mode writes update the bounded memory cache immediately, then coalesce persistence through `requestIdleCallback` with a one-second timeout and a short timer fallback. Repeated writes for the same search before the callback serialize only the newest result.
+- The former monolithic payload was replaced with a small index and one storage value per search key. Updating one visited search no longer sorts and serializes every cached result payload, and stored entries are loaded lazily only when requested.
+- Persisted result data is limited to 20 entries, 30 minutes, and 2 MiB of serialized entry data. Oldest entries are evicted before a write exceeds either bound; expired, malformed, missing, and oversized entries are removed or kept memory-only as appropriate.
+- Storage quota or security failures do not trigger a second serialization attempt. Memory caching remains available for the active browser session, while incomplete persistent writes are excluded from the index.
+- The legacy `adminsearch-search-results-cache-v4` monolithic value is removed only when opt-in cache mode first initializes. No settings, controls, result rendering, loading states, or navigation behavior changed.
+
+#### Validation
+
+- [x] Unit tests prove fresh mode performs no storage reads, writes, scheduling, or serialization; deferred writes coalesce; changed entries persist incrementally; a new cache instance restores stored results; and TTL, count, byte, oversized-entry, and quota-failure behavior remains bounded.
+- [x] A browser check against a deterministic loopback upstream rendered 20 results in fresh mode and 40 accumulated results after cache-mode load-more, with the existing layout and controls, no framework overlay, and no console warnings or errors.
+- [x] All 31 tests, targeted Biome checks, TypeScript, the production build, and React Doctor pass.
 
 ### PERF-06: Every non-empty query loads mathjs
 

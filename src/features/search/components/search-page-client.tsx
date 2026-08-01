@@ -479,7 +479,9 @@ function useSearchResults({
       if (initialData.tab === "all" && initialData.suggestions.length > 0) {
         setImageTabSuggestions(initialData.suggestions);
       }
-      writeSearchCache(searchCacheKey, initialData);
+      if (resultReuseMode === "cache") {
+        writeSearchCache(resultReuseMode, searchCacheKey, initialData);
+      }
       setState((previous) =>
         previous.status === "success" && previous.data === initialData
           ? previous
@@ -489,7 +491,11 @@ function useSearchResults({
     }
 
     if (resultReuseMode === "cache") {
-      const cachedData = readSearchCache(searchCacheKey, requestedPage);
+      const cachedData = readSearchCache(
+        resultReuseMode,
+        searchCacheKey,
+        requestedPage,
+      );
 
       if (cachedData) {
         setLoadedPage(cachedData.page);
@@ -566,7 +572,9 @@ function useSearchResults({
         if (aggregated.tab === "all" && aggregated.suggestions.length > 0) {
           setImageTabSuggestions(aggregated.suggestions);
         }
-        writeSearchCache(searchCacheKey, aggregated);
+        if (resultReuseMode === "cache") {
+          writeSearchCache(resultReuseMode, searchCacheKey, aggregated);
+        }
         setState({
           status: "success",
           data: aggregated,
@@ -669,7 +677,9 @@ function useSearchResults({
 
         const merged = mergeSearchResponses(current, nextPayload);
 
-        writeSearchCache(searchCacheKey, merged);
+        if (resultReuseMode === "cache") {
+          writeSearchCache(resultReuseMode, searchCacheKey, merged);
+        }
 
         return {
           status: "success",
@@ -698,6 +708,7 @@ function useSearchResults({
     canLoadMore,
     queryStringWithoutPage,
     requestFailedMessage,
+    resultReuseMode,
     searchCacheKey,
   ]);
 
