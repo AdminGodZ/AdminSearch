@@ -48,7 +48,7 @@ The warmed Next.js layer is already fast locally. Search latency is dominated by
 | PERF-03 | P0 | Browser aborts do not cancel upstream work | High capacity and tail-latency improvement | Low-medium | High | DONE |
 | PERF-04 | P0 | Autocomplete has zero debounce and fetches while unfocused | High request-volume reduction | Low | High | DONE |
 | PERF-05 | P1 | Fresh-result mode still serializes the full session cache | Medium-high INP/main-thread improvement | Low-medium | High | DONE |
-| PERF-06 | P1 | Every non-empty query loads mathjs | Medium download/parse improvement | Low | High | OPEN |
+| PERF-06 | P1 | Every non-empty query loads mathjs | Medium download/parse improvement | Low | High | DONE |
 | PERF-07 | P1 | Load-more rerenders the accumulated result list | Medium long-session rendering improvement | Low-medium | High | OPEN |
 | PERF-08 | P1 | Favicon URLs fail through `next/image` and are not server-cached | Correctness plus medium request-fan-out improvement | Low-medium | High | IN PROGRESS |
 | PERF-09 | P1 | Large global client dependency baseline | Medium cold-load and parse improvement | Medium | High | OPEN |
@@ -393,7 +393,7 @@ Every write prunes and sorts all entries, stringifies all result payloads, synch
 ### PERF-06: Every non-empty query loads mathjs
 
 - **Priority:** P1
-- **Status:** OPEN
+- **Status:** DONE
 - **Evidence:** [`src/features/search/components/search-page-client.tsx`](src/features/search/components/search-page-client.tsx#L1211), [`src/features/search/lib/calculator.ts`](src/features/search/lib/calculator.ts#L1)
 
 #### Problem
@@ -416,9 +416,24 @@ Normal text queries download and parse the chunk only for the calculator to reje
 
 #### Acceptance criteria
 
-- [ ] Ordinary text searches do not request the calculator chunk.
-- [ ] Supported mathematical expressions still load and calculate correctly.
-- [ ] Invalid expressions fail without user-visible errors.
+- [x] Ordinary text searches do not request the calculator chunk.
+- [x] Supported mathematical expressions still load and calculate correctly.
+- [x] Invalid expressions fail without user-visible errors.
+
+#### Implementation (2026-08-01)
+
+- Added a dependency-free `looksLikeCalculatorExpression` scanner that runs before the existing dynamic import. It accepts decimal and scientific numbers, the configured arithmetic operators, balanced parentheses, `pi`/`e`, and the exact functions already provided to the calculator.
+- The scanner rejects unknown identifiers, prose, URLs, assignments, unbalanced parentheses, top-level commas, unsupported characters, and inputs longer than 256 characters before `mathjs` can download.
+- Ambiguous but math-like syntax may still reach the existing evaluator; its established exception handling returns no answer without surfacing an error. The calculator implementation and answer rendering are unchanged.
+- The effect clears any previous calculator result and returns before `import("@/features/search/lib/calculator")` for disabled or non-mathematical queries. No search controls, result markup, loading states, styling, or settings changed.
+
+#### Validation
+
+- [x] Unit tests cover ordinary searches, product/version queries, URLs, unknown functions, malformed expressions, decimal/scientific syntax, constants, operators, and every configured calculator function.
+- [x] The production build retains a separate 143,273-byte calculator chunk (39,436 bytes with offline gzip).
+- [x] A production-mode browser check showed `nextjs performance` rendering 20 results with 11 scripts and no calculator chunk. `1+1` loaded exactly one additional script—the calculator chunk—and preserved the existing `1 + 1 = 2` answer.
+- [x] A malformed math-like query rendered 20 normal results with no calculator answer, framework overlay, console warning, or console error.
+- [x] All 35 tests, targeted Biome checks, TypeScript, the production build, and React Doctor pass.
 
 ### PERF-07: Load-more rerenders every accumulated result
 

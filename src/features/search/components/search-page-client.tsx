@@ -31,6 +31,7 @@ import { ResultList } from "@/features/search/components/result-list";
 import { SearchForm } from "@/features/search/components/search-form";
 import { SearchInfoboxCard } from "@/features/search/components/search-infobox-card";
 import { SearchTabs } from "@/features/search/components/search-tabs";
+import { looksLikeCalculatorExpression } from "@/features/search/lib/calculator-query";
 import { SEARCH_MAX_PAGE } from "@/features/search/lib/limits";
 import {
   createSearchRequestKey,
@@ -1217,7 +1218,10 @@ function SearchPageResults({
   });
 
   useEffect(() => {
-    if (!preferences.settings.calculator || !currentQuery) {
+    if (
+      !preferences.settings.calculator ||
+      !looksLikeCalculatorExpression(currentQuery)
+    ) {
       setCalculatorResult(undefined);
       return;
     }
