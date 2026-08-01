@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
 import type { SearchResult } from "@/features/search/types";
 import type { UrlFormattingMode } from "@/features/settings/lib/preferences";
@@ -131,7 +132,7 @@ function formatResultUrl(
   }
 }
 
-export function ResultCard({
+export const ResultCard = memo(function ResultCard({
   compactDensity = false,
   faviconResolver = "google",
   openInNewTab = true,
@@ -144,7 +145,7 @@ export function ResultCard({
   const formattedUrl = formatResultUrl(result, meta, urlFormatting);
 
   return (
-    <article className="max-w-4xl space-y-1">
+    <article className="max-w-4xl space-y-1 [contain-intrinsic-size:auto_160px] [content-visibility:auto]">
       <div className="flex items-start gap-3">
         {showFavicons ? (
           <SiteFavicon
@@ -204,4 +205,4 @@ export function ResultCard({
       ) : null}
     </article>
   );
-}
+});

@@ -103,6 +103,9 @@ test("server-seeded page aggregation matches client pagination semantics", () =>
     merged.results.map((result) => result.id),
     ["one", "two", "three"],
   );
+  assert.strictEqual(merged.results[0], first.results[0]);
+  assert.strictEqual(merged.results[1], first.results[1]);
+  assert.strictEqual(merged.results[2], second.results[1]);
   assert.equal(merged.page, 2);
   assert.equal(merged.totalResults, 3);
   assert.equal(merged.hasMore, false);

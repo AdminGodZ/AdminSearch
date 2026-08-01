@@ -438,7 +438,7 @@ Normal text queries download and parse the chunk only for the calculator to reje
 ### PERF-07: Load-more rerenders every accumulated result
 
 - **Priority:** P1
-- **Status:** OPEN
+- **Status:** DONE (2026-08-01)
 - **Evidence:** [`src/features/search/components/result-list.tsx`](src/features/search/components/result-list.tsx#L18), [`src/features/search/components/search-page-client.tsx`](src/features/search/components/search-page-client.tsx#L117)
 
 #### Problem
@@ -455,10 +455,26 @@ The merge function preserves existing result object references, but `ResultCard`
 
 #### Acceptance criteria
 
-- [ ] Loading a new page does not rerender unchanged result cards.
-- [ ] Offscreen results avoid unnecessary layout and paint work.
-- [ ] Focus, screen-reader navigation, browser find, and scroll position remain correct.
-- [ ] No custom comparator performs more work than the avoided render.
+- [x] Loading a new page does not rerender unchanged result cards.
+- [x] Offscreen results avoid unnecessary layout and paint work.
+- [x] Focus, screen-reader navigation, browser find, and scroll position remain correct.
+- [x] No custom comparator performs more work than the avoided render.
+
+#### Implementation (2026-08-01)
+
+- Wrapped `ResultCard` and `VideoResultCard` in `React.memo` with React's default shallow comparison. Pagination already preserves every accumulated result object, so unchanged cards now bail out before their URL parsing, metadata formatting, translation, and JSX work.
+- Extracted each image result into a memoized `ImageResultTile`. `ImageGrid` passes a stable `useCallback` selector plus stable result references and primitive preference props, while dialog ownership and the opener ref remain in `ImageGrid`.
+- Added `content-visibility: auto` and a type-specific `contain-intrinsic-size` to web cards, video cards, and image tiles. This lets the browser defer offscreen layout and paint while keeping every result in the DOM for native focus, find-in-page, and assistive technology behavior.
+- Used no custom comparators and did not introduce virtualization. Result markup, copy, ordering, link behavior, image-dialog behavior, responsive layout classes, and visible styling remain unchanged.
+- Added strict identity assertions around `mergeSearchResponses` so the reference-stability contract that makes shallow memoization effective is covered by the test suite.
+
+#### Validation
+
+- [x] All 35 tests pass, including accumulated-result identity checks; targeted Biome checks and TypeScript pass.
+- [x] The production build passes and its generated CSS contains the expected `content-visibility: auto` rule plus 160 px, 240 px, and 280 px intrinsic-size fallbacks.
+- [x] Changed-scope React Doctor reports no issues.
+- [x] Production-mode browser checks with a deterministic four-page upstream appended web, image, and video results to 40 items without an error overlay or captured console errors; computed styles were correct on every rendered item.
+- [x] The 40-result accessibility snapshot includes both the first and last video result. Image preview open/close retained its dialog semantics and returned focus to the exact opening tile.
 
 ### PERF-08: Favicons fail through `next/image` and fan out to external providers
 

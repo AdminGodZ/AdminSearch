@@ -5,7 +5,7 @@ import { ExternalLink, Globe, X } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 
 import type { SearchResult } from "@/features/search/types";
 import { cn } from "@/lib/utils";
@@ -104,9 +104,8 @@ function ImagePreviewDialog({
     { label: t("imageViews"), value: result.views },
     { label: t("imageEngine"), value: engineNames },
     { label: t("imageMetadata"), value: result.metadata },
-  ].filter(
-    (item): item is { label: string; value: string } =>
-      Boolean(item.value?.trim()),
+  ].filter((item): item is { label: string; value: string } =>
+    Boolean(item.value?.trim()),
   );
 
   return (
@@ -244,6 +243,76 @@ function ImageFavicon({
   );
 }
 
+type ImageResultTileProps = {
+  ariaLabel: string;
+  compactDensity: boolean;
+  faviconResolver: string;
+  noPreviewLabel: string;
+  onSelect: (result: SearchResult, opener: HTMLButtonElement) => void;
+  previewHiddenLabel: string;
+  result: SearchResult;
+  showFavicons: boolean;
+  showThumbnails: boolean;
+};
+
+const ImageResultTile = memo(function ImageResultTile({
+  ariaLabel,
+  compactDensity,
+  faviconResolver,
+  noPreviewLabel,
+  onSelect,
+  previewHiddenLabel,
+  result,
+  showFavicons,
+  showThumbnails,
+}: ImageResultTileProps) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={(event) => onSelect(result, event.currentTarget)}
+      className="group flex min-w-0 cursor-pointer self-start flex-col overflow-hidden rounded-xl bg-[var(--surface-panel)] text-left transition-colors [contain-intrinsic-size:auto_240px] [content-visibility:auto] hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    >
+      <span className="aspect-[16/10] w-full overflow-hidden bg-muted">
+        {!showThumbnails ? (
+          <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+            {previewHiddenLabel}
+          </span>
+        ) : result.imageUrl || result.thumbnailUrl ? (
+          <ImageResultPreview
+            imageUrl={result.imageUrl}
+            thumbnailUrl={result.thumbnailUrl}
+            title={result.title}
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+            {noPreviewLabel}
+          </span>
+        )}
+      </span>
+      <span
+        className={cn(
+          "flex min-h-[68px] min-w-0 flex-1 flex-col justify-start space-y-0.5 px-2.5",
+          compactDensity ? "py-1.5" : "py-2.5",
+        )}
+      >
+        {showFavicons ? (
+          <span className="flex min-w-0 items-center gap-1.5">
+            <ImageFavicon
+              key={`${faviconResolver}:${result.url}`}
+              faviconResolver={faviconResolver}
+              url={result.url}
+            />
+          </span>
+        ) : null}
+        <span className="line-clamp-2 text-xs leading-4 font-medium text-[var(--text-strong)] transition-colors group-hover:text-primary">
+          {result.title}
+        </span>
+      </span>
+    </button>
+  );
+});
+
 export function ImageGrid({
   compactDensity = false,
   faviconResolver = "google",
@@ -253,17 +322,24 @@ export function ImageGrid({
   showThumbnails = true,
 }: ImageGridProps) {
   const t = useTranslations("Search");
+  const noPreviewLabel = t("noPreview");
+  const previewHiddenLabel = t("previewHidden");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(
     null,
   );
   const openerRef = useRef<HTMLButtonElement | null>(null);
+  const handleSelect = useCallback(
+    (result: SearchResult, opener: HTMLButtonElement) => {
+      openerRef.current = opener;
+      setSelectedResult(result);
+      setDialogOpen(true);
+    },
+    [],
+  );
 
   return (
-    <DialogPrimitive.Root
-      open={dialogOpen}
-      onOpenChange={setDialogOpen}
-    >
+    <DialogPrimitive.Root open={dialogOpen} onOpenChange={setDialogOpen}>
       <div
         className={cn(
           "grid min-w-0 grid-cols-2 items-start sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6",
@@ -271,54 +347,18 @@ export function ImageGrid({
         )}
       >
         {results.map((result) => (
-          <button
+          <ImageResultTile
             key={result.id}
-            type="button"
-            aria-label={t("openImagePreview", { title: result.title })}
-            onClick={(event) => {
-              openerRef.current = event.currentTarget;
-              setSelectedResult(result);
-              setDialogOpen(true);
-            }}
-            className="group flex min-w-0 cursor-pointer self-start flex-col overflow-hidden rounded-xl bg-[var(--surface-panel)] text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <span className="aspect-[16/10] w-full overflow-hidden bg-muted">
-              {!showThumbnails ? (
-                <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                  {t("previewHidden")}
-                </span>
-              ) : result.imageUrl || result.thumbnailUrl ? (
-                <ImageResultPreview
-                  imageUrl={result.imageUrl}
-                  thumbnailUrl={result.thumbnailUrl}
-                  title={result.title}
-                />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                  {t("noPreview")}
-                </span>
-              )}
-            </span>
-            <span
-              className={cn(
-                "flex min-h-[68px] min-w-0 flex-1 flex-col justify-start space-y-0.5 px-2.5",
-                compactDensity ? "py-1.5" : "py-2.5",
-              )}
-            >
-              {showFavicons ? (
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <ImageFavicon
-                    key={`${faviconResolver}:${result.url}`}
-                    faviconResolver={faviconResolver}
-                    url={result.url}
-                  />
-                </span>
-              ) : null}
-              <span className="line-clamp-2 text-xs leading-4 font-medium text-[var(--text-strong)] transition-colors group-hover:text-primary">
-                {result.title}
-              </span>
-            </span>
-          </button>
+            ariaLabel={t("openImagePreview", { title: result.title })}
+            compactDensity={compactDensity}
+            faviconResolver={faviconResolver}
+            noPreviewLabel={noPreviewLabel}
+            onSelect={handleSelect}
+            previewHiddenLabel={previewHiddenLabel}
+            result={result}
+            showFavicons={showFavicons}
+            showThumbnails={showThumbnails}
+          />
         ))}
       </div>
 

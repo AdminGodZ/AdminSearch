@@ -2,7 +2,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
 import { buildVideoPreviewEmbedUrl } from "@/features/search/lib/video-preview-url";
 import type { SearchResult } from "@/features/search/types";
@@ -94,7 +94,7 @@ function formatResultUrl(
   }
 }
 
-export function VideoResultCard({
+export const VideoResultCard = memo(function VideoResultCard({
   compactDensity = false,
   faviconResolver = "google",
   openInNewTab = true,
@@ -119,7 +119,7 @@ export function VideoResultCard({
   ].filter((part): part is string => Boolean(part?.trim()));
 
   return (
-    <article className="max-w-4xl">
+    <article className="max-w-4xl [contain-intrinsic-size:auto_280px] [content-visibility:auto]">
       <div className={cn("space-y-3", compactDensity && "space-y-2")}>
         <div className="flex items-start gap-3">
           {showFavicons ? (
@@ -238,4 +238,4 @@ export function VideoResultCard({
       </div>
     </article>
   );
-}
+});
