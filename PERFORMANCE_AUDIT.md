@@ -50,9 +50,9 @@ The warmed Next.js layer is already fast locally. Search latency is dominated by
 | PERF-05 | P1 | Fresh-result mode still serializes the full session cache | Medium-high INP/main-thread improvement | Low-medium | High | DONE |
 | PERF-06 | P1 | Every non-empty query loads mathjs | Medium download/parse improvement | Low | High | DONE |
 | PERF-07 | P1 | Load-more rerenders the accumulated result list | Medium long-session rendering improvement | Low-medium | High | OPEN |
-| PERF-08 | P1 | Favicon URLs fail through `next/image` and are not server-cached | Correctness plus medium request-fan-out improvement | Low-medium | High | IN PROGRESS |
-| PERF-09 | P1 | Large global client dependency baseline | Medium cold-load and parse improvement | Medium | High | OPEN |
-| PERF-10 | P2 | Both theme logos are eagerly preloaded | Medium home-page LCP/network improvement | Low-medium | High | OPEN |
+| PERF-08 | P1 | Favicon URLs fail through `next/image` and are not server-cached | Correctness plus medium request-fan-out improvement | Low-medium | High | DONE |
+| PERF-09 | P1 | Large global client dependency baseline | Medium cold-load and parse improvement | Medium | High | DONE |
+| PERF-10 | P2 | Both theme logos are eagerly preloaded | Medium home-page LCP/network improvement | Low-medium | High | DONE |
 | PERF-11 | P2 | Root cookie access makes every route dynamic | Medium cacheability/capacity improvement | Medium-high | High | OPEN |
 | PERF-12 | P2 | All translation messages are sent to every client route | Low-medium HTML/hydration improvement | Medium | High | OPEN |
 | PERF-13 | P2 | Redis limiter uses two or three round trips | Low locally, medium with remote Redis | Low | High | OPEN |
@@ -577,12 +577,12 @@ Bundle-analyzer estimates included:
 - [x] The settings entry remained effectively flat at 96,949 bytes gzip versus 96,782 before (+167 bytes from chunk reshaping) while retaining the route's required Sonner code.
 - [x] Production browser verification confirmed the home route has no notification live region. The settings route still exposes its labelled language combobox and notification region; changing Compact density produced the unchanged unsaved-changes toast with working Discard and Save changes actions, and Discard restored the original switch state.
 - [x] All 41 tests, targeted Biome checks, TypeScript, the production build, and changed-scope React Doctor pass with no framework overlay or captured console errors.
-- [ ] Not-found and privacy routes do not load settings-only UI libraries.
+- [x] Not-found and privacy routes do not load settings-only UI libraries.
 
 ### PERF-10: Both theme logos are eagerly preloaded
 
 - **Priority:** P2
-- **Status:** OPEN
+- **Status:** DONE (2026-08-01)
 - **Evidence:** [`src/components/site/theme-logo.tsx`](src/components/site/theme-logo.tsx#L12), [`src/app/page.tsx`](src/app/page.tsx#L28)
 
 #### Problem
@@ -604,9 +604,24 @@ The source PNGs are both 1254x1254:
 
 #### Acceptance criteria
 
-- [ ] Only one logo asset is preloaded and downloaded on initial home load.
-- [ ] Theme switching still produces the correct logo without a disruptive flash.
-- [ ] Home LCP does not regress.
+- [x] Only one logo asset is preloaded and downloaded on initial home load.
+- [x] Theme switching still produces the correct logo without a disruptive flash.
+- [x] Home LCP does not regress.
+
+#### Implementation (2026-08-01)
+
+- The home page passes its server-read appearance preference into the logo, which now renders one responsive optimized image for explicit light or dark mode instead of two CSS-hidden `next/image` elements.
+- System mode uses a native `<picture>` source selected by `prefers-color-scheme`. Its light and dark preload candidates carry mutually exclusive media conditions, so the browser applies only the candidate matching the operating-system theme.
+- The selected logo remains eager and high-priority, retains the existing 176-pixel responsive sizing and translated alternative text, and follows `next-themes` after hydration so the existing light/dark transition continues to swap artwork correctly.
+- Both original PNG variants and all layout, animation, spacing, and theme-toggle behavior remain unchanged.
+
+#### Validation (2026-08-01)
+
+- [x] Before the change, a production browser load contained two unconditional responsive image preloads and two complete 176x176 logo images, including the `display: none` variant. The final explicit-light load contains one responsive preload and one complete 176x176 image.
+- [x] The final production browser selected `/logo_dark.png` in light mode and `/logo_white.png` in dark mode. Immediate post-toggle checks found the replacement image complete at 176x176 with no hidden duplicate, framework overlay, layout change, or visible flash.
+- [x] System-following-dark rendered one image whose current source was `/logo_white.png`; its `<picture>` source and applicable preload both used `(prefers-color-scheme: dark)`, while the alternate preload was limited to `(prefers-color-scheme: light)`.
+- [x] The LCP-critical image remains responsive-preloaded, `loading="eager"`, and `fetchPriority="high"` at the same dimensions and position. Removing the competing preload reduces the representative 384-pixel optimized logo transfer from both 18,292-byte and 17,475-byte responses to only the selected response. This is a controlled local guard rather than a production p95 claim.
+- [x] All 42 tests, targeted Biome checks, TypeScript, the production build, and changed-scope React Doctor pass. Production screenshots match the prior light layout and the expected dark layout, with no framework error overlay.
 
 ### PERF-11: Root cookie access makes every public route dynamic
 

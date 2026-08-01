@@ -28,6 +28,7 @@ export default async function Home() {
             <div className="relative size-40 select-none sm:size-44">
               <ThemeLogo
                 className="object-contain translate-y-4 sm:translate-y-5"
+                initialTheme={preferences.settings.theme}
                 sizes="176px"
                 priority
               />
