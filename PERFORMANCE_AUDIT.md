@@ -533,7 +533,7 @@ Representative timings:
 ### PERF-09: Large global client dependency baseline
 
 - **Priority:** P1
-- **Status:** OPEN
+- **Status:** DONE (2026-08-01)
 - **Evidence:** [`src/app/layout.tsx`](src/app/layout.tsx#L44), [`src/components/site/language-select.tsx`](src/components/site/language-select.tsx#L49), [`src/components/site/searxng-version-indicator.tsx`](src/components/site/searxng-version-indicator.tsx#L31)
 
 #### Problem
@@ -560,9 +560,23 @@ Bundle-analyzer estimates included:
 
 #### Acceptance criteria
 
-- [ ] Sonner is absent from non-settings routes.
-- [ ] Language selection retains keyboard and screen-reader accessibility.
-- [ ] Common gzip JavaScript decreases measurably.
+- [x] Sonner is absent from non-settings routes.
+- [x] Language selection retains keyboard and screen-reader accessibility.
+- [x] Common gzip JavaScript decreases measurably.
+
+#### Implementation (2026-08-01)
+
+- Removed the Sonner toaster from the root layout and rendered the identical configured toaster only on `/settings`, the sole route that imports `toast` or emits notifications.
+- The settings page returns the toaster immediately after its existing `<main>`, preserving its prior order under the same theme, internationalization, and tooltip providers. Toast position, width, icons, live-region behavior, maximum visible count, styling, and actions are unchanged.
+- Kept the existing Radix language selector and version tooltip untouched. Moving Sonner alone meets the acceptance criteria, so changing those visible and accessible controls would add UX risk without being necessary for this item.
+
+#### Validation
+
+- [x] Production client-reference manifests contain `components/ui/sonner.tsx` only for `/settings`; home, search, privacy, and not-found manifests do not contain it.
+- [x] Using the same production-build measurement method, home-route entry JavaScript fell from 328,173 to 292,174 bytes raw, from 102,047 to 92,343 bytes gzip, and from 90,231 to 81,619 bytes Brotli. That removes 35,999 raw bytes, 9,704 gzip bytes, and 8,612 Brotli bytes from the representative non-settings route.
+- [x] The settings entry remained effectively flat at 96,949 bytes gzip versus 96,782 before (+167 bytes from chunk reshaping) while retaining the route's required Sonner code.
+- [x] Production browser verification confirmed the home route has no notification live region. The settings route still exposes its labelled language combobox and notification region; changing Compact density produced the unchanged unsaved-changes toast with working Discard and Save changes actions, and Discard restored the original switch state.
+- [x] All 41 tests, targeted Biome checks, TypeScript, the production build, and changed-scope React Doctor pass with no framework overlay or captured console errors.
 - [ ] Not-found and privacy routes do not load settings-only UI libraries.
 
 ### PERF-10: Both theme logos are eagerly preloaded

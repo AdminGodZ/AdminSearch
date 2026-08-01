@@ -5,7 +5,6 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { ThemePreferencesSync } from "@/components/providers/theme-preferences-sync";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 import "./globals.css";
@@ -66,10 +65,7 @@ export default async function RootLayout({
             enableSystem
           >
             <ThemePreferencesSync />
-            <TooltipProvider>
-              {children}
-              <Toaster position="bottom-center" visibleToasts={3} />
-            </TooltipProvider>
+            <TooltipProvider>{children}</TooltipProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
