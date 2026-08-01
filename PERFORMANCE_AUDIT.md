@@ -479,7 +479,7 @@ The merge function preserves existing result object references, but `ResultCard`
 ### PERF-08: Favicons fail through `next/image` and fan out to external providers
 
 - **Priority:** P1
-- **Status:** IN PROGRESS
+- **Status:** DONE (2026-08-01)
 - **Evidence:** [`src/features/search/components/site-favicon.tsx`](src/features/search/components/site-favicon.tsx#L23), [`src/features/search/components/image-grid.tsx`](src/features/search/components/image-grid.tsx#L194), [`src/app/api/favicon/route.ts`](src/app/api/favicon/route.ts#L48), [`next.config.ts`](next.config.ts#L52)
 
 #### Problem
@@ -510,15 +510,25 @@ Representative timings:
 
 - [x] Favicons render instead of falling back because of image-optimizer 400 responses.
 - [x] Tiny favicon responses bypass Next.js image transformation.
-- [ ] Repeated hostnames reuse browser/server cache entries.
+- [x] Repeated hostnames reuse browser/server cache entries.
 - [x] Invalid authorities remain rejected.
 
 #### Implementation (2026-08-01)
 
 - Both web-result and image-result favicon components now mark their query-bearing same-origin sources as `unoptimized`, so the browser requests `/api/favicon` directly instead of sending tiny icons through `/_next/image`.
 - A browser regression check confirmed that the previously failing Google search renders without a Next.js error overlay, returns complete 32-pixel favicons, and issues zero optimized favicon requests.
-- The existing route still returns a seven-day browser-cache header and rejects malformed authorities with HTTP 400.
-- Bounded shared success and negative caching for provider requests remains open, so PERF-08 is not yet complete.
+- The route now uses a process-shared LRU cache capped at 256 entries and 4 MiB. Successful provider responses remain warm for 24 hours; failed, missing, invalid-content-type, empty, and oversized responses use a five-minute negative entry.
+- Concurrent requests for the same normalized authority and resolver share one in-flight provider request. A canceled HTTP caller no longer aborts provider work that another caller is awaiting, while the canceled caller still receives the existing explicit 499 response.
+- Explicit resolver parameters bypass preference-cookie parsing. Provider payloads must be successful, non-empty `image/*` responses no larger than 256 KiB before they can be returned or cached.
+- Successful responses use the existing one-day browser cache plus seven-day stale revalidation; negative responses now advertise a five-minute browser cache. Malformed authorities remain HTTP 400.
+
+#### Validation (2026-08-01)
+
+- [x] All 40 tests pass, including in-flight deduplication, warm success reuse, shorter negative expiry, LRU/byte eviction, oversized-entry rejection, resolver preference bypass, authority normalization, and content-type validation.
+- [x] TypeScript, targeted Biome checks, and the production build pass.
+- [x] On a fresh production server, a successful DuckDuckGo favicon request took 118.5 ms cold and 2.2 ms warm; a provider miss took 115.8 ms cold and 2.2 ms from the negative cache. These are controlled samples, not p95 claims.
+- [x] Production browser verification rendered 20 repeated-host GitHub favicons at their complete 32-pixel natural width. All 20 image sources pointed directly to `/api/favicon`, with zero `/_next/image` favicon sources, no framework overlay, and no captured console errors.
+- [x] The production route returned the intended success and negative cache headers, preserved the provider's `image/png` or `image/x-icon` content type, and returned HTTP 400 for a path-bearing authority.
 
 ### PERF-09: Large global client dependency baseline
 
