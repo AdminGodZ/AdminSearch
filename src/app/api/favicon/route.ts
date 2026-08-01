@@ -1,4 +1,8 @@
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
+import {
+  createClientClosedResponse,
+  fetchUpstream,
+} from "@/server/upstream-fetch";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -54,6 +58,11 @@ export async function GET(request: Request) {
   }
 
   const preferences = await getPersistedPreferences();
+
+  if (request.signal.aborted) {
+    return createClientClosedResponse();
+  }
+
   const resolver = normalizeResolver(
     url.searchParams.get("resolver") ?? preferences.settings.faviconResolver,
   );
@@ -62,16 +71,30 @@ export async function GET(request: Request) {
   let upstreamResponse: Response;
 
   try {
-    upstreamResponse = await fetch(upstreamUrl, {
-      method: "GET",
-      headers: {
-        accept: "image/*",
+    upstreamResponse = await fetchUpstream(
+      upstreamUrl,
+      {
+        method: "GET",
+        headers: {
+          accept: "image/*",
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+      {
+        requestSignal: request.signal,
+        timeoutMs: REQUEST_TIMEOUT_MS,
+      },
+    );
   } catch {
+    if (request.signal.aborted) {
+      return createClientClosedResponse();
+    }
+
     return new Response(null, { status: 404 });
+  }
+
+  if (request.signal.aborted) {
+    return createClientClosedResponse();
   }
 
   if (!upstreamResponse.ok || !upstreamResponse.body) {

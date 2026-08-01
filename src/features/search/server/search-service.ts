@@ -46,12 +46,14 @@ type ExecuteSearchOptions = {
   searchParams: URLSearchParams;
   requestHeaders: RequestHeaders;
   preferences?: PersistedPreferences;
+  signal?: AbortSignal;
 };
 
 export async function executeSearch({
   searchParams,
   requestHeaders,
   preferences,
+  signal,
 }: ExecuteSearchOptions): Promise<SearchServiceResult> {
   const startedAt = performance.now();
   const clientIp = getClientIpFromHeaders(requestHeaders);
@@ -73,6 +75,7 @@ export async function executeSearch({
   }
 
   try {
+    signal?.throwIfAborted();
     const searchRequest = parseSearchRequest(searchParams);
     const [resolvedPreferences, searchT] = await Promise.all([
       preferences ?? getPersistedPreferences(),
@@ -89,10 +92,12 @@ export async function executeSearch({
       ...runtimePreferences,
       clientIp: selfInfoEnabled ? getForwardableClientIp(clientIp) : undefined,
       engineTokens: getConfiguredEngineTokens(),
+      signal,
       userAgent: selfInfoEnabled
         ? getForwardableUserAgentFromHeaders(requestHeaders)
         : undefined,
     });
+    signal?.throwIfAborted();
     const payload = transformSearxResponse(
       upstreamResponse.payload,
       searchRequest,
@@ -116,6 +121,10 @@ export async function executeSearch({
       headers: rateLimitHeaders,
     };
   } catch (error) {
+    if (signal?.aborted) {
+      throw error;
+    }
+
     if (error instanceof ZodError) {
       return {
         ok: false,

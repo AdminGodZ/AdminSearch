@@ -5,6 +5,10 @@ import { AUTOCOMPLETE_MAX_SUGGESTIONS } from "@/features/search/lib/limits";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 import { getClientIp } from "@/server/client-ip";
 import { checkRateLimit, createRateLimitHeaders } from "@/server/rate-limit";
+import {
+  createClientClosedResponse,
+  fetchUpstream,
+} from "@/server/upstream-fetch";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -49,6 +53,10 @@ export async function GET(request: Request) {
     );
   }
 
+  if (request.signal.aborted) {
+    return createClientClosedResponse(rateLimitHeaders);
+  }
+
   if (
     query.length < AUTOCOMPLETE_MIN_QUERY_LENGTH ||
     query.length > AUTOCOMPLETE_MAX_QUERY_LENGTH
@@ -60,6 +68,11 @@ export async function GET(request: Request) {
   }
 
   const preferences = await getPersistedPreferences();
+
+  if (request.signal.aborted) {
+    return createClientClosedResponse(rateLimitHeaders);
+  }
+
   const upstreamUrl = new URL("/autocompleter", getSearxBaseUrl());
   upstreamUrl.searchParams.set("q", query);
   upstreamUrl.searchParams.set(
@@ -67,37 +80,38 @@ export async function GET(request: Request) {
     preferences.settings.autocomplete,
   );
 
-  let response: Response;
-
-  try {
-    response = await fetch(upstreamUrl, {
-      method: "GET",
-      headers: {
-        accept: "application/json",
-        "x-real-ip": "127.0.0.1",
-      },
-      cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-  } catch {
-    return NextResponse.json(
-      { suggestions: [] },
-      { headers: rateLimitHeaders },
-    );
-  }
-
-  if (!response.ok) {
-    return NextResponse.json(
-      { suggestions: [] },
-      { headers: rateLimitHeaders },
-    );
-  }
-
   let payload: unknown;
 
   try {
+    const response = await fetchUpstream(
+      upstreamUrl,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+          "x-real-ip": "127.0.0.1",
+        },
+        cache: "no-store",
+      },
+      {
+        requestSignal: request.signal,
+        timeoutMs: REQUEST_TIMEOUT_MS,
+      },
+    );
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { suggestions: [] },
+        { headers: rateLimitHeaders },
+      );
+    }
+
     payload = await response.json();
   } catch {
+    if (request.signal.aborted) {
+      return createClientClosedResponse(rateLimitHeaders);
+    }
+
     return NextResponse.json(
       { suggestions: [] },
       { headers: rateLimitHeaders },

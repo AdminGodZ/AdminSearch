@@ -4,6 +4,7 @@ import {
   type EngineGroupKey,
   engineCatalog,
 } from "@/features/settings/lib/preferences";
+import { fetchUpstream } from "@/server/upstream-fetch";
 import {
   createSearchContinuationFingerprint,
   loadSearchContinuation,
@@ -56,6 +57,7 @@ export type SearxRuntimeOptions = {
   httpMethod?: "get" | "post";
   imageProxy?: boolean;
   resultsPerPage?: number;
+  signal?: AbortSignal;
   userAgent?: string;
 };
 
@@ -325,7 +327,6 @@ function createSearxFetchRequest({
         headers,
         body: params.toString(),
         cache: "no-store",
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       },
       url,
     } satisfies { init: RequestInit; url: URL };
@@ -338,7 +339,6 @@ function createSearxFetchRequest({
       method,
       headers,
       cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     },
     url,
   } satisfies { init: RequestInit; url: URL };
@@ -366,8 +366,15 @@ async function fetchSearxPage(
   let response: Response;
 
   try {
-    response = await fetch(url, init);
+    response = await fetchUpstream(url, init, {
+      requestSignal: options?.signal,
+      timeoutMs: REQUEST_TIMEOUT_MS,
+    });
   } catch (error) {
+    if (options?.signal?.aborted) {
+      throw error;
+    }
+
     if (error instanceof Error && error.name === "TimeoutError") {
       throw new SearchUpstreamError("backendTimedOut");
     }
@@ -383,7 +390,15 @@ async function fetchSearxPage(
 
   try {
     payload = await response.json();
-  } catch {
+  } catch (error) {
+    if (options?.signal?.aborted) {
+      throw error;
+    }
+
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new SearchUpstreamError("backendTimedOut");
+    }
+
     throw new SearchUpstreamError("backendInvalidJson");
   }
 
@@ -413,14 +428,21 @@ async function fetchSearxEngineData(
   });
 
   try {
-    const response = await fetch(url, init);
+    const response = await fetchUpstream(url, init, {
+      requestSignal: options?.signal,
+      timeoutMs: REQUEST_TIMEOUT_MS,
+    });
 
     if (!response.ok) {
       return {};
     }
 
     return parseEngineDataFromHtml(await response.text());
-  } catch {
+  } catch (error) {
+    if (options?.signal?.aborted) {
+      throw error;
+    }
+
     return {};
   }
 }
@@ -611,6 +633,8 @@ export async function fetchSearxResponse(
   request: SearchRequest,
   options?: SearxRuntimeOptions,
 ): Promise<PaginatedSearxResponse> {
+  options?.signal?.throwIfAborted();
+
   if (shouldFetchEngineData(request, options)) {
     return fetchSearxVideoResponse(request, options);
   }

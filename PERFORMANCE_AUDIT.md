@@ -44,10 +44,10 @@ The warmed Next.js layer is already fast locally. Search latency is dominated by
 | ID | Priority | Finding | Expected impact | Effort | Confidence | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | PERF-01 | P0 | Pagination re-fetches previous upstream pages | Very high search/load-more latency and backend load | Medium-high | High | DONE |
-| PERF-02 | P0 | Initial search starts after hydration and native form reload | High time-to-first-result improvement | Medium | High | OPEN |
-| PERF-03 | P0 | Browser aborts do not cancel upstream work | High capacity and tail-latency improvement | Low-medium | High | OPEN |
+| PERF-02 | P0 | Initial search starts after hydration and native form reload | High time-to-first-result improvement | Medium | High | DONE |
+| PERF-03 | P0 | Browser aborts do not cancel upstream work | High capacity and tail-latency improvement | Low-medium | High | DONE |
 | PERF-04 | P0 | Autocomplete has zero debounce and fetches while unfocused | High request-volume reduction | Low | High | OPEN |
-| PERF-05 | P1 | Fresh-result mode still serializes the full session cache | Medium-high INP/main-thread improvement | Low-medium | High | OPEN |
+| PERF-05 | P1 | Fresh-result mode still serializes the full session cache | Medium-high INP/main-thread improvement | Low-medium | High | IN PROGRESS |
 | PERF-06 | P1 | Every non-empty query loads mathjs | Medium download/parse improvement | Low | High | OPEN |
 | PERF-07 | P1 | Load-more rerenders the accumulated result list | Medium long-session rendering improvement | Low-medium | High | OPEN |
 | PERF-08 | P1 | Favicon URLs fail through `next/image` and are not server-cached | Correctness plus medium request-fan-out improvement | Low-medium | High | IN PROGRESS |
@@ -253,8 +253,8 @@ Quick win:
 ### PERF-03: Browser cancellation does not stop upstream work
 
 - **Priority:** P0
-- **Status:** OPEN
-- **Evidence:** [`src/features/search/server/searx-client.ts`](src/features/search/server/searx-client.ts#L277), [`src/app/api/autocomplete/route.ts`](src/app/api/autocomplete/route.ts#L69), [`src/app/api/favicon/route.ts`](src/app/api/favicon/route.ts#L62)
+- **Status:** DONE
+- **Evidence:** [`src/server/upstream-fetch.ts`](src/server/upstream-fetch.ts#L1), [`src/features/search/server/searx-client.ts`](src/features/search/server/searx-client.ts#L292), [`src/features/search/server/search-service.ts`](src/features/search/server/search-service.ts#L45), [`src/app/api/search/route.ts`](src/app/api/search/route.ts#L9), [`src/app/api/autocomplete/route.ts`](src/app/api/autocomplete/route.ts#L84), [`src/app/api/favicon/route.ts`](src/app/api/favicon/route.ts#L75)
 
 #### Problem
 
@@ -278,15 +278,27 @@ AbortSignal.any([
 
 #### Acceptance criteria
 
-- [ ] Aborting `/api/search` aborts the active SearXNG fetch.
-- [ ] Aborting autocomplete stops the upstream autocompleter request.
-- [ ] Timeout behavior remains intact.
-- [ ] Aborts do not appear as backend failures in logs or metrics.
+- [x] Aborting `/api/search` aborts the active SearXNG fetch.
+- [x] Aborting autocomplete stops the upstream autocompleter request.
+- [x] Timeout behavior remains intact.
+- [x] Aborts do not appear as backend failures in logs or metrics.
+
+#### Implementation (2026-08-01)
+
+- A shared upstream-fetch helper composes each request's cancellation signal with the endpoint's existing timeout through `AbortSignal.any`.
+- `/api/search` passes `request.signal` through the shared search service and SearX runtime options. Both the JSON search request and the parallel video engine-data request now stop on client cancellation.
+- Search cancellation is rethrown instead of being converted to `backendUnavailable`; the route consumes it as a bodyless HTTP 499 response, keeping disconnects distinct from backend errors.
+- Autocomplete and favicon proxy requests use the same composition and bodyless client-closed response while preserving their existing fallback behavior for timeouts and provider failures.
+- Aborts that occur while consuming JSON or HTML response bodies are handled consistently, not misclassified as invalid upstream payloads.
 
 #### Validation
 
-- Rapidly switch tabs, filters, and queries while inspecting Next.js and SearXNG logs.
-- Track started, completed, timed-out, and client-aborted upstream requests.
+- [x] Unit tests verify that client cancellation reaches the active upstream fetch, timeout cancellation remains active, and client-closed responses are bodyless HTTP 499 responses.
+- [x] Against a deliberately 15-second loopback upstream, disconnecting the search client closed the SearX request after 694 ms and disconnecting autocomplete closed its request after 701 ms.
+- [x] Without client cancellation, search retained its HTTP 503 response at approximately 8.01 seconds and autocomplete retained its empty HTTP 200 response at approximately 5.01 seconds.
+- [x] Next.js development logs reported the disconnected requests without backend failure errors.
+- [x] A normal direct search rendered 20 results without a duplicate browser API request; load-more rendered another 20 through the modified route with no overlay or captured console errors.
+- [x] Tests, targeted Biome checks, TypeScript, the production build, and changed-scope React Doctor pass.
 
 ### PERF-04: Autocomplete has zero debounce and fetches while unfocused
 
@@ -297,6 +309,8 @@ AbortSignal.any([
 #### Problem
 
 `AUTOCOMPLETE_DEBOUNCE_MS` is zero. Every character from length two dispatches a request. The effect depends on `isFocused` but does not return early when unfocused, so blur/focus changes can issue another request for the same query.
+
+React Doctor 0.9.3 also flags the 382-line `SearchInput` file as a valid maintainability warning. It predates PERF-03 and is best addressed with PERF-04 by extracting autocomplete state/network behavior and the suggestion panel, rather than mixing an unrelated component refactor into the cancellation branch.
 
 #### Recommended design
 
@@ -400,7 +414,7 @@ The merge function preserves existing result object references, but `ResultCard`
 ### PERF-08: Favicons fail through `next/image` and fan out to external providers
 
 - **Priority:** P1
-- **Status:** OPEN
+- **Status:** IN PROGRESS
 - **Evidence:** [`src/features/search/components/site-favicon.tsx`](src/features/search/components/site-favicon.tsx#L23), [`src/features/search/components/image-grid.tsx`](src/features/search/components/image-grid.tsx#L194), [`src/app/api/favicon/route.ts`](src/app/api/favicon/route.ts#L48), [`next.config.ts`](next.config.ts#L52)
 
 #### Problem
@@ -903,3 +917,4 @@ The SearXNG version indicator's timer and abort controller are cleaned up correc
 | 2026-07-31 | Initial audit and implementation tracker created. |
 | 2026-07-31 | Completed PERF-01 with bounded Valkey-backed continuations, linear recovery, video overflow preservation, and pagination regression tests. |
 | 2026-08-01 | Fixed the client-facing portion of PERF-08 by bypassing image transformation for tiny query-bearing favicon URLs; shared provider caching remains open. |
+| 2026-08-01 | Completed PERF-03 by propagating client cancellation to search, autocomplete, and favicon upstream requests while preserving endpoint timeout behavior. |
