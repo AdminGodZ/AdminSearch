@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 
-import { AUTOCOMPLETE_MAX_SUGGESTIONS } from "@/features/search/lib/limits";
+import {
+  AUTOCOMPLETE_MAX_QUERY_LENGTH,
+  AUTOCOMPLETE_MAX_SUGGESTIONS,
+  AUTOCOMPLETE_MIN_QUERY_LENGTH,
+} from "@/features/search/lib/limits";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
 import { getClientIp } from "@/server/client-ip";
 import { checkRateLimit, createRateLimitHeaders } from "@/server/rate-limit";
@@ -15,8 +19,6 @@ export const runtime = "nodejs";
 
 const DEFAULT_SEARXNG_URL = "http://127.0.0.1:8080";
 const REQUEST_TIMEOUT_MS = 5_000;
-const AUTOCOMPLETE_MIN_QUERY_LENGTH = 2;
-const AUTOCOMPLETE_MAX_QUERY_LENGTH = 128;
 const AUTOCOMPLETE_RATE_LIMIT_WINDOW_MS = Number(
   process.env.AUTOCOMPLETE_RATE_LIMIT_WINDOW_MS ?? 60_000,
 );

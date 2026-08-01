@@ -46,7 +46,7 @@ The warmed Next.js layer is already fast locally. Search latency is dominated by
 | PERF-01 | P0 | Pagination re-fetches previous upstream pages | Very high search/load-more latency and backend load | Medium-high | High | DONE |
 | PERF-02 | P0 | Initial search starts after hydration and native form reload | High time-to-first-result improvement | Medium | High | DONE |
 | PERF-03 | P0 | Browser aborts do not cancel upstream work | High capacity and tail-latency improvement | Low-medium | High | DONE |
-| PERF-04 | P0 | Autocomplete has zero debounce and fetches while unfocused | High request-volume reduction | Low | High | OPEN |
+| PERF-04 | P0 | Autocomplete has zero debounce and fetches while unfocused | High request-volume reduction | Low | High | DONE |
 | PERF-05 | P1 | Fresh-result mode still serializes the full session cache | Medium-high INP/main-thread improvement | Low-medium | High | IN PROGRESS |
 | PERF-06 | P1 | Every non-empty query loads mathjs | Medium download/parse improvement | Low | High | OPEN |
 | PERF-07 | P1 | Load-more rerenders the accumulated result list | Medium long-session rendering improvement | Low-medium | High | OPEN |
@@ -303,8 +303,8 @@ AbortSignal.any([
 ### PERF-04: Autocomplete has zero debounce and fetches while unfocused
 
 - **Priority:** P0
-- **Status:** OPEN
-- **Evidence:** [`src/features/search/components/search-input.tsx`](src/features/search/components/search-input.tsx#L23)
+- **Status:** DONE
+- **Evidence:** [`src/features/search/lib/autocomplete-client.ts`](src/features/search/lib/autocomplete-client.ts#L1), [`src/features/search/components/use-autocomplete.ts`](src/features/search/components/use-autocomplete.ts#L1), [`src/features/search/components/search-suggestions.tsx`](src/features/search/components/search-suggestions.tsx#L1), [`src/features/search/components/search-input.tsx`](src/features/search/components/search-input.tsx#L26)
 
 #### Problem
 
@@ -314,7 +314,7 @@ React Doctor 0.9.3 also flags the 382-line `SearchInput` file as a valid maintai
 
 #### Recommended design
 
-- Use a 150-200 ms debounce.
+- Use an 80 ms debounce to coalesce fast typing bursts while keeping added suggestion latency low.
 - Return early when the input is unfocused.
 - Normalize query keys and add a bounded in-memory TTL cache.
 - Deduplicate identical in-flight queries.
@@ -323,10 +323,29 @@ React Doctor 0.9.3 also flags the 382-line `SearchInput` file as a valid maintai
 
 #### Acceptance criteria
 
-- [ ] Normal typing of a six-character query usually produces one autocomplete request.
-- [ ] Blurring an input does not trigger a request.
-- [ ] Refocusing can reuse a recent exact-query result.
-- [ ] Keyboard, screen-reader, and suggestion-selection behavior is unchanged.
+- [x] Normal typing of a six-character query usually produces one autocomplete request.
+- [x] Blurring an input does not trigger a request.
+- [x] Refocusing can reuse a recent exact-query result.
+- [x] Keyboard, screen-reader, and suggestion-selection behavior is unchanged.
+
+#### Implementation (2026-08-01)
+
+- Autocomplete waits 80 ms after the final normalized input change and is disabled whenever the field is unfocused or a search navigation is pending. Query changes clear stale visible suggestions immediately.
+- A browser-memory-only request manager normalizes whitespace and case for request identity, retains up to 40 positive results for two minutes with least-recently-used eviction, and never persists query text to browser storage.
+- Identical active queries share one fetch. Each consumer keeps independent cancellation semantics; canceling one subscriber preserves work needed by another, while canceling the last subscriber aborts the browser request and reaches PERF-03's server-side upstream cancellation path.
+- Client and API validation now use the same minimum, maximum, and eight-result limits. Invalid lengths never reach the endpoint, and empty or failed responses are not cached so transient upstream failures cannot poison future suggestions.
+- Networking/state moved into `useAutocomplete`, while viewport sizing, option rendering, and selected-option scrolling moved into `SearchSuggestions`. `SearchInput` dropped from 382 to 216 lines and no longer triggers React Doctor's giant-component warning.
+- Selecting a suggestion ends the autocomplete session before submitting, and pending form navigation disables new suggestion work. This prevents an extra request for the selected text while the search route is loading.
+
+#### Validation
+
+- [x] Fast browser typing of `google` produced one `/api/autocomplete?q=google` resource and rendered exactly eight options.
+- [x] An atomic type-and-blur interaction followed by 500 ms produced zero autocomplete resources; the panel remained closed.
+- [x] After one `privacy` request, blur/refocus restored eight cached options after more than the debounce interval with the resource count still at one.
+- [x] The suggestion list retained `overflow-y: auto`, a 13 px viewport gap, and kept the eighth keyboard-selected option visible with one `aria-selected="true"` option and a matching `aria-activedescendant`.
+- [x] Keyboard selection navigated to the selected search query without a runtime overlay. Final server and browser resource logs contained only the original autocomplete request, not an extra request for the selected text.
+- [x] Unit tests cover normalization, the client limit, TTL and LRU eviction, in-flight deduplication, shared-subscriber cancellation, final-subscriber upstream abort, invalid lengths, and pre-canceled consumers.
+- [x] Tests, targeted Biome checks, TypeScript, the production build, and changed-scope plus full React Doctor pass.
 
 ### PERF-05: Fresh-result mode still serializes the full cache
 
@@ -918,3 +937,4 @@ The SearXNG version indicator's timer and abort controller are cleaned up correc
 | 2026-07-31 | Completed PERF-01 with bounded Valkey-backed continuations, linear recovery, video overflow preservation, and pagination regression tests. |
 | 2026-08-01 | Fixed the client-facing portion of PERF-08 by bypassing image transformation for tiny query-bearing favicon URLs; shared provider caching remains open. |
 | 2026-08-01 | Completed PERF-03 by propagating client cancellation to search, autocomplete, and favicon upstream requests while preserving endpoint timeout behavior. |
+| 2026-08-01 | Completed PERF-04 with focus-aware debounce, bounded memory caching, shared in-flight autocomplete requests, and a focused component extraction. |
