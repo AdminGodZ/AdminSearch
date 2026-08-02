@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 
 import { ThemePreferencesSync } from "@/components/providers/theme-preferences-sync";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
+import {
+  GLOBAL_CLIENT_MESSAGE_NAMESPACES,
+  pickClientMessages,
+} from "@/i18n/client-messages";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -45,8 +49,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [locale, preferences] = await Promise.all([
+  const [locale, messages, preferences] = await Promise.all([
     getLocale(),
+    getMessages(),
     getPersistedPreferences(),
   ]);
 
@@ -58,7 +63,12 @@ export default async function RootLayout({
       className={`min-h-full font-sans ${geist.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <NextIntlClientProvider>
+        <NextIntlClientProvider
+          messages={pickClientMessages(
+            messages,
+            GLOBAL_CLIENT_MESSAGE_NAMESPACES,
+          )}
+        >
           <ThemeProvider
             attribute="class"
             defaultTheme={preferences.settings.theme}

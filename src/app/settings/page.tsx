@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getMessages, getTranslations } from "next-intl/server";
 
+import { ScopedIntlClientProvider } from "@/components/providers/scoped-intl-client-provider";
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
 import { Toaster } from "@/components/ui/sonner";
 import { SettingsPagePreview } from "@/features/settings/components/settings-page-preview";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
+import {
+  pickClientMessages,
+  ROUTE_CLIENT_MESSAGE_NAMESPACES,
+} from "@/i18n/client-messages";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Metadata");
@@ -15,7 +20,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SettingsPage() {
-  const preferences = await getPersistedPreferences();
+  const [messages, preferences] = await Promise.all([
+    getMessages(),
+    getPersistedPreferences(),
+  ]);
 
   return (
     <>
@@ -33,10 +41,17 @@ export default async function SettingsPage() {
           </div>
         </section>
 
-        <SettingsPagePreview
-          initialSettings={preferences.settings}
-          initialEngines={preferences.engines}
-        />
+        <ScopedIntlClientProvider
+          messages={pickClientMessages(
+            messages,
+            ROUTE_CLIENT_MESSAGE_NAMESPACES.settings,
+          )}
+        >
+          <SettingsPagePreview
+            initialSettings={preferences.settings}
+            initialEngines={preferences.engines}
+          />
+        </ScopedIntlClientProvider>
 
         <Footer />
       </main>

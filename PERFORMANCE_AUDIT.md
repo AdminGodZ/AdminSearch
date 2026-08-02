@@ -7,43 +7,44 @@
 | Field | Value |
 | --- | --- |
 | Reassessment date | 2026-08-02 |
-| Source revision | PERF-15 worktree based on `2fe7703` (`master`) |
+| Source revision | PERF-12 implementation based on `ea99d94` (`master`) |
 | Framework | Next.js 16.2.12, React 19.2.6 |
 | Runtime | Self-hosted Node.js, SearXNG, Valkey, and Caddy |
 | Production telemetry | Not currently available |
-| Active findings | 3 |
+| Active findings | 2 |
 
-PERF-01 through PERF-10 and PERF-14 through PERF-16 are implemented and verified. Their implementation history remains in Git; it is no longer repeated here.
+PERF-01 through PERF-10, PERF-12, and PERF-14 through PERF-16 are implemented and verified. Their implementation history remains in Git; it is no longer repeated here.
 
 ### Status legend
 
-- `READY`: Bounded implementation is worthwhile now.
-- `LATER`: Valid improvement, but current impact does not justify doing it before the ready items.
+- `LATER`: Valid improvement, but current impact does not justify prioritizing it without new production evidence.
 
 ## Current measurement snapshot
 
-The 2026-08-02 production build passed TypeScript and `next build`. The size snapshot below was measured on 2026-08-01; these are controlled local measurements, not production p50, p95, or p99 claims.
+The 2026-08-02 PERF-12 production build passed TypeScript and `next build`. These are controlled local measurements, not production p50, p95, or p99 claims.
 
 ### Route entry JavaScript
 
 | Route | Raw | Offline gzip estimate |
 | --- | ---: | ---: |
-| `/` | 294,100 bytes | 92,856 bytes |
-| `/privacy` | 260,756 bytes | 80,432 bytes |
-| `/search` | 383,279 bytes | 115,669 bytes |
-| `/settings` | 321,441 bytes | 96,815 bytes |
-| `/_not-found` | 192,560 bytes | 57,924 bytes |
+| `/` | 294,891 bytes | 93,154 bytes |
+| `/privacy` | 261,243 bytes | 80,617 bytes |
+| `/search` | 382,564 bytes | 115,497 bytes |
+| `/settings` | 322,228 bytes | 97,135 bytes |
+| `/_not-found` | 192,652 bytes | 57,950 bytes |
 
-### Server-rendered HTML
+PERF-12 intentionally targeted serialized messages rather than the `next-intl` runtime, so no JavaScript reduction is claimed.
 
-| Route | HTML bytes |
-| --- | ---: |
-| `/` | 43,239 |
-| `/privacy` | 43,199 |
-| `/search` | 59,643 |
-| `/settings` | 64,242 |
+### Server-rendered payload after PERF-12
 
-The locale files remain 14,259 bytes for English and 15,639 bytes for German. Their largest namespaces are `Settings`, `Privacy`, and `Search`; client labels required on every route total only about 1 KiB.
+| Route | English HTML | HTML saved | English RSC | RSC saved |
+| --- | ---: | ---: | ---: | ---: |
+| `/` | 31,923 bytes | 11,317 bytes (26.2%) | 14,306 bytes | 10,478 bytes (42.3%) |
+| `/privacy` | 31,257 bytes | 11,942 bytes (27.6%) | 15,070 bytes | 11,048 bytes (42.3%) |
+| `/search` | 50,818 bytes | 8,825 bytes (14.8%) | 15,976 bytes | 8,277 bytes (34.1%) |
+| `/settings` | 58,943 bytes | 5,298 bytes (8.2%) | 19,322 bytes | 4,998 bytes (20.6%) |
+
+The equivalent German samples saved 6,014-13,211 HTML bytes and 5,714-12,317 RSC bytes. The locale files remain 14,259 bytes for English and 15,639 bytes for German, but each client boundary now receives only the global labels and route-specific namespaces it uses. Server-only `Privacy` and `ApiErrors` messages are not serialized into client providers.
 
 Docker was not running during this reassessment, so Redis round-trip and SearXNG engine conclusions are based on the deployed topology and code paths rather than a live-container sample.
 
@@ -51,52 +52,8 @@ Docker was not running during this reassessment, so Redis round-trip and SearXNG
 
 | Order | ID | Priority | Status | Outcome |
 | ---: | --- | --- | --- | --- |
-| 1 | PERF-12 | P2 | READY | Serialize only the translation namespaces required by each route or interactive subtree. |
-| 2 | PERF-11 | P3 | LATER | Parse preferences once per server render; do not pursue the former static-route redesign. |
-| 3 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
-
-## PERF-12: Scope client translation messages
-
-- **Priority:** P2
-- **Status:** READY
-- **Evidence:** [`src/app/layout.tsx`](src/app/layout.tsx), [`src/i18n/request.ts`](src/i18n/request.ts), [`messages/en.json`](messages/en.json), [`messages/de.json`](messages/de.json)
-
-### Current problem
-
-The root `NextIntlClientProvider` inherits the complete locale object on every route. That serializes 14-16 KiB of raw messages even when a route needs only global header/footer labels and a small route-specific subset.
-
-Current namespace sizes show a bounded opportunity:
-
-| Namespace | English | German | Main consumer |
-| --- | ---: | ---: | --- |
-| `Settings` | 5,691 bytes | 6,244 bytes | `/settings` |
-| `Privacy` | 2,249 bytes | 2,593 bytes | Server-rendered privacy page |
-| `Search` | 1,874 bytes | 2,135 bytes | `/search` |
-| Global client labels combined | About 1 KiB | About 1 KiB | Header and footer |
-
-The ICU runtime will remain while client components use `useTranslations`; this item targets serialized messages, not a promised JavaScript-runtime removal.
-
-### Implementation scope
-
-- Pass only global interactive namespaces at the root client boundary.
-- Add route or subtree providers for home, search, and settings client namespaces.
-- Keep server-only namespaces such as `Privacy` and `ApiErrors` out of client serialization.
-- Avoid a broad rewrite that converts every translated component to string props.
-- Preserve runtime locale switching and the current English/German output exactly.
-
-### Acceptance criteria
-
-- [ ] `/privacy` does not serialize `Settings`, `Search`, `Privacy`, or `ApiErrors` into the client provider.
-- [ ] Home, search, and settings receive only their required client namespaces plus global labels.
-- [ ] No missing-message errors occur during direct loads, client navigation, interaction, or locale switching.
-- [ ] English and German visible text remains unchanged.
-- [ ] HTML/RSC payload decreases measurably; no JavaScript reduction is claimed unless measured.
-
-### Required validation
-
-- Add namespace-coverage tests for every route-level client subtree.
-- Compare route HTML/RSC bytes before and after using the same production build method.
-- Browser-test direct loads, cross-route navigation, language changes, search interactions, settings sections, and error states in both locales.
+| 1 | PERF-11 | P3 | LATER | Parse preferences once per server render; do not pursue the former static-route redesign. |
+| 2 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
 
 ## PERF-11: Memoize preference parsing per server render
 
@@ -166,7 +123,7 @@ Valkey is currently local to the application stack, so latency improvement is ex
 The following findings should not be reopened without new measurements or changed requirements:
 
 - **PERF-17:** IntersectionObserver already performs the primary infinite-scroll detection. The extra check is animation-frame throttled, cleaned up, and useful as a reliability fallback; removing it has low upside and regression risk.
-- **PERF-18:** The settings route is 96,815 bytes gzip, only about 4 KiB above home, and renders only the active settings section. Splitting the 1,262-line component may improve maintainability, but it is not justified as a performance project.
+- **PERF-18:** The settings route is 97,135 bytes gzip, only about 4 KiB above home, and renders only the active settings section. Splitting the 1,262-line component may improve maintainability, but it is not justified as a performance project.
 - **PERF-19:** Result memoization already removed the important repeated work. Hoisting tiny sets, caching a short environment split, or replacing a one-second text animation is not expected to affect user-visible performance.
 - **PERF-20:** Image pull policy, restart speed, and SearXNG engine/time-out tuning are operations decisions. Engine tuning requires production latency and result-quality data; SearXNG already suspends CAPTCHA-failing engines.
 - **Full former PERF-11:** Cookie splitting and static privacy rendering are deferred indefinitely unless production capacity or cacheability data shows a real need.

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { getTranslations } from "next-intl/server";
+import { getMessages, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
+import { ScopedIntlClientProvider } from "@/components/providers/scoped-intl-client-provider";
 import { Footer } from "@/components/site/footer";
 import { SearchPageClient } from "@/features/search/components/search-page-client";
 import { SearchPageFallback } from "@/features/search/components/search-page-fallback";
@@ -17,6 +18,10 @@ import {
 import { loadInitialSearch } from "@/features/search/server/initial-search";
 import { getSearchPreferenceDefaults } from "@/features/settings/lib/preferences";
 import { getPersistedPreferences } from "@/features/settings/server/preferences";
+import {
+  pickClientMessages,
+  ROUTE_CLIENT_MESSAGE_NAMESPACES,
+} from "@/i18n/client-messages";
 
 export const dynamic = "force-dynamic";
 
@@ -49,9 +54,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 async function SearchPageContent({ searchParams }: SearchPageProps) {
-  const [resolvedSearchParams, requestHeaders, preferences] = await Promise.all(
-    [searchParams, headers(), getPersistedPreferences()],
-  );
+  const [resolvedSearchParams, requestHeaders, messages, preferences] =
+    await Promise.all([
+      searchParams,
+      headers(),
+      getMessages(),
+      getPersistedPreferences(),
+    ]);
   const defaults = getSearchPreferenceDefaults(preferences.settings);
   const effectiveParams = applySearchPreferenceDefaults(
     toUrlSearchParams(resolvedSearchParams),
@@ -78,12 +87,19 @@ async function SearchPageContent({ searchParams }: SearchPageProps) {
     : undefined;
 
   return (
-    <Suspense fallback={<SearchPageFallback />}>
-      <SearchPageClient
-        initialPreferences={preferences}
-        initialSearchPromise={initialSearchPromise}
-      />
-    </Suspense>
+    <ScopedIntlClientProvider
+      messages={pickClientMessages(
+        messages,
+        ROUTE_CLIENT_MESSAGE_NAMESPACES.search,
+      )}
+    >
+      <Suspense fallback={<SearchPageFallback />}>
+        <SearchPageClient
+          initialPreferences={preferences}
+          initialSearchPromise={initialSearchPromise}
+        />
+      </Suspense>
+    </ScopedIntlClientProvider>
   );
 }
 
