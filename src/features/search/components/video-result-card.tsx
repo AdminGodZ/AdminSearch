@@ -2,9 +2,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { memo, useMemo, useState } from "react";
+import { memo } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
-import { buildVideoPreviewEmbedUrl } from "@/features/search/lib/video-preview-url";
 import type { SearchResult } from "@/features/search/types";
 import type { UrlFormattingMode } from "@/features/settings/lib/preferences";
 import { cn } from "@/lib/utils";
@@ -106,11 +105,6 @@ export const VideoResultCard = memo(function VideoResultCard({
   const t = useTranslations("Search");
   const meta = getResultMeta(result, faviconResolver);
   const formattedUrl = formatResultUrl(result, meta, urlFormatting);
-  const [showPreview, setShowPreview] = useState(false);
-  const previewSrc = useMemo(
-    () => buildVideoPreviewEmbedUrl(result.previewUrl),
-    [result.previewUrl],
-  );
   const videoMetaParts = [
     getPlatformName(meta.host),
     result.author,
@@ -162,26 +156,12 @@ export const VideoResultCard = memo(function VideoResultCard({
             target={openInNewTab ? "_blank" : undefined}
             rel={openInNewTab ? "noreferrer noopener" : undefined}
             className="block w-full shrink-0 sm:w-[220px]"
-            onMouseEnter={() => setShowPreview(showThumbnails)}
-            onMouseLeave={() => setShowPreview(false)}
-            onFocus={() => setShowPreview(showThumbnails)}
-            onBlur={() => setShowPreview(false)}
           >
             <div className="aspect-video overflow-hidden rounded-2xl bg-[var(--surface-panel)]">
               {!showThumbnails ? (
                 <div className="flex h-full items-center justify-center text-sm text-[var(--text-soft-alt)]">
                   {t("previewHidden")}
                 </div>
-              ) : showPreview && previewSrc ? (
-                <iframe
-                  src={previewSrc}
-                  title={t("videoPreviewTitle", { title: result.title })}
-                  allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-                  allowFullScreen
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  sandbox="allow-scripts"
-                  className="h-full w-full border-0"
-                />
               ) : result.thumbnailUrl ? (
                 // react-doctor-disable-next-line nextjs-no-img-element
                 <img

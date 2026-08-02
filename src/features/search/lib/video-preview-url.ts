@@ -65,32 +65,3 @@ export function normalizeVideoPreviewUrl(value: string | undefined) {
     return undefined;
   }
 }
-
-export function buildVideoPreviewEmbedUrl(value: string | undefined) {
-  const normalized = normalizeVideoPreviewUrl(value);
-
-  if (!normalized) {
-    return undefined;
-  }
-
-  const url = new URL(normalized);
-  const provider = readPreviewProvider(url);
-
-  if (!provider) {
-    return undefined;
-  }
-
-  url.searchParams.set("autoplay", "1");
-  url.searchParams.set("mute", "1");
-
-  if (provider === "youtube") {
-    url.searchParams.set("controls", "0");
-    url.searchParams.set("playsinline", "1");
-    url.searchParams.set("rel", "0");
-    url.searchParams.set("iv_load_policy", "3");
-    url.searchParams.set("fs", "0");
-    url.searchParams.set("disablekb", "1");
-  }
-
-  return url.toString();
-}
