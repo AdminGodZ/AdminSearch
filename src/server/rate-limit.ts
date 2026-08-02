@@ -1,4 +1,4 @@
-import { getRedisClient } from "@/server/redis";
+import { type AdminSearchRedisClient, getRedisClient } from "@/server/redis";
 
 type RateLimitResult = {
   allowed: boolean;
@@ -66,8 +66,8 @@ function pruneMemoryStore(now: number, force = false) {
 async function checkMemoryRateLimit(
   key: string,
   options?: RateLimitOptions,
+  now = Date.now(),
 ): Promise<RateLimitResult> {
-  const now = Date.now();
   const windowMs = getWindowMs(options);
   const limit = getMaxRequests(options);
 
@@ -102,40 +102,46 @@ async function checkMemoryRateLimit(
   };
 }
 
-export async function checkRateLimit(
-  key: string,
-  options?: RateLimitOptions,
-): Promise<RateLimitResult> {
-  const redis = getRedisClient();
-  const windowMs = getWindowMs(options);
-  const limit = getMaxRequests(options);
+type ResolveRedisClient = () => AdminSearchRedisClient | null;
 
-  if (!redis) {
-    return checkMemoryRateLimit(key, options);
-  }
+export function createRateLimitChecker(
+  resolveRedisClient: ResolveRedisClient,
+  now: () => number = Date.now,
+) {
+  return async function checkRateLimit(
+    key: string,
+    options?: RateLimitOptions,
+  ): Promise<RateLimitResult> {
+    const redis = resolveRedisClient();
+    const windowMs = getWindowMs(options);
+    const limit = getMaxRequests(options);
 
-  const namespacedKey = `adminsearch:ratelimit:${key}`;
-
-  try {
-    const total = await redis.incr(namespacedKey);
-
-    if (total === 1) {
-      await redis.pexpire(namespacedKey, windowMs);
+    if (!redis) {
+      return checkMemoryRateLimit(key, options, now());
     }
 
-    const ttl = await redis.pttl(namespacedKey);
-    const resetAt = Date.now() + Math.max(ttl, 0);
+    const namespacedKey = `adminsearch:ratelimit:${key}`;
 
-    return {
-      allowed: total <= limit,
-      limit,
-      remaining: Math.max(limit - total, 0),
-      resetAt,
-    };
-  } catch {
-    return checkMemoryRateLimit(key, options);
-  }
+    try {
+      const [total, ttl] = await redis.adminsearchRateLimit(
+        namespacedKey,
+        windowMs,
+      );
+      const resetAt = now() + Math.max(ttl, 0);
+
+      return {
+        allowed: total <= limit,
+        limit,
+        remaining: Math.max(limit - total, 0),
+        resetAt,
+      };
+    } catch {
+      return checkMemoryRateLimit(key, options, now());
+    }
+  };
 }
+
+export const checkRateLimit = createRateLimitChecker(getRedisClient);
 
 export function createRateLimitHeaders(result: RateLimitResult) {
   return {

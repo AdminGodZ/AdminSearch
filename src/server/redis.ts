@@ -1,5 +1,36 @@
 import Redis from "ioredis";
 
+const RATE_LIMIT_SCRIPT = `
+local window = tonumber(ARGV[1])
+
+if not window or window <= 0 or window % 1 ~= 0 then
+  return redis.error_reply("rate limit window must be a positive integer")
+end
+
+local created = redis.call("SET", KEYS[1], 1, "PX", window, "NX")
+
+if created then
+  return { 1, window }
+end
+
+local total = redis.call("INCR", KEYS[1])
+local ttl = redis.call("PTTL", KEYS[1])
+
+if ttl < 0 then
+  redis.call("PEXPIRE", KEYS[1], window)
+  ttl = redis.call("PTTL", KEYS[1])
+end
+
+return { total, ttl }
+`;
+
+export type AdminSearchRedisClient = Redis & {
+  adminsearchRateLimit(
+    key: string,
+    windowMs: number,
+  ): Promise<[number, number]>;
+};
+
 declare global {
   // `var` is required for a process-wide cache that survives Next.js reloads.
   // eslint-disable-next-line no-var
@@ -24,6 +55,19 @@ function normalizeRedisUrl(redisUrl: string) {
   return redisUrl;
 }
 
+function configureRedisClient(client: Redis) {
+  const configuredClient = client as AdminSearchRedisClient;
+
+  if (typeof configuredClient.adminsearchRateLimit !== "function") {
+    client.defineCommand("adminsearchRateLimit", {
+      numberOfKeys: 1,
+      lua: RATE_LIMIT_SCRIPT,
+    });
+  }
+
+  return configuredClient;
+}
+
 export function getRedisClient(redisUrl = process.env.RATE_LIMIT_REDIS_URL) {
   if (!redisUrl) {
     return null;
@@ -37,7 +81,7 @@ export function getRedisClient(redisUrl = process.env.RATE_LIMIT_REDIS_URL) {
   const existingClient = clients.get(normalizedUrl);
 
   if (existingClient) {
-    return existingClient;
+    return configureRedisClient(existingClient);
   }
 
   const client = new Redis(normalizedUrl, {
@@ -51,5 +95,5 @@ export function getRedisClient(redisUrl = process.env.RATE_LIMIT_REDIS_URL) {
   });
   clients.set(normalizedUrl, client);
 
-  return client;
+  return configureRedisClient(client);
 }
