@@ -6,14 +6,14 @@
 
 | Field | Value |
 | --- | --- |
-| Reassessment date | 2026-08-01 |
-| Source revision | `c782c30` (`master`) |
+| Reassessment date | 2026-08-02 |
+| Source revision | PERF-16 worktree based on `1ead0aa` (`master`) |
 | Framework | Next.js 16.2.12, React 19.2.6 |
 | Runtime | Self-hosted Node.js, SearXNG, Valkey, and Caddy |
 | Production telemetry | Not currently available |
-| Active findings | 6 |
+| Active findings | 5 |
 
-PERF-01 through PERF-10 are implemented and verified. Their implementation history remains in Git; it is no longer repeated here.
+PERF-01 through PERF-10 and PERF-16 are implemented and verified. Their implementation history remains in Git; it is no longer repeated here.
 
 ### Status legend
 
@@ -22,7 +22,7 @@ PERF-01 through PERF-10 are implemented and verified. Their implementation histo
 
 ## Current measurement snapshot
 
-The 2026-08-01 production build passed TypeScript and `next build`. These are controlled local measurements, not production p50, p95, or p99 claims.
+The 2026-08-02 production build passed TypeScript and `next build`. The size snapshot below was measured on 2026-08-01; these are controlled local measurements, not production p50, p95, or p99 claims.
 
 ### Route entry JavaScript
 
@@ -51,45 +51,11 @@ Docker was not running during this reassessment, so Redis round-trip and SearXNG
 
 | Order | ID | Priority | Status | Outcome |
 | ---: | --- | --- | --- | --- |
-| 1 | PERF-16 | P1 | READY | Stop global version-check cache bypass and indefinite retries. |
-| 2 | PERF-14 | P1 | READY | Add privacy-safe phase timing before making further backend tuning decisions. |
-| 3 | PERF-15 | P2 | READY | Prevent accidental video-player loads without changing intentional hover or keyboard behavior. |
-| 4 | PERF-12 | P2 | READY | Serialize only the translation namespaces required by each route or interactive subtree. |
-| 5 | PERF-11 | P3 | LATER | Parse preferences once per server render; do not pursue the former static-route redesign. |
-| 6 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
-
-## PERF-16: Bound and cache the global version check
-
-- **Priority:** P1
-- **Status:** READY
-- **Evidence:** [`src/components/site/searxng-version-indicator.tsx`](src/components/site/searxng-version-indicator.tsx), [`src/app/api/searxng/version/route.ts`](src/app/api/searxng/version/route.ts), [`src/features/maintenance/server/searxng-update-status.ts`](src/features/maintenance/server/searxng-update-status.ts)
-
-### Current problem
-
-The footer is rendered on every public route. Its client fetch uses `cache: "no-store"`, bypassing the API's five-minute browser cache for successful status responses. An unknown or failed state retries every 15 seconds for the lifetime of the page, producing four requests per minute per client during a persistent failure.
-
-The server already deduplicates concurrent checks and caches successful checks for six hours. The avoidable work is the client cache and retry policy.
-
-### Implementation scope
-
-- Use normal browser HTTP caching for successful status responses.
-- Replace the fixed infinite retry with bounded exponential retry, for example an immediate check followed by 15 seconds, 60 seconds, and five minutes, then stop for that page lifetime.
-- Preserve the existing abort and timer cleanup.
-- Preserve the current dot, label, tooltip, and link behavior.
-- Do not defer the initial check or redesign the footer in this item.
-
-### Acceptance criteria
-
-- [ ] Navigating between routes does not bypass a still-fresh successful response.
-- [ ] A persistent failure performs no more than four attempts during one page lifetime.
-- [ ] Unmounting cancels the active request and pending retry.
-- [ ] Latest, outdated, checking, and unknown UI states remain visually and accessibly identical.
-
-### Required validation
-
-- Unit-test the retry schedule, retry cap, successful stop condition, and cleanup.
-- Verify successful cache reuse and persistent-failure request counts in a production browser.
-- Verify every existing indicator state and tooltip in light and dark themes.
+| 1 | PERF-14 | P1 | READY | Add privacy-safe phase timing before making further backend tuning decisions. |
+| 2 | PERF-15 | P2 | READY | Prevent accidental video-player loads without changing intentional hover or keyboard behavior. |
+| 3 | PERF-12 | P2 | READY | Serialize only the translation namespaces required by each route or interactive subtree. |
+| 4 | PERF-11 | P3 | LATER | Parse preferences once per server render; do not pursue the former static-route redesign. |
+| 5 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
 
 ## PERF-14: Add useful search phase timing
 

@@ -8,95 +8,34 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  createSearxngVersionClient,
+  INITIAL_SEARXNG_VERSION_STATUS,
+  type SearxngVersionStatus,
+} from "@/features/maintenance/lib/searxng-version-client";
 import { cn } from "@/lib/utils";
-
-type SearxngStatusState = "latest" | "outdated" | "unknown";
-
-type SearxngVersionStatus = {
-  currentVersion: string | null;
-  latestVersion: string | null;
-  state: SearxngStatusState;
-};
-
-const initialStatus: SearxngVersionStatus = {
-  currentVersion: null,
-  latestVersion: null,
-  state: "unknown",
-};
 
 const SEARXNG_COMMITS_URL = "https://github.com/searxng/searxng/commits/master";
 const SEARXNG_GITHUB_URL = "https://github.com/searxng/searxng";
-const UNKNOWN_RETRY_DELAY_MS = 15_000;
 
 export function SearxngVersionIndicator() {
   const t = useTranslations("SearxngVersion");
   const [hasChecked, setHasChecked] = useState(false);
-  const [status, setStatus] = useState<SearxngVersionStatus>(initialStatus);
+  const [status, setStatus] = useState<SearxngVersionStatus>(
+    INITIAL_SEARXNG_VERSION_STATUS,
+  );
 
-  // The abort guard prevents post-unmount retries; cleanup owns both resources.
-  // react-doctor-disable-next-line effect-needs-cleanup
   useEffect(() => {
-    const controller = new AbortController();
-    let retryTimeout: ReturnType<typeof setTimeout> | undefined;
-
-    function scheduleRetry() {
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      retryTimeout = setTimeout(() => {
-        void readStatus();
-      }, UNKNOWN_RETRY_DELAY_MS);
-    }
-
-    async function readStatus() {
-      try {
-        const response = await fetch("/api/searxng/version", {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          setHasChecked(true);
-          setStatus(initialStatus);
-          scheduleRetry();
-          return;
-        }
-
-        const nextStatus = (await response.json()) as SearxngVersionStatus;
-        const nextState =
-          nextStatus.state === "latest" || nextStatus.state === "outdated"
-            ? nextStatus.state
-            : "unknown";
-
+    const client = createSearxngVersionClient({
+      onStatus(nextStatus) {
         setHasChecked(true);
-        setStatus({
-          currentVersion: sanitizeVersion(nextStatus.currentVersion),
-          latestVersion: sanitizeVersion(nextStatus.latestVersion),
-          state: nextState,
-        });
+        setStatus(nextStatus);
+      },
+    });
 
-        if (nextState === "unknown") {
-          scheduleRetry();
-        }
-      } catch {
-        if (!controller.signal.aborted) {
-          setHasChecked(true);
-          setStatus(initialStatus);
-          scheduleRetry();
-        }
-      }
-    }
+    void client.start();
 
-    void readStatus();
-
-    return () => {
-      controller.abort();
-
-      if (retryTimeout !== undefined) {
-        clearTimeout(retryTimeout);
-      }
-    };
+    return client.stop;
   }, []);
 
   const content = useMemo(() => {
@@ -193,10 +132,4 @@ function getSearxngChangelogUrl(status: SearxngVersionStatus) {
 
 function getVersionCommit(value: string | null | undefined) {
   return value?.trim().match(/[+-]([a-f0-9]{7,40})$/i)?.[1] ?? null;
-}
-
-function sanitizeVersion(value: string | null | undefined) {
-  const trimmed = value?.trim();
-
-  return trimmed || null;
 }
