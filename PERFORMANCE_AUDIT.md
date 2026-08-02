@@ -7,13 +7,13 @@
 | Field | Value |
 | --- | --- |
 | Reassessment date | 2026-08-02 |
-| Source revision | PERF-12 implementation based on `ea99d94` (`master`) |
-| Framework | Next.js 16.2.12, React 19.2.6 |
+| Source revision | PERF-11 implementation based on `ffd0b6c` (`master`) |
+| Framework | Next.js 16.2.12, React 19.2.8 |
 | Runtime | Self-hosted Node.js, SearXNG, Valkey, and Caddy |
 | Production telemetry | Not currently available |
-| Active findings | 2 |
+| Active findings | 1 |
 
-PERF-01 through PERF-10, PERF-12, and PERF-14 through PERF-16 are implemented and verified. Their implementation history remains in Git; it is no longer repeated here.
+PERF-01 through PERF-12 and PERF-14 through PERF-16 are implemented and verified. Their implementation history remains in Git; it is no longer repeated here.
 
 ### Status legend
 
@@ -21,7 +21,7 @@ PERF-01 through PERF-10, PERF-12, and PERF-14 through PERF-16 are implemented an
 
 ## Current measurement snapshot
 
-The 2026-08-02 PERF-12 production build passed TypeScript and `next build`. These are controlled local measurements, not production p50, p95, or p99 claims.
+The 2026-08-02 PERF-11 production build passed TypeScript and `next build`. These are controlled local measurements, not production p50, p95, or p99 claims.
 
 ### Route entry JavaScript
 
@@ -46,45 +46,15 @@ PERF-12 intentionally targeted serialized messages rather than the `next-intl` r
 
 The equivalent German samples saved 6,014-13,211 HTML bytes and 5,714-12,317 RSC bytes. The locale files remain 14,259 bytes for English and 15,639 bytes for German, but each client boundary now receives only the global labels and route-specific namespaces it uses. Server-only `Privacy` and `ApiErrors` messages are not serialized into client providers.
 
+PERF-11 now shares one parsed preference snapshot across repeated calls in a Server Component render and invalidates that snapshot for the next request. This is a small server-work reduction; no user-visible latency improvement is claimed.
+
 Docker was not running during this reassessment, so Redis round-trip and SearXNG engine conclusions are based on the deployed topology and code paths rather than a live-container sample.
 
 ## Recommended order
 
 | Order | ID | Priority | Status | Outcome |
 | ---: | --- | --- | --- | --- |
-| 1 | PERF-11 | P3 | LATER | Parse preferences once per server render; do not pursue the former static-route redesign. |
-| 2 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
-
-## PERF-11: Memoize preference parsing per server render
-
-- **Priority:** P3
-- **Status:** LATER
-- **Evidence:** [`src/features/settings/server/preferences.ts`](src/features/settings/server/preferences.ts), [`src/app/layout.tsx`](src/app/layout.tsx), [`src/app/page.tsx`](src/app/page.tsx), [`src/app/search/page.tsx`](src/app/search/page.tsx), [`src/app/settings/page.tsx`](src/app/settings/page.tsx)
-
-### Current problem
-
-The root layout, next-intl request configuration, and several pages can call `getPersistedPreferences` during the same server render. The helper is not memoized, so it can read and parse the same cookie more than once.
-
-The former PERF-11 proposal to split cookies and make privacy static is no longer active. The controlled privacy response was already small and fast locally, while restructuring root locale and theme ownership creates a real risk of theme flash, locale mismatch, and settings divergence.
-
-### Implementation scope
-
-- Memoize `getPersistedPreferences` at the request/server-render boundary using the framework-supported request cache pattern.
-- Keep the cookie format, size, path, persistence behavior, and all preference ownership unchanged.
-- Do not introduce static route groups, client-only theme bootstrapping, or a second preference source.
-
-### Acceptance criteria
-
-- [ ] Repeated calls in one server render resolve to one cookie read and parse.
-- [ ] Separate requests never share user preference data.
-- [ ] Theme, color theme, locale, search defaults, and settings remain unchanged.
-- [ ] No theme flash or hydration mismatch is introduced.
-
-### Required validation
-
-- Unit-test same-request deduplication and cross-request isolation.
-- Browser-test direct loads and navigation in light, dark, system, English, and German states.
-- Treat this as a small server-work cleanup, not a cacheability project.
+| 1 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
 
 ## PERF-13: Make the Redis limiter atomic
 
@@ -126,7 +96,7 @@ The following findings should not be reopened without new measurements or change
 - **PERF-18:** The settings route is 97,135 bytes gzip, only about 4 KiB above home, and renders only the active settings section. Splitting the 1,262-line component may improve maintainability, but it is not justified as a performance project.
 - **PERF-19:** Result memoization already removed the important repeated work. Hoisting tiny sets, caching a short environment split, or replacing a one-second text animation is not expected to affect user-visible performance.
 - **PERF-20:** Image pull policy, restart speed, and SearXNG engine/time-out tuning are operations decisions. Engine tuning requires production latency and result-quality data; SearXNG already suspends CAPTCHA-failing engines.
-- **Full former PERF-11:** Cookie splitting and static privacy rendering are deferred indefinitely unless production capacity or cacheability data shows a real need.
+- **Former expanded PERF-11:** Cookie splitting and static privacy rendering are deferred indefinitely unless production capacity or cacheability data shows a real need.
 
 ## Validation standard for every implementation
 
