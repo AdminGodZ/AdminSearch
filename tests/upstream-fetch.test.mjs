@@ -43,10 +43,17 @@ test("client cancellation aborts an active upstream fetch", async (t) => {
   const getReceivedSignal = installPendingFetch(t);
   const controller = new AbortController();
   const reason = new DOMException("Client disconnected", "AbortError");
+  let upstreamRequestCount = 0;
   const request = fetchUpstream(
     "https://example.test/slow",
     { method: "GET" },
-    { requestSignal: controller.signal, timeoutMs: 1_000 },
+    {
+      onRequest: () => {
+        upstreamRequestCount += 1;
+      },
+      requestSignal: controller.signal,
+      timeoutMs: 1_000,
+    },
   );
 
   controller.abort(reason);
@@ -54,6 +61,7 @@ test("client cancellation aborts an active upstream fetch", async (t) => {
   await assert.rejects(request, (error) => error === reason);
   assert.equal(getReceivedSignal()?.aborted, true);
   assert.equal(getReceivedSignal()?.reason, reason);
+  assert.equal(upstreamRequestCount, 1);
 });
 
 test("upstream timeout remains active without client cancellation", async (t) => {

@@ -7,13 +7,13 @@
 | Field | Value |
 | --- | --- |
 | Reassessment date | 2026-08-02 |
-| Source revision | PERF-16 worktree based on `1ead0aa` (`master`) |
+| Source revision | PERF-14 worktree based on `e68e051` (`master`) |
 | Framework | Next.js 16.2.12, React 19.2.6 |
 | Runtime | Self-hosted Node.js, SearXNG, Valkey, and Caddy |
 | Production telemetry | Not currently available |
-| Active findings | 5 |
+| Active findings | 4 |
 
-PERF-01 through PERF-10 and PERF-16 are implemented and verified. Their implementation history remains in Git; it is no longer repeated here.
+PERF-01 through PERF-10, PERF-14, and PERF-16 are implemented and verified. Their implementation history remains in Git; it is no longer repeated here.
 
 ### Status legend
 
@@ -51,46 +51,10 @@ Docker was not running during this reassessment, so Redis round-trip and SearXNG
 
 | Order | ID | Priority | Status | Outcome |
 | ---: | --- | --- | --- | --- |
-| 1 | PERF-14 | P1 | READY | Add privacy-safe phase timing before making further backend tuning decisions. |
-| 2 | PERF-15 | P2 | READY | Prevent accidental video-player loads without changing intentional hover or keyboard behavior. |
-| 3 | PERF-12 | P2 | READY | Serialize only the translation namespaces required by each route or interactive subtree. |
-| 4 | PERF-11 | P3 | LATER | Parse preferences once per server render; do not pursue the former static-route redesign. |
-| 5 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
-
-## PERF-14: Add useful search phase timing
-
-- **Priority:** P1
-- **Status:** READY
-- **Evidence:** [`src/features/search/server/search-service.ts`](src/features/search/server/search-service.ts), [`src/app/api/search/route.ts`](src/app/api/search/route.ts), [`src/features/search/server/searx-client.ts`](src/features/search/server/searx-client.ts)
-
-### Current problem
-
-The old claim that translations run before timing begins is obsolete. `startedAt` now runs at the beginning of `executeSearch`, before translations, rate limiting, preference loading, upstream work, and transformation.
-
-What remains missing is attribution. The single duration cannot distinguish rate limiting, preferences and translations, SearXNG requests, result transformation, or response serialization. Upstream page counts are also unavailable outside the continuation tests.
-
-### Implementation scope
-
-- Keep the existing complete `requestDurationMs` value.
-- Add `Server-Timing` phases for rate limiting, preference/translation preparation, upstream search, transformation, and total service time.
-- Include an upstream-request or upstream-page count that can be inspected without exposing the query.
-- Time JSON response serialization if it can be captured without duplicating serialization work.
-- Add no third-party telemetry provider in this item.
-- Never emit raw queries, engine tokens, client IP addresses, or sensitive preference values.
-
-### Acceptance criteria
-
-- [ ] Phase timing explains most of the existing total service duration.
-- [ ] Successful, validation-error, rate-limited, timed-out, and client-aborted paths expose only appropriate timing data.
-- [ ] Direct and continuation searches expose accurate upstream page/request counts.
-- [ ] Headers and logs contain no search text or private configuration.
-- [ ] Existing API payloads and search UI remain unchanged.
-
-### Required validation
-
-- Unit-test header formatting, phase bounds, and privacy exclusions.
-- Compare normal, continuation, invalid, rate-limited, timed-out, and aborted requests.
-- Document results as controlled samples until production percentiles exist.
+| 1 | PERF-15 | P2 | READY | Prevent accidental video-player loads without changing intentional hover or keyboard behavior. |
+| 2 | PERF-12 | P2 | READY | Serialize only the translation namespaces required by each route or interactive subtree. |
+| 3 | PERF-11 | P3 | LATER | Parse preferences once per server render; do not pursue the former static-route redesign. |
+| 4 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
 
 ## PERF-15: Require pointer intent before loading video players
 

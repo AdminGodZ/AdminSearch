@@ -1,6 +1,7 @@
 const CLIENT_CLOSED_REQUEST_STATUS = 499;
 
 type UpstreamFetchOptions = {
+  onRequest?: () => void;
   requestSignal?: AbortSignal;
   timeoutMs: number;
 };
@@ -19,8 +20,10 @@ export function createUpstreamSignal(
 export function fetchUpstream(
   input: RequestInfo | URL,
   init: RequestInit,
-  { requestSignal, timeoutMs }: UpstreamFetchOptions,
+  { onRequest, requestSignal, timeoutMs }: UpstreamFetchOptions,
 ) {
+  onRequest?.();
+
   return fetch(input, {
     ...init,
     signal: createUpstreamSignal(requestSignal, timeoutMs),

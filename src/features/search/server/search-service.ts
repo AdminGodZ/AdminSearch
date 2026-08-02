@@ -5,6 +5,10 @@ import { ZodError } from "zod";
 
 import { parseSearchRequest } from "@/features/search/server/schema";
 import {
+  createSearchTiming,
+  type SearchTiming,
+} from "@/features/search/server/search-timing";
+import {
   fetchSearxResponse,
   SearchUpstreamError,
 } from "@/features/search/server/searx-client";
@@ -47,19 +51,37 @@ type ExecuteSearchOptions = {
   requestHeaders: RequestHeaders;
   preferences?: PersistedPreferences;
   signal?: AbortSignal;
+  timing?: SearchTiming;
 };
 
-export async function executeSearch({
+export async function executeSearch(
+  options: ExecuteSearchOptions,
+): Promise<SearchServiceResult> {
+  const timing = options.timing ?? createSearchTiming();
+
+  try {
+    return await executeTimedSearch({
+      ...options,
+      timing,
+    });
+  } finally {
+    timing.finishService();
+  }
+}
+
+async function executeTimedSearch({
   searchParams,
   requestHeaders,
   preferences,
   signal,
-}: ExecuteSearchOptions): Promise<SearchServiceResult> {
-  const startedAt = performance.now();
+  timing,
+}: ExecuteSearchOptions & {
+  timing: SearchTiming;
+}): Promise<SearchServiceResult> {
   const clientIp = getClientIpFromHeaders(requestHeaders);
   const [t, rateLimit] = await Promise.all([
-    getTranslations("ApiErrors"),
-    checkRateLimit(clientIp),
+    timing.measureAsync("prepare", () => getTranslations("ApiErrors")),
+    timing.measureAsync("rate-limit", () => checkRateLimit(clientIp)),
   ]);
   const rateLimitHeaders = createRateLimitHeaders(rateLimit);
 
@@ -76,32 +98,44 @@ export async function executeSearch({
 
   try {
     signal?.throwIfAborted();
-    const searchRequest = parseSearchRequest(searchParams);
-    const [resolvedPreferences, searchT] = await Promise.all([
-      preferences ?? getPersistedPreferences(),
-      getTranslations("Search"),
-    ]);
-    const runtimePreferences = getSearchRuntimePreferences(
-      resolvedPreferences.settings,
-      resolvedPreferences.engines,
-      searchRequest.tab,
-    );
+    const preparedSearch = await timing.measureAsync("prepare", async () => {
+      const searchRequest = parseSearchRequest(searchParams);
+      const [resolvedPreferences, searchT] = await Promise.all([
+        preferences ?? getPersistedPreferences(),
+        getTranslations("Search"),
+      ]);
+      const runtimePreferences = getSearchRuntimePreferences(
+        resolvedPreferences.settings,
+        resolvedPreferences.engines,
+        searchRequest.tab,
+      );
+
+      return {
+        runtimePreferences,
+        searchRequest,
+        searchT,
+      };
+    });
+    const { runtimePreferences, searchRequest, searchT } = preparedSearch;
     const selfInfoEnabled =
       runtimePreferences.enabledPlugins.includes("self_info");
-    const upstreamResponse = await fetchSearxResponse(searchRequest, {
-      ...runtimePreferences,
-      clientIp: selfInfoEnabled ? getForwardableClientIp(clientIp) : undefined,
-      engineTokens: getConfiguredEngineTokens(),
-      signal,
-      userAgent: selfInfoEnabled
-        ? getForwardableUserAgentFromHeaders(requestHeaders)
-        : undefined,
-    });
+    const upstreamResponse = await timing.measureAsync("upstream", () =>
+      fetchSearxResponse(searchRequest, {
+        ...runtimePreferences,
+        clientIp: selfInfoEnabled
+          ? getForwardableClientIp(clientIp)
+          : undefined,
+        engineTokens: getConfiguredEngineTokens(),
+        onUpstreamRequest: timing.recordUpstreamRequest,
+        signal,
+        userAgent: selfInfoEnabled
+          ? getForwardableUserAgentFromHeaders(requestHeaders)
+          : undefined,
+      }),
+    );
     signal?.throwIfAborted();
-    const payload = transformSearxResponse(
-      upstreamResponse.payload,
-      searchRequest,
-      {
+    const payload = timing.measureSync("transform", () =>
+      transformSearxResponse(upstreamResponse.payload, searchRequest, {
         hasMore: upstreamResponse.hasMore,
         labels: {
           instantAnswer: (number) => searchT("instantAnswer", { number }),
@@ -110,9 +144,9 @@ export async function executeSearch({
         },
         nextPageCursor: upstreamResponse.nextPageCursor,
         resultsPerPage: runtimePreferences.resultsPerPage,
-      },
+      }),
     );
-    payload.requestDurationMs = performance.now() - startedAt;
+    payload.requestDurationMs = timing.getElapsedDuration();
 
     return {
       ok: true,

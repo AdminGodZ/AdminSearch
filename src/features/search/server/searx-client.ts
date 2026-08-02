@@ -56,6 +56,7 @@ export type SearxRuntimeOptions = {
   engineTokens?: string[];
   httpMethod?: "get" | "post";
   imageProxy?: boolean;
+  onUpstreamRequest?: () => void;
   resultsPerPage?: number;
   signal?: AbortSignal;
   userAgent?: string;
@@ -367,6 +368,7 @@ async function fetchSearxPage(
 
   try {
     response = await fetchUpstream(url, init, {
+      onRequest: options?.onUpstreamRequest,
       requestSignal: options?.signal,
       timeoutMs: REQUEST_TIMEOUT_MS,
     });
@@ -429,6 +431,7 @@ async function fetchSearxEngineData(
 
   try {
     const response = await fetchUpstream(url, init, {
+      onRequest: options?.onUpstreamRequest,
       requestSignal: options?.signal,
       timeoutMs: REQUEST_TIMEOUT_MS,
     });
