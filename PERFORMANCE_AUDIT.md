@@ -51,12 +51,12 @@ Docker was not running during this reassessment, so Redis round-trip and SearXNG
 
 | Order | ID | Priority | Status | Outcome |
 | ---: | --- | --- | --- | --- |
-| 1 | PERF-15 | P2 | READY | Prevent accidental video-player loads without changing intentional hover or keyboard behavior. |
+| 1 | PERF-15 | P2 | READY | Remove inline player loads and make video thumbnails direct links. |
 | 2 | PERF-12 | P2 | READY | Serialize only the translation namespaces required by each route or interactive subtree. |
 | 3 | PERF-11 | P3 | LATER | Parse preferences once per server render; do not pursue the former static-route redesign. |
 | 4 | PERF-13 | P3 | LATER | Make the Redis counter atomic if reliability or measured Redis time justifies it. |
 
-## PERF-15: Require pointer intent before loading video players
+## PERF-15: Keep video results thumbnail-only
 
 - **Priority:** P2
 - **Status:** READY
@@ -64,29 +64,34 @@ Docker was not running during this reassessment, so Redis round-trip and SearXNG
 
 ### Current problem
 
-Moving the pointer across a video thumbnail immediately replaces the lazy thumbnail with a third-party iframe. Accidental or repeated hover can initialize a comparatively expensive player and create avoidable third-party connections.
+Moving the pointer across a video thumbnail immediately replaces the lazy thumbnail with a third-party iframe. Hovering or focusing several results can initialize multiple players, creating avoidable third-party connections, JavaScript execution, media requests, CPU work, and memory use before the user has chosen a video.
+
+Inline previews are not required. The thumbnail can serve as a normal link to the original video, matching the intentional navigation already available from the result.
 
 ### Implementation scope
 
-- Require approximately 250 ms of continuous pointer hover before mounting the iframe.
-- Cancel the pending mount on pointer leave and component unmount.
-- Keep keyboard focus intentional and immediate.
-- Keep blur and pointer leave behavior, the curated iframe sandbox, and every visible style unchanged.
-- Do not replace hover preview with click-to-play; that would be a UX change.
+- Remove the inline player iframe and all hover, focus, blur, timer, and preview state used only to mount it.
+- Keep the existing lazy-loaded thumbnail visible at all times.
+- Make the thumbnail a normal link to the exact original video URL, using the same safe external-link behavior as the result's existing video link.
+- Preserve modifier-click, context-menu, and keyboard activation semantics.
+- Preserve the card layout, thumbnail sizing and crop, metadata, visible styling, and focus indication.
+- Do not add click-to-play, a modal, an embedded player, preconnects, or player prefetching.
+- This item intentionally removes hover and keyboard-focus previews in favor of direct, explicit navigation.
 
 ### Acceptance criteria
 
-- [ ] Pointer movement shorter than the intent delay never mounts or requests the iframe.
-- [ ] Deliberate hover still loads the same preview after the short delay.
-- [ ] Keyboard focus still activates the preview intentionally.
-- [ ] Leaving before activation cancels all pending work.
-- [ ] Cards, thumbnails, focus behavior, and preview styling remain unchanged.
+- [ ] No video-player iframe is rendered or mounted on initial render, hover, focus, blur, or pointer movement.
+- [ ] Hovering or focusing video results creates no player-script, player-document, or media requests.
+- [ ] Clicking the thumbnail or activating it from the keyboard opens the exact original video URL with the established external-link semantics.
+- [ ] Modifier-click and the browser context menu continue to work because the thumbnail is a real anchor.
+- [ ] Card layout, thumbnail rendering, metadata, responsive behavior, and visible focus treatment remain unchanged.
 
 ### Required validation
 
-- Use fake-timer tests for brief hover, sustained hover, leave, focus, blur, and unmount.
-- In a production browser, confirm zero iframe requests for brief pointer movement and one request for deliberate activation.
-- Verify the existing iframe sandbox and focus semantics.
+- Add component coverage proving hover and focus never create an iframe and verifying the thumbnail link's URL, target, and `rel` attributes.
+- In a production browser, confirm repeated hover and keyboard focus produce zero player iframe or media requests.
+- Verify pointer click, Enter activation, modifier-click semantics, and context-menu availability without changing the destination.
+- Compare video cards in light and dark themes at desktop and narrow widths to confirm the visible layout is unchanged.
 
 ## PERF-12: Scope client translation messages
 
