@@ -28,6 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AiOverviewCard } from "@/features/search/components/ai-overview-card";
 import { Filters } from "@/features/search/components/filters";
+import { instantAnswerCardClassName } from "@/features/search/components/instant-answer-card-style";
 import { ResultList } from "@/features/search/components/result-list";
 import { SearchForm } from "@/features/search/components/search-form";
 import { SearchInfoboxCard } from "@/features/search/components/search-infobox-card";
@@ -87,8 +88,6 @@ const resultSkeletonKeys = [
 const panelCardClassName = "rounded-[28px]";
 const emptyResultsCardClassName =
   "rounded-[28px] border border-[var(--surface-panel-border)] bg-[var(--surface-panel)] ring-0 shadow-none";
-const answerCardClassName =
-  "rounded-2xl border-transparent bg-[var(--surface-panel)] ring-0 shadow-none";
 const searchHeaderColumns = "lg:grid-cols-[132px_725px_minmax(0,1fr)]";
 const searchContentColumns = "lg:grid-cols-[206px_minmax(0,1fr)]";
 
@@ -323,7 +322,7 @@ function SearchAnswers({ answers }: { answers: string[] }) {
   }
 
   return (
-    <Card className={`${answerCardClassName} gap-0 py-0`}>
+    <Card className={instantAnswerCardClassName}>
       <CardContent className="space-y-1.5 px-5 py-3">
         {answers.map((answer) => (
           <p
@@ -989,6 +988,32 @@ function SearchResultsSection({
             currentTab === "images" && "overflow-x-hidden",
           )}
         >
+          {activeData ? (
+            <p
+              className={cn(
+                "text-sm text-[var(--text-soft-alt)]",
+                resultsSectionClass,
+              )}
+            >
+              {activeData.requestDurationMs
+                ? t("showingWithDuration", {
+                    count: activeData.results.length,
+                    type: resultsLabel,
+                    duration: format.number(
+                      activeData.requestDurationMs / 1000,
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      },
+                    ),
+                  })
+                : t("showing", {
+                    count: activeData.results.length,
+                    type: resultsLabel,
+                  })}
+            </p>
+          ) : null}
+
           {currentTab === "images" && visibleImageSuggestions.length ? (
             <div className={cn("space-y-4", resultsSectionClass)}>
               <ImageSuggestionStrip
@@ -1011,6 +1036,12 @@ function SearchResultsSection({
             )}
           >
             <div className="space-y-7 min-w-0">
+              {visibleAnswers.length ? (
+                <div className={resultsSectionClass}>
+                  <SearchAnswers answers={visibleAnswers} />
+                </div>
+              ) : null}
+
               {showAiOverview && activeData ? (
                 <div className={resultsSectionClass}>
                   <AiOverviewCard
@@ -1018,38 +1049,6 @@ function SearchResultsSection({
                     results={activeData.results}
                   />
                 </div>
-              ) : null}
-
-              {visibleAnswers.length ? (
-                <div className={resultsSectionClass}>
-                  <SearchAnswers answers={visibleAnswers} />
-                </div>
-              ) : null}
-
-              {activeData ? (
-                <p
-                  className={cn(
-                    "text-sm text-[var(--text-soft-alt)]",
-                    resultsSectionClass,
-                  )}
-                >
-                  {activeData.requestDurationMs
-                    ? t("showingWithDuration", {
-                        count: activeData.results.length,
-                        type: resultsLabel,
-                        duration: format.number(
-                          activeData.requestDurationMs / 1000,
-                          {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          },
-                        ),
-                      })
-                    : t("showing", {
-                        count: activeData.results.length,
-                        type: resultsLabel,
-                      })}
-                </p>
               ) : null}
 
               {state.status === "error" ? (

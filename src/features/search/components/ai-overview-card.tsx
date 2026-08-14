@@ -99,10 +99,10 @@ export function AiOverviewCard({
 
   return (
     <Card
-      className="rounded-2xl border border-[var(--surface-panel-border)] bg-[var(--surface-ai-overview)] shadow-none ring-0"
+      className="gap-0 rounded-[28px] border border-[var(--surface-panel-border)] bg-background py-0 shadow-none ring-0"
       aria-busy={visibleState.status === "loading"}
     >
-      <CardContent className="space-y-4 p-5">
+      <CardContent className="space-y-3 px-5 py-3">
         <div className="flex items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Sparkles aria-hidden="true" className="size-4" />
@@ -130,7 +130,7 @@ export function AiOverviewCard({
             <p className="whitespace-pre-wrap text-[14px] leading-6 text-[var(--text-body)]">
               {visibleState.text}
             </p>
-            <p className="border-t border-[var(--surface-separator)] pt-3 text-[11.5px] leading-5 text-[var(--text-soft)]">
+            <p className="border-t border-[var(--surface-separator)] pt-2.5 text-[11.5px] leading-5 text-[var(--text-soft)]">
               {t("aiOverviewDisclaimer")}
             </p>
           </>
