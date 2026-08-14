@@ -29,11 +29,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  autocompleteProviders,
   defaultEngineState,
   defaultSettingsState,
   type EngineGroupKey,
   type EngineState,
   engineCatalog,
+  faviconResolvers,
   getUnavailableEngineReplacement,
   isEngineUnavailable,
   normalizeHttpMethod,
@@ -107,6 +109,17 @@ const selectTriggerClass =
   "h-10 w-full min-w-[200px] rounded-xl border-[var(--surface-panel-border)] bg-background px-3.5 text-[14px] font-medium shadow-none hover:border-foreground/20 focus-visible:border-foreground/30 focus-visible:ring-foreground/5 data-[state=open]:border-foreground/30";
 const settingsToastId = "settings-unsaved-changes";
 const settingsToastWidth = "min(calc(100vw - 2rem), 660px)";
+const providerLabels: Record<string, string> = {
+  bing: "Bing",
+  brave: "Brave",
+  duckduckgo: "DuckDuckGo",
+  google: "Google",
+  kagi: "Kagi",
+  qwant: "Qwant",
+  startpage: "Startpage",
+  wikipedia: "Wikipedia",
+  yandex: "Yandex",
+};
 
 type SettingRowProps = {
   label: string;
@@ -228,10 +241,7 @@ function EngineRows({ groupKey, filter, selected, onToggle }: EngineRowsProps) {
       ) : (
         filtered.map((engine) => {
           const unavailable = isEngineUnavailable(groupKey, engine);
-          const replacement = getUnavailableEngineReplacement(
-            groupKey,
-            engine,
-          );
+          const replacement = getUnavailableEngineReplacement(groupKey, engine);
           const checked = !unavailable && selected.has(engine);
 
           return (
@@ -494,15 +504,10 @@ function GeneralSettingsSection({
           <SettingSelect
             value={settings.autocomplete}
             onValueChange={(value) => updateSetting("autocomplete", value)}
-            options={[
-              { value: "google", label: "Google" },
-              { value: "brave", label: "Brave" },
-              { value: "duckduckgo", label: "DuckDuckGo" },
-              { value: "bing", label: "Bing" },
-              { value: "startpage", label: "Startpage" },
-              { value: "qwant", label: "Qwant" },
-              { value: "wikipedia", label: "Wikipedia" },
-            ]}
+            options={autocompleteProviders.map((value) => ({
+              value,
+              label: providerLabels[value],
+            }))}
           />
         </SettingRow>
         <SettingRow
@@ -512,10 +517,20 @@ function GeneralSettingsSection({
           <SettingSelect
             value={settings.faviconResolver}
             onValueChange={(value) => updateSetting("faviconResolver", value)}
-            options={[
-              { value: "google", label: "Google" },
-              { value: "duckduckgo", label: "DuckDuckGo" },
-            ]}
+            options={faviconResolvers.map((value) => ({
+              value,
+              label: providerLabels[value],
+            }))}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("general.aiOverviewLabel")}
+          description={t("general.aiOverviewDescription")}
+        >
+          <Toggle
+            checked={settings.aiOverview}
+            onToggle={() => updateSetting("aiOverview", !settings.aiOverview)}
+            label={t("general.aiOverviewLabel")}
           />
         </SettingRow>
         <SettingRow
@@ -653,10 +668,7 @@ function InterfaceSettingsSection({
           <SettingSelect
             value={normalizeUrlFormattingMode(settings.urlFormatting)}
             onValueChange={(value) =>
-              updateSetting(
-                "urlFormatting",
-                normalizeUrlFormattingMode(value),
-              )
+              updateSetting("urlFormatting", normalizeUrlFormattingMode(value))
             }
             options={[
               { value: "pretty", label: common("urlFormats.pretty") },
@@ -773,9 +785,7 @@ function PrivacySettingsSection({
         >
           <Toggle
             checked={settings.doiRewrite}
-            onToggle={() =>
-              updateSetting("doiRewrite", !settings.doiRewrite)
-            }
+            onToggle={() => updateSetting("doiRewrite", !settings.doiRewrite)}
             label={t("privacy.doiRewriteLabel")}
           />
         </SettingRow>
@@ -908,14 +918,48 @@ function SpecialSettingsSection({
       />
       <div className="divide-y divide-[var(--surface-panel-border)]">
         <SettingRow
+          label={t("special.statisticsLabel")}
+          description={t("special.statisticsDescription")}
+        >
+          <p className="rounded-full bg-[var(--control-bg)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-soft)]">
+            {t("special.alwaysAvailable")}
+          </p>
+        </SettingRow>
+        <SettingRow
+          label={t("special.randomLabel")}
+          description={t("special.randomDescription")}
+        >
+          <p className="rounded-full bg-[var(--control-bg)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-soft)]">
+            {t("special.alwaysAvailable")}
+          </p>
+        </SettingRow>
+        <SettingRow
+          label={t("special.hashLookupLabel")}
+          description={t("special.hashLookupDescription")}
+        >
+          <Toggle
+            checked={settings.hashSearch}
+            onToggle={() => updateSetting("hashSearch", !settings.hashSearch)}
+            label={t("special.hashLookupLabel")}
+          />
+        </SettingRow>
+        <SettingRow
+          label={t("special.torCheckLabel")}
+          description={t("special.torCheckDescription")}
+        >
+          <Toggle
+            checked={settings.torCheck}
+            onToggle={() => updateSetting("torCheck", !settings.torCheck)}
+            label={t("special.torCheckLabel")}
+          />
+        </SettingRow>
+        <SettingRow
           label={t("special.calculatorLabel")}
           description={t("special.calculatorDescription")}
         >
           <Toggle
             checked={settings.calculator}
-            onToggle={() =>
-              updateSetting("calculator", !settings.calculator)
-            }
+            onToggle={() => updateSetting("calculator", !settings.calculator)}
             label={t("special.calculatorLabel")}
           />
         </SettingRow>
@@ -929,16 +973,6 @@ function SpecialSettingsSection({
               updateSetting("unitConverter", !settings.unitConverter)
             }
             label={t("special.unitConverterLabel")}
-          />
-        </SettingRow>
-        <SettingRow
-          label={t("special.hashLookupLabel")}
-          description={t("special.hashLookupDescription")}
-        >
-          <Toggle
-            checked={settings.hashSearch}
-            onToggle={() => updateSetting("hashSearch", !settings.hashSearch)}
-            label={t("special.hashLookupLabel")}
           />
         </SettingRow>
         <SettingRow
@@ -1040,10 +1074,7 @@ export function SettingsPagePreview({
   }, []);
 
   useEffect(() => {
-    if (
-      !activeAppearanceMode ||
-      !isAppearanceMode(activeAppearanceMode)
-    ) {
+    if (!activeAppearanceMode || !isAppearanceMode(activeAppearanceMode)) {
       return;
     }
 
@@ -1205,7 +1236,9 @@ export function SettingsPagePreview({
     };
   }, []);
 
-  const activeMeta = navSections.find((section) => section.id === activeSection);
+  const activeMeta = navSections.find(
+    (section) => section.id === activeSection,
+  );
 
   return (
     <section className="relative mx-auto flex w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-32 sm:px-8 lg:px-10">

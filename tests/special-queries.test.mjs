@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { extractAnswerTexts } from "../src/features/search/lib/answer-texts.ts";
@@ -124,4 +125,32 @@ test("self-info forwards only valid, bounded request metadata", () => {
     getForwardableUserAgent(request),
   );
   assert.equal(getClientIpFromHeaders(request.headers), getClientIp(request));
+});
+
+test("special-query settings expose every reference module and plugin", async () => {
+  const [messagesSource, searxSettings] = await Promise.all([
+    readFile(new URL("../messages/en.json", import.meta.url), "utf8"),
+    readFile(
+      new URL("../searxng/core-config/settings.yml", import.meta.url),
+      "utf8",
+    ),
+  ]);
+  const special = JSON.parse(messagesSource).Settings.special;
+
+  for (const key of [
+    "statisticsLabel",
+    "randomLabel",
+    "hashLookupLabel",
+    "torCheckLabel",
+    "calculatorLabel",
+    "selfInfoLabel",
+    "timeZoneLabel",
+  ]) {
+    assert.equal(typeof special[key], "string", key);
+  }
+
+  assert.match(
+    searxSettings,
+    /searx\.plugins\.tor_check\.SXNGPlugin:\s+active: false/u,
+  );
 });

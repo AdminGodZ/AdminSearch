@@ -1,5 +1,9 @@
 import type { SearchTab } from "@/features/search/types";
 import {
+  autocompleteProviders,
+  faviconResolvers,
+} from "@/features/settings/lib/provider-options";
+import {
   type AppearanceMode,
   appearanceModes,
   type ColorTheme,
@@ -7,6 +11,8 @@ import {
   DEFAULT_APPEARANCE_MODE,
   DEFAULT_COLOR_THEME,
 } from "@/features/settings/lib/themes";
+
+export { autocompleteProviders, faviconResolvers };
 
 export const SETTINGS_COOKIE_NAME = "adminsearch-settings";
 export const UI_LANGUAGE_STORAGE_KEY = "adminsearch-language";
@@ -37,6 +43,7 @@ export type SettingsState = {
   showThumbnails: boolean;
   compactDensity: boolean;
   queryInTitle: boolean;
+  aiOverview: boolean;
   imageProxy: boolean;
   trackerCleaner: boolean;
   doiRewrite: boolean;
@@ -45,6 +52,7 @@ export type SettingsState = {
   unitConverter: boolean;
   hashSearch: boolean;
   selfInfo: boolean;
+  torCheck: boolean;
   timeZone: boolean;
 };
 
@@ -72,10 +80,7 @@ const UNAVAILABLE_ENGINE_REPLACEMENTS: Record<
   news: {},
 };
 
-export function isEngineUnavailable(
-  group: EngineGroupKey,
-  engine: string,
-) {
+export function isEngineUnavailable(group: EngineGroupKey, engine: string) {
   return Object.prototype.hasOwnProperty.call(
     UNAVAILABLE_ENGINE_REPLACEMENTS[group],
     engine,
@@ -119,6 +124,7 @@ export const defaultSettingsState: SettingsState = {
   showThumbnails: true,
   compactDensity: false,
   queryInTitle: false,
+  aiOverview: false,
   imageProxy: false,
   trackerCleaner: false,
   doiRewrite: false,
@@ -127,6 +133,7 @@ export const defaultSettingsState: SettingsState = {
   unitConverter: true,
   hashSearch: true,
   selfInfo: true,
+  torCheck: false,
   timeZone: true,
 };
 
@@ -240,6 +247,7 @@ export type SearchRuntimePreferences = {
 
 export type SearchInterfacePreferences = Pick<
   SettingsState,
+  | "aiOverview"
   | "compactDensity"
   | "faviconResolver"
   | "infiniteScroll"
@@ -256,6 +264,7 @@ const PLUGIN_SETTING_MAP = {
   calculator: "calculator",
   hash_plugin: "hashSearch",
   self_info: "selfInfo",
+  tor_check: "torCheck",
   unit_converter: "unitConverter",
   time_zone: "timeZone",
   tracker_url_remover: "trackerCleaner",
@@ -411,20 +420,12 @@ export function parsePreferencesCookie(
       autocomplete: sanitizeStringSetting(
         settings.autocomplete,
         defaults.settings.autocomplete,
-        [
-          "google",
-          "brave",
-          "duckduckgo",
-          "bing",
-          "startpage",
-          "qwant",
-          "wikipedia",
-        ],
+        autocompleteProviders,
       ),
       faviconResolver: sanitizeStringSetting(
         settings.faviconResolver,
         defaults.settings.faviconResolver,
-        ["google", "duckduckgo"],
+        faviconResolvers,
       ),
       httpMethod: sanitizeStringSetting(
         settings.httpMethod,
@@ -485,6 +486,10 @@ export function parsePreferencesCookie(
         settings.queryInTitle,
         defaults.settings.queryInTitle,
       ),
+      aiOverview: sanitizeBooleanSetting(
+        settings.aiOverview,
+        defaults.settings.aiOverview,
+      ),
       imageProxy: sanitizeBooleanSetting(
         settings.imageProxy,
         defaults.settings.imageProxy,
@@ -516,6 +521,10 @@ export function parsePreferencesCookie(
       selfInfo: sanitizeBooleanSetting(
         settings.selfInfo,
         defaults.settings.selfInfo,
+      ),
+      torCheck: sanitizeBooleanSetting(
+        settings.torCheck,
+        defaults.settings.torCheck,
       ),
       timeZone: sanitizeBooleanSetting(
         settings.timeZone,
@@ -573,8 +582,7 @@ export function preferencesCookieNeedsMigration(rawValue: string | undefined) {
         Array.isArray(selectedEngines) &&
         selectedEngines.some(
           (engine) =>
-            typeof engine === "string" &&
-            isEngineUnavailable(group, engine),
+            typeof engine === "string" && isEngineUnavailable(group, engine),
         )
       );
     });
@@ -705,6 +713,7 @@ export function getSearchInterfacePreferences(
   settings: SettingsState,
 ): SearchInterfacePreferences {
   return {
+    aiOverview: settings.aiOverview,
     compactDensity: settings.compactDensity,
     faviconResolver: settings.faviconResolver,
     infiniteScroll: settings.infiniteScroll,

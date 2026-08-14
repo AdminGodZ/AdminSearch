@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AiOverviewCard } from "@/features/search/components/ai-overview-card";
 import { Filters } from "@/features/search/components/filters";
 import { ResultList } from "@/features/search/components/result-list";
 import { SearchForm } from "@/features/search/components/search-form";
@@ -342,18 +343,23 @@ function SearchSidebar({
   openInNewTab,
   pathname,
   searchParams,
+  showAiOverview,
 }: {
   data: SearchResponse;
   openInNewTab: boolean;
   pathname: string;
   searchParams: ReturnType<typeof useSearchParams>;
+  showAiOverview: boolean;
 }) {
-  if (!data.infoboxes.length) {
+  if (!showAiOverview && !data.infoboxes.length) {
     return null;
   }
 
   return (
     <aside className="space-y-5">
+      {showAiOverview ? (
+        <AiOverviewCard query={data.query} results={data.results} />
+      ) : null}
       {data.infoboxes.map((infobox) => (
         <SearchInfoboxCard
           key={infobox.id}
@@ -948,7 +954,15 @@ function SearchResultsSection({
       ),
     [activeData?.answers, calculatorAnswer],
   );
-  const hasSidebarContent = Boolean(activeData?.infoboxes.length);
+  const showAiOverview = Boolean(
+    interfacePreferences.aiOverview &&
+      activeData?.tab === "all" &&
+      activeData.results.length > 0 &&
+      activeData.infoboxes.length === 0,
+  );
+  const hasSidebarContent = Boolean(
+    activeData?.infoboxes.length || showAiOverview,
+  );
   const showLoadingFallback =
     currentQuery &&
     !activeData &&
@@ -1156,6 +1170,7 @@ function SearchResultsSection({
                 openInNewTab={interfacePreferences.openInNewTab}
                 pathname={pathname}
                 searchParams={searchParams}
+                showAiOverview={showAiOverview}
               />
             ) : null}
           </div>

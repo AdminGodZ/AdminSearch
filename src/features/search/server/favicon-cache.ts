@@ -1,4 +1,4 @@
-export type FaviconResolver = "duckduckgo" | "google";
+export type FaviconResolver = "duckduckgo" | "google" | "kagi" | "yandex";
 
 export type FaviconPayload = {
   body: ArrayBuffer;
@@ -47,7 +47,21 @@ export function normalizeFaviconAuthority(value: string | null) {
 export function normalizeFaviconResolver(
   value: string | null | undefined,
 ): FaviconResolver {
-  return value === "duckduckgo" ? "duckduckgo" : "google";
+  return value === "duckduckgo" || value === "kagi" || value === "yandex"
+    ? value
+    : "google";
+}
+
+export function isUsableFaviconPayload(
+  resolver: FaviconResolver,
+  byteLength: number,
+) {
+  if (byteLength <= 0) {
+    return false;
+  }
+
+  // Yandex uses a 70-byte placeholder for domains without a favicon.
+  return resolver !== "yandex" || byteLength !== 70;
 }
 
 export async function resolveFaviconResolver(

@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   createFaviconCache,
+  isUsableFaviconPayload,
   normalizeFaviconAuthority,
   normalizeFaviconContentType,
+  normalizeFaviconResolver,
   resolveFaviconResolver,
 } from "../src/features/search/server/favicon-cache.ts";
 
@@ -32,6 +34,9 @@ test("explicit favicon resolvers skip preference loading", async () => {
     "duckduckgo",
   );
   assert.equal(preferenceReads, 1);
+  assert.equal(normalizeFaviconResolver("kagi"), "kagi");
+  assert.equal(normalizeFaviconResolver("yandex"), "yandex");
+  assert.equal(normalizeFaviconResolver("unsupported"), "google");
 });
 
 test("favicon inputs retain authority and image content validation", () => {
@@ -46,6 +51,10 @@ test("favicon inputs retain authority and image content validation", () => {
   );
   assert.equal(normalizeFaviconContentType("text/html"), undefined);
   assert.equal(normalizeFaviconContentType(null), undefined);
+  assert.equal(isUsableFaviconPayload("google", 70), true);
+  assert.equal(isUsableFaviconPayload("yandex", 70), false);
+  assert.equal(isUsableFaviconPayload("yandex", 71), true);
+  assert.equal(isUsableFaviconPayload("kagi", 0), false);
 });
 
 test("favicon cache deduplicates in-flight loads and reuses successes", async () => {

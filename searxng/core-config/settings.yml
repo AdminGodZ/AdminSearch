@@ -54,6 +54,10 @@ search:
   # autocomplete: brave
   # autocomplete: duckduckgo
   # autocomplete: bing
+  # autocomplete: kagi
+  # autocomplete: qwant
+  # autocomplete: startpage
+  # autocomplete: wikipedia
   formats:
     - html
     - json
@@ -67,6 +71,9 @@ plugins:
 
   searx.plugins.self_info.SXNGPlugin:
     active: true
+
+  searx.plugins.tor_check.SXNGPlugin:
+    active: false
 
   searx.plugins.unit_converter.SXNGPlugin:
     active: true

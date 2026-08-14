@@ -2,6 +2,7 @@ import {
   createFaviconCache,
   type FaviconPayload,
   type FaviconResolver,
+  isUsableFaviconPayload,
   normalizeFaviconAuthority,
   normalizeFaviconContentType,
   resolveFaviconResolver,
@@ -30,6 +31,14 @@ const faviconCache = createFaviconCache({
 function getResolverUrl(authority: string, resolver: FaviconResolver) {
   if (resolver === "duckduckgo") {
     return `https://icons.duckduckgo.com/ip2/${authority}.ico`;
+  }
+
+  if (resolver === "kagi") {
+    return `https://news.kagi.com/api/favicon-proxy?domain=${encodeURIComponent(authority)}&quality=fast`;
+  }
+
+  if (resolver === "yandex") {
+    return `https://favicon.yandex.net/favicon/${encodeURIComponent(authority)}`;
   }
 
   return (
@@ -101,7 +110,10 @@ export async function GET(request: Request) {
 
       const body = await upstreamResponse.arrayBuffer();
 
-      if (body.byteLength === 0 || body.byteLength > MAX_FAVICON_BYTES) {
+      if (
+        !isUsableFaviconPayload(resolver, body.byteLength) ||
+        body.byteLength > MAX_FAVICON_BYTES
+      ) {
         return null;
       }
 

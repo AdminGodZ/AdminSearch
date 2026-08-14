@@ -16,6 +16,7 @@ export function createSearchRuntimeKey(preferences: PersistedPreferences) {
       doiRewrite: preferences.settings.doiRewrite,
       hashSearch: preferences.settings.hashSearch,
       selfInfo: preferences.settings.selfInfo,
+      torCheck: preferences.settings.torCheck,
       timeZone: preferences.settings.timeZone,
       trackerCleaner: preferences.settings.trackerCleaner,
       unitConverter: preferences.settings.unitConverter,

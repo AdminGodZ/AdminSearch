@@ -149,7 +149,12 @@
     "imageMetadata": "Details",
     "untitledImage": "Bild ohne Titel",
     "untitledResult": "Ergebnis ohne Titel",
-    "instantAnswer": "Sofortantwort {number}"
+    "instantAnswer": "Sofortantwort {number}",
+    "aiOverviewTitle": "KI-Überblick",
+    "aiOverviewGenerating": "Überblick wird erstellt…",
+    "aiOverviewDisclaimer": "Von KI erstellt. Diese Antwort kann ungenau, unvollständig oder irreführend sein.",
+    "aiOverviewUnavailable": "Für diese Suche konnte kein KI-Überblick erstellt werden.",
+    "aiOverviewRetry": "Erneut versuchen"
   },
   "Settings": {
     "title": "Einstellungen",
@@ -217,6 +222,8 @@
       "autocompleteDescription": "Anbieter für Vorschläge während der Eingabe.",
       "faviconResolverLabel": "Favicon-Anbieter",
       "faviconResolverDescription": "Der externe Dienst, der Favicons für Ergebniszeilen lädt.",
+      "aiOverviewLabel": "KI-Überblick",
+      "aiOverviewDescription": "Erstelle in der Seitenleiste eine KI-Zusammenfassung aus bis zu 24 Web-Ergebnissen. Suchanfrage und Ausschnitte werden an den konfigurierten KI-Dienst gesendet.",
       "httpMethodLabel": "HTTP-Methode",
       "httpMethodDescription": "So sendet AdminSearch Suchanfragen an das SearXNG-Backend.",
       "loadMoreLabel": "Größe beim Nachladen",
@@ -274,34 +281,41 @@
     "special": {
       "title": "Spezialanfragen",
       "description": "Direkte Helfer für einfache Fragen innerhalb der Suchergebnisse.",
+      "alwaysAvailable": "Immer verfügbar",
+      "statisticsLabel": "Statistikfunktionen",
+      "statisticsDescription": "Berechne Minimum, Maximum, Durchschnitt, Summe, Produkt oder Spannweite. Beispiel: avg 123 548 2.04 24.2.",
+      "randomLabel": "Zufallswertgenerator",
+      "randomDescription": "Erzeuge zufällige Zeichenfolgen, Zahlen, Hashes, UUIDs oder Farben. Beispiel: random uuid.",
       "calculatorLabel": "Rechner",
       "calculatorDescription": "Schnelle Rechenergebnisse direkt in der Suche.",
       "unitConverterLabel": "Einheitenumrechner",
       "unitConverterDescription": "Einheiten direkt über Suchanfragen umrechnen.",
       "hashLookupLabel": "Hash-Suche",
-      "hashLookupDescription": "Schnelle Prüfung bekannter Hashwerte.",
+      "hashLookupDescription": "Wandle Text in MD5-, SHA-1-, SHA-224-, SHA-256-, SHA-384- oder SHA-512-Hashes um.",
+      "torCheckLabel": "Tor-Prüfung",
+      "torCheckDescription": "Zeige an, ob die Anfrageadresse ein Tor-Ausgangsknoten ist.",
       "selfInfoLabel": "Instanzinformationen",
-      "selfInfoDescription": "Von der Instanz bereitgestellte Informationen und Kurzbefehle.",
+      "selfInfoDescription": "Zeige deine IP mit \"ip\" und den Browser-User-Agent mit \"user-agent\" an.",
       "timeZoneLabel": "Zeitzone",
-      "timeZoneDescription": "Zeitzonenabhängige Schnellantworten und Umrechnungen."
+      "timeZoneDescription": "Zeige die aktuelle Zeit in einer anderen Zone. Beispiel: time Berlin."
     }
   },
   "Privacy": {
     "title": "Datenschutz",
     "intro": "AdminSearch wurde entwickelt, um die Datenerfassung zu minimieren und Suchanfragen über ein privates SearXNG-Backend bereitzustellen.",
     "searchRequestsTitle": "Suchanfragen",
-    "searchRequestsBody": "Suchbegriffe und Eingaben für Suchvorschläge werden an den AdminSearch-Server und anschließend an dessen privaten SearXNG-Dienst gesendet. SearXNG fragt die ausgewählten externen Suchanbieter ab und gibt deren Ergebnisse zurück. AdminSearch benötigt kein Benutzerkonto und enthält weder clientseitige Analysen noch Werbetracker.",
+    "searchRequestsBody": "Suchbegriffe und Eingaben für Suchvorschläge werden an den AdminSearch-Server und anschließend an dessen privaten SearXNG-Dienst gesendet. SearXNG fragt die ausgewählten externen Suchanbieter ab und gibt deren Ergebnisse zurück. Wenn der optionale KI-Überblick aktiviert ist, sendet AdminSearch außerdem die Suchanfrage sowie bis zu 24 Ergebnistitel, Ausschnitte und URLs an den konfigurierten KI-Dienst (standardmäßig brief.priv.au). AdminSearch benötigt kein Benutzerkonto und enthält weder clientseitige Analysen noch Werbetracker.",
     "browserStorageTitle": "Browserspeicher",
     "browserStorageBody": "Einstellungen werden bis zu einem Jahr in einem Erstanbieter-Cookie gespeichert oder nur für die aktuelle Sitzung, wenn dauerhafter Speicher deaktiviert ist. Sprache und Speichermodus verwenden lokalen oder Sitzungsspeicher. Wenn die Wiederverwendung von Ergebnissen aktiviert ist, können aktuelle Suchergebnisse bis zu 30 Minuten im Sitzungsspeicher verbleiben. Das Cookie wird nur an AdminSearch gesendet; lokaler und Sitzungsspeicher bleiben auf deinem Gerät. Alle diese Daten können über die Websitedaten-Einstellungen deines Browsers entfernt werden.",
     "rateLimitingTitle": "Anfragenbegrenzung",
     "rateLimitingBody": "Der Server kann deine IP-Adresse als Teil eines temporären Redis-/Valkey-Schlüssels zur Anfragenbegrenzung verwenden. Der Schlüssel läuft nach dem konfigurierten Zeitfenster ab, standardmäßig nach einer Minute. AdminSearch führt weder eine separate Kontodatenbank noch einen serverseitigen Suchverlauf.",
     "externalContentTitle": "Externe Inhalte",
-    "externalContentBody": "Favicons werden vom AdminSearch-Server über Google oder DuckDuckGo abgerufen. Ergebnisvorschaubilder werden von ihrer Quelle geladen. Optionale Videovorschauen können deinen Browser mit Anbietern wie YouTube, Vimeo, Dailymotion oder Odysee verbinden. Favicons und Vorschaubilder können in den Einstellungen deaktiviert werden.",
+    "externalContentBody": "Favicons werden vom AdminSearch-Server über Google, DuckDuckGo, Kagi oder Yandex abgerufen. Ergebnisvorschaubilder werden von ihrer Quelle geladen. Optionale Videovorschauen können deinen Browser mit Anbietern wie YouTube, Vimeo, Dailymotion oder Odysee verbinden. Favicons und Vorschaubilder können in den Einstellungen deaktiviert werden.",
     "hostingTitle": "Hosting",
     "hostingBody": "Die betreute Bereitstellung wird bei Railway in Amsterdam gehostet. Railway verarbeitet die für den Betrieb erforderlichen Netzwerk- und technischen Anfragedaten. Infrastrukturprotokolle können Anfrage-Metadaten enthalten. Selbst gehostete AdminSearch-Instanzen können andere Anbieter sowie andere Protokollierungs- und Aufbewahrungseinstellungen verwenden.",
     "sourceTitle": "Quellcode und Fragen",
     "sourceBody": "AdminSearch ist quelloffen. Du kannst den Code einsehen oder den Maintainer über das <link>GitHub-Repository</link> kontaktieren.",
-    "lastUpdated": "Letzte Aktualisierung: 30. Juni 2026"
+    "lastUpdated": "Letzte Aktualisierung: 14. August 2026"
   },
   "ApiErrors": {
     "tooManySearchRequests": "Zu viele Suchanfragen. Bitte versuche es in Kürze erneut.",
@@ -312,6 +326,10 @@
     "backendError": "Das Such-Backend hat einen Fehler zurückgegeben.",
     "backendInvalidJson": "Das Such-Backend hat ungültiges JSON zurückgegeben.",
     "backendEmptyBody": "Das Such-Backend hat eine leere Antwort zurückgegeben.",
-    "tooManyAutocompleteRequests": "Zu viele Anfragen für Suchvorschläge. Bitte versuche es in Kürze erneut."
+    "tooManyAutocompleteRequests": "Zu viele Anfragen für Suchvorschläge. Bitte versuche es in Kürze erneut.",
+    "tooManyAiOverviewRequests": "Zu viele Anfragen für KI-Überblicke. Bitte versuche es in Kürze erneut.",
+    "aiOverviewDisabled": "Der KI-Überblick ist in den Einstellungen deaktiviert.",
+    "invalidAiOverviewRequest": "Ungültige Anfrage für einen KI-Überblick.",
+    "aiOverviewUnavailable": "Der Dienst für KI-Überblicke ist nicht verfügbar."
   }
 }

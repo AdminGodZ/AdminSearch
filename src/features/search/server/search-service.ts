@@ -119,10 +119,13 @@ async function executeTimedSearch({
     const { runtimePreferences, searchRequest, searchT } = preparedSearch;
     const selfInfoEnabled =
       runtimePreferences.enabledPlugins.includes("self_info");
+    const clientIpEnabled =
+      selfInfoEnabled ||
+      runtimePreferences.enabledPlugins.includes("tor_check");
     const upstreamResponse = await timing.measureAsync("upstream", () =>
       fetchSearxResponse(searchRequest, {
         ...runtimePreferences,
-        clientIp: selfInfoEnabled
+        clientIp: clientIpEnabled
           ? getForwardableClientIp(clientIp)
           : undefined,
         engineTokens: getConfiguredEngineTokens(),

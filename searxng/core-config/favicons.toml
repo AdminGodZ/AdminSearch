@@ -14,3 +14,5 @@ max_age = 5184000
 [favicons.proxy.resolver_map]
 "google" = "searx.favicons.resolvers.google"
 "duckduckgo" = "searx.favicons.resolvers.duckduckgo"
+"kagi" = "searx.favicons.resolvers.kagi"
+"yandex" = "searx.favicons.resolvers.yandex"
