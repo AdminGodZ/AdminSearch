@@ -223,7 +223,7 @@
       "faviconResolverLabel": "Favicon-Anbieter",
       "faviconResolverDescription": "Der externe Dienst, der Favicons für Ergebniszeilen lädt.",
       "aiOverviewLabel": "KI-Überblick",
-      "aiOverviewDescription": "Erstelle in der Seitenleiste eine KI-Zusammenfassung aus bis zu 24 Web-Ergebnissen. Suchanfrage und Ausschnitte werden an den konfigurierten KI-Dienst gesendet.",
+      "aiOverviewDescription": "Erstelle eine KI-Zusammenfassung aus bis zu 24 Web-Ergebnissen. Suchanfrage und Ausschnitte werden an den konfigurierten KI-Dienst gesendet.",
       "httpMethodLabel": "HTTP-Methode",
       "httpMethodDescription": "So sendet AdminSearch Suchanfragen an das SearXNG-Backend.",
       "loadMoreLabel": "Größe beim Nachladen",

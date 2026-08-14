@@ -223,7 +223,7 @@
       "faviconResolverLabel": "Favicon resolver",
       "faviconResolverDescription": "Which upstream resolver fetches favicons for result rows.",
       "aiOverviewLabel": "AI overview",
-      "aiOverviewDescription": "Generate an AI summary from up to 24 web-result snippets in the sidebar. The query and snippets are sent to the configured AI service.",
+      "aiOverviewDescription": "Generate an AI summary from up to 24 web-result snippets. The query and snippets are sent to the configured AI service.",
       "httpMethodLabel": "HTTP method",
       "httpMethodDescription": "How AdminSearch sends search requests to the SearXNG backend.",
       "loadMoreLabel": "Load more size",

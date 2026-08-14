@@ -99,8 +99,7 @@ export function AiOverviewCard({
 
   return (
     <Card
-      variant="panel"
-      className="rounded-[28px]"
+      className="rounded-2xl border border-[var(--surface-panel-border)] bg-[var(--surface-ai-overview)] shadow-none ring-0"
       aria-busy={visibleState.status === "loading"}
     >
       <CardContent className="space-y-4 p-5">

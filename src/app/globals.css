@@ -121,6 +121,11 @@
   --footer-bg: #f6f8fa;
   --surface-panel: #f6f8fa;
   --surface-panel-border: #d0d7de;
+  --surface-ai-overview: color-mix(
+    in oklab,
+    var(--background) 92%,
+    var(--foreground) 8%
+  );
   --surface-chip-border: #afb8c1;
   --surface-separator: #d8dee4;
   --surface-shadow:

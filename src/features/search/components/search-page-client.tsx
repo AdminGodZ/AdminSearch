@@ -343,23 +343,18 @@ function SearchSidebar({
   openInNewTab,
   pathname,
   searchParams,
-  showAiOverview,
 }: {
   data: SearchResponse;
   openInNewTab: boolean;
   pathname: string;
   searchParams: ReturnType<typeof useSearchParams>;
-  showAiOverview: boolean;
 }) {
-  if (!showAiOverview && !data.infoboxes.length) {
+  if (!data.infoboxes.length) {
     return null;
   }
 
   return (
     <aside className="space-y-5">
-      {showAiOverview ? (
-        <AiOverviewCard query={data.query} results={data.results} />
-      ) : null}
       {data.infoboxes.map((infobox) => (
         <SearchInfoboxCard
           key={infobox.id}
@@ -957,12 +952,9 @@ function SearchResultsSection({
   const showAiOverview = Boolean(
     interfacePreferences.aiOverview &&
       activeData?.tab === "all" &&
-      activeData.results.length > 0 &&
-      activeData.infoboxes.length === 0,
+      activeData.results.length > 0,
   );
-  const hasSidebarContent = Boolean(
-    activeData?.infoboxes.length || showAiOverview,
-  );
+  const hasSidebarContent = Boolean(activeData?.infoboxes.length);
   const showLoadingFallback =
     currentQuery &&
     !activeData &&
@@ -1019,6 +1011,15 @@ function SearchResultsSection({
             )}
           >
             <div className="space-y-7 min-w-0">
+              {showAiOverview && activeData ? (
+                <div className={resultsSectionClass}>
+                  <AiOverviewCard
+                    query={activeData.query}
+                    results={activeData.results}
+                  />
+                </div>
+              ) : null}
+
               {visibleAnswers.length ? (
                 <div className={resultsSectionClass}>
                   <SearchAnswers answers={visibleAnswers} />
@@ -1170,7 +1171,6 @@ function SearchResultsSection({
                 openInNewTab={interfacePreferences.openInNewTab}
                 pathname={pathname}
                 searchParams={searchParams}
-                showAiOverview={showAiOverview}
               />
             ) : null}
           </div>
