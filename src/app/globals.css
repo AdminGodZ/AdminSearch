@@ -4,6 +4,34 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@property --ai-overview-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes ai-overview-border-orbit {
+  from {
+    --ai-overview-border-angle: 0deg;
+  }
+
+  to {
+    --ai-overview-border-angle: 360deg;
+  }
+}
+
+@keyframes ai-overview-border-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  12%,
+  88% {
+    opacity: 1;
+  }
+}
+
 @keyframes theme-fade-out {
   from {
     opacity: 1;
@@ -30,6 +58,51 @@
 
 ::view-transition-new(root) {
   animation: theme-fade-in 220ms ease-out both;
+}
+
+.ai-overview-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.ai-overview-card[data-answer-ready="true"]::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--ai-overview-border-angle),
+    transparent 0deg 245deg,
+    #ff4d8d 258deg,
+    #ff9f43 275deg,
+    #ffe66d 292deg,
+    #4ade80 309deg,
+    #22d3ee 326deg,
+    #60a5fa 343deg,
+    #c084fc 356deg,
+    transparent 360deg
+  );
+  pointer-events: none;
+  content: "";
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation:
+    ai-overview-border-orbit 1.8s linear both,
+    ai-overview-border-fade 1.8s ease-in-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-overview-card[data-answer-ready="true"]::after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 @theme inline {
