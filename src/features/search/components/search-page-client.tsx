@@ -88,8 +88,8 @@ const resultSkeletonKeys = [
 const panelCardClassName = "rounded-[28px]";
 const emptyResultsCardClassName =
   "rounded-[28px] border border-[var(--surface-panel-border)] bg-[var(--surface-panel)] ring-0 shadow-none";
-const searchHeaderColumns = "lg:grid-cols-[132px_725px_minmax(0,1fr)]";
-const searchContentColumns = "lg:grid-cols-[206px_minmax(0,1fr)]";
+const searchHeaderColumns = "lg:grid-cols-[108px_725px_minmax(0,1fr)]";
+const searchContentColumns = "lg:grid-cols-[182px_minmax(0,1fr)]";
 
 async function fetchSearchPageData(
   paramsString: string,
@@ -829,7 +829,7 @@ function SearchPageHeader({
 
           <Link
             href="/"
-            className="hidden lg:inline-flex lg:absolute lg:top-1/2 lg:left-0 lg:h-14 lg:-translate-y-1/2 lg:items-center lg:text-[26px] lg:leading-none lg:font-semibold lg:tracking-tight lg:text-foreground lg:select-none"
+            className="hidden lg:inline-flex lg:absolute lg:top-1/2 lg:-left-2.5 lg:h-14 lg:-translate-y-1/2 lg:items-center lg:text-[26px] lg:leading-none lg:font-semibold lg:tracking-tight lg:text-foreground lg:select-none"
           >
             AdminSearch
           </Link>
