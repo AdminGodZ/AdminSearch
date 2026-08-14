@@ -99,7 +99,7 @@ export function AiOverviewCard({
 
   return (
     <Card
-      className="ai-overview-card gap-0 rounded-[28px] border border-[var(--surface-panel-border)] bg-background py-0 shadow-none ring-0"
+      className="ai-overview-card gap-0 rounded-[22px] border border-[var(--surface-panel-border)] bg-background py-0 shadow-none ring-0"
       aria-busy={visibleState.status === "loading"}
       data-answer-ready={visibleState.status === "success" ? "true" : undefined}
     >

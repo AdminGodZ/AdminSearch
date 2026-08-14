@@ -984,7 +984,7 @@ function SearchResultsSection({
         {currentTab !== "images" ? <div className="hidden lg:block" /> : null}
         <div
           className={cn(
-            "space-y-7 min-w-0",
+            "space-y-5 min-w-0",
             currentTab === "images" && "overflow-x-hidden",
           )}
         >
