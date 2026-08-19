@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AiOverviewCard } from "@/features/search/components/ai-overview-card";
 import { Filters } from "@/features/search/components/filters";
 import { instantAnswerCardClassName } from "@/features/search/components/instant-answer-card-style";
 import { ResultList } from "@/features/search/components/result-list";
@@ -948,11 +947,6 @@ function SearchResultsSection({
       ),
     [activeData?.answers, calculatorAnswer],
   );
-  const showAiOverview = Boolean(
-    interfacePreferences.aiOverview &&
-      activeData?.tab === "all" &&
-      activeData.results.length > 0,
-  );
   const hasSidebarContent = Boolean(activeData?.infoboxes.length);
   const showLoadingFallback =
     currentQuery &&
@@ -1039,15 +1033,6 @@ function SearchResultsSection({
               {visibleAnswers.length ? (
                 <div className={resultsSectionClass}>
                   <SearchAnswers answers={visibleAnswers} />
-                </div>
-              ) : null}
-
-              {showAiOverview && activeData ? (
-                <div className={resultsSectionClass}>
-                  <AiOverviewCard
-                    query={activeData.query}
-                    results={activeData.results}
-                  />
                 </div>
               ) : null}
 

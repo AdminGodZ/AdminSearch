@@ -35,15 +35,19 @@ test("provider catalogs contain every requested autocomplete and favicon choice"
   assert.match(source, /faviconResolvers/u);
 });
 
-test("AI overview and Tor Check are persisted, opt-in preferences", async () => {
-  const source = await readFile(
+test("retired preference schemas migrate while Tor Check remains opt-in", async () => {
+  const preferencesSource = await readFile(
     new URL("../src/features/settings/lib/preferences.ts", import.meta.url),
     "utf8",
   );
 
-  assert.match(source, /aiOverview: false/u);
-  assert.match(source, /torCheck: false/u);
-  assert.match(source, /settings\.aiOverview/u);
-  assert.match(source, /settings\.torCheck/u);
-  assert.match(source, /tor_check: "torCheck"/u);
+  assert.match(preferencesSource, /PREVIOUS_SETTINGS_COOKIE_VERSION = 3/u);
+  assert.match(preferencesSource, /SETTINGS_COOKIE_VERSION = 4/u);
+  assert.match(
+    preferencesSource,
+    /payload\.version === PREVIOUS_SETTINGS_COOKIE_VERSION/u,
+  );
+  assert.match(preferencesSource, /torCheck: false/u);
+  assert.match(preferencesSource, /settings\.torCheck/u);
+  assert.match(preferencesSource, /tor_check: "torCheck"/u);
 });

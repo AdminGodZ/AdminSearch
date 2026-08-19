@@ -524,16 +524,6 @@ function GeneralSettingsSection({
           />
         </SettingRow>
         <SettingRow
-          label={t("general.aiOverviewLabel")}
-          description={t("general.aiOverviewDescription")}
-        >
-          <Toggle
-            checked={settings.aiOverview}
-            onToggle={() => updateSetting("aiOverview", !settings.aiOverview)}
-            label={t("general.aiOverviewLabel")}
-          />
-        </SettingRow>
-        <SettingRow
           label={t("general.httpMethodLabel")}
           description={t("general.httpMethodDescription")}
         >

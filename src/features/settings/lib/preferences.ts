@@ -20,8 +20,9 @@ export const SETTINGS_PERSIST_MODE_STORAGE_KEY = "adminsearch-settings-persist";
 export const SETTINGS_SYNC_EVENT = "adminsearch:settings-sync";
 export const SETTINGS_SYNC_STORAGE_KEY = "adminsearch-settings-sync";
 const LEGACY_SETTINGS_COOKIE_VERSION = 1;
-const PREVIOUS_SETTINGS_COOKIE_VERSION = 2;
-const SETTINGS_COOKIE_VERSION = 3;
+const OLDER_SETTINGS_COOKIE_VERSION = 2;
+const PREVIOUS_SETTINGS_COOKIE_VERSION = 3;
+const SETTINGS_COOKIE_VERSION = 4;
 
 export type SettingsState = {
   locale: string;
@@ -43,7 +44,6 @@ export type SettingsState = {
   showThumbnails: boolean;
   compactDensity: boolean;
   queryInTitle: boolean;
-  aiOverview: boolean;
   imageProxy: boolean;
   trackerCleaner: boolean;
   doiRewrite: boolean;
@@ -124,7 +124,6 @@ export const defaultSettingsState: SettingsState = {
   showThumbnails: true,
   compactDensity: false,
   queryInTitle: false,
-  aiOverview: false,
   imageProxy: false,
   trackerCleaner: false,
   doiRewrite: false,
@@ -247,7 +246,6 @@ export type SearchRuntimePreferences = {
 
 export type SearchInterfacePreferences = Pick<
   SettingsState,
-  | "aiOverview"
   | "compactDensity"
   | "faviconResolver"
   | "infiniteScroll"
@@ -382,6 +380,7 @@ export function parsePreferencesCookie(
   if (
     payload.version !== SETTINGS_COOKIE_VERSION &&
     payload.version !== PREVIOUS_SETTINGS_COOKIE_VERSION &&
+    payload.version !== OLDER_SETTINGS_COOKIE_VERSION &&
     payload.version !== LEGACY_SETTINGS_COOKIE_VERSION
   ) {
     return defaults;
@@ -486,10 +485,6 @@ export function parsePreferencesCookie(
         settings.queryInTitle,
         defaults.settings.queryInTitle,
       ),
-      aiOverview: sanitizeBooleanSetting(
-        settings.aiOverview,
-        defaults.settings.aiOverview,
-      ),
       imageProxy: sanitizeBooleanSetting(
         settings.imageProxy,
         defaults.settings.imageProxy,
@@ -589,6 +584,7 @@ export function preferencesCookieNeedsMigration(rawValue: string | undefined) {
 
     return (
       payload.version === LEGACY_SETTINGS_COOKIE_VERSION ||
+      payload.version === OLDER_SETTINGS_COOKIE_VERSION ||
       payload.version === PREVIOUS_SETTINGS_COOKIE_VERSION ||
       hasUnavailableEngine
     );
@@ -713,7 +709,6 @@ export function getSearchInterfacePreferences(
   settings: SettingsState,
 ): SearchInterfacePreferences {
   return {
-    aiOverview: settings.aiOverview,
     compactDensity: settings.compactDensity,
     faviconResolver: settings.faviconResolver,
     infiniteScroll: settings.infiniteScroll,
