@@ -102,8 +102,8 @@ engines:
     disabled: false
   - name: duckduckgo
     disabled: false
-  # Kept so a future SearXNG release can reactivate the normal Google HTML
-  # engine. It is currently inactive upstream.
+  # Keep the regular and CSE variants available. AdminSearch defaults to CSE
+  # so selecting both does not produce near-duplicate results.
   - name: google
     disabled: false
   - name: google cse
@@ -131,7 +131,7 @@ engines:
     disabled: false
   - name: brave.images
     disabled: false
-  # The normal Google image engine is also inactive upstream for now.
+  # Keep CSE Images as the default while regular Google Images stays optional.
   - name: google images
     disabled: false
   - name: google cse images

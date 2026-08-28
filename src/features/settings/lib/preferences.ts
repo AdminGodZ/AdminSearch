@@ -74,17 +74,14 @@ const UNAVAILABLE_ENGINE_REPLACEMENTS: Record<
   EngineGroupKey,
   Record<string, string | null>
 > = {
-  general: { google: "google cse" },
-  images: { "google images": "google cse images" },
-  videos: { "google videos": null },
+  general: {},
+  images: {},
+  videos: {},
   news: {},
 };
 
 export function isEngineUnavailable(group: EngineGroupKey, engine: string) {
-  return Object.prototype.hasOwnProperty.call(
-    UNAVAILABLE_ENGINE_REPLACEMENTS[group],
-    engine,
-  );
+  return Object.hasOwn(UNAVAILABLE_ENGINE_REPLACEMENTS[group], engine);
 }
 
 export function getUnavailableEngineReplacement(
@@ -208,7 +205,7 @@ export const defaultEngineState: EngineState = {
     "google cse images",
     "startpage images",
   ]),
-  videos: new Set(["youtube"]),
+  videos: new Set(["youtube", "google videos"]),
   news: new Set([
     "google news",
     "startpage news",
