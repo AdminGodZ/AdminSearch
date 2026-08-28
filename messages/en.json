@@ -134,8 +134,6 @@
     "providersUnavailable": "Search providers did not respond.",
     "providersUnavailableDescription": "AdminSearch could not complete this query because the selected providers did not respond. This does not mean there are no matching pages. Try again shortly or select other search engines.",
     "unavailableProviders": "Unavailable providers: {providers}",
-    "partialResults": "Results may be incomplete.",
-    "partialResultsDescription": "Some selected providers did not respond: {providers}.",
     "loadMore": "Load more results",
     "previewHidden": "Preview hidden",
     "noPreview": "No preview",

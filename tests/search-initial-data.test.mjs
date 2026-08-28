@@ -120,3 +120,55 @@ test("server-seeded page aggregation matches client pagination semantics", () =>
   assert.deepEqual(merged.answers, ["answer"]);
   assert.deepEqual(merged.providerFailures, second.providerFailures);
 });
+
+test("page aggregation merges engine consensus and reranks all loaded results", () => {
+  const first = createResponse({
+    results: [
+      {
+        id: "original",
+        kind: "web",
+        title: "Original",
+        url: "https://original.test/article",
+        engine: "google",
+      },
+      {
+        id: "single",
+        kind: "web",
+        title: "Single engine",
+        url: "https://single.test/article",
+        engine: "startpage",
+      },
+    ],
+  });
+  const second = createResponse({
+    page: 2,
+    results: [
+      {
+        id: "duplicate-original",
+        kind: "web",
+        title: "Duplicate original",
+        url: "https://original.test/article",
+        engines: ["brave", "duckduckgo"],
+      },
+      {
+        id: "two-engines",
+        kind: "web",
+        title: "Two engines",
+        url: "https://two.test/article",
+        engines: ["google", "brave"],
+      },
+    ],
+  });
+
+  const merged = mergeSearchResponses(first, second);
+
+  assert.deepEqual(
+    merged.results.map((result) => result.id),
+    ["original", "two-engines", "single"],
+  );
+  assert.deepEqual(merged.results[0].engines, [
+    "google",
+    "brave",
+    "duckduckgo",
+  ]);
+});

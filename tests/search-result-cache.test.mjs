@@ -104,6 +104,34 @@ test("cache writes are deferred, coalesced, and restored across instances", () =
   assert.equal(getStoredIndex(storage)?.entries.length, 1);
 });
 
+test("cached responses adopt engine-consensus ranking when read", () => {
+  const cache = createSearchResultCache();
+
+  cache.write(
+    "cache",
+    "ranked-key",
+    createResponse({
+      results: [
+        {
+          id: "single",
+          url: "https://single.test",
+          engines: ["google"],
+        },
+        {
+          id: "consensus",
+          url: "https://consensus.test",
+          engines: ["brave", "google", "duckduckgo"],
+        },
+      ],
+    }),
+  );
+
+  assert.deepEqual(
+    cache.read("cache", "ranked-key", 1)?.results.map((result) => result.id),
+    ["consensus", "single"],
+  );
+});
+
 test("incremental updates serialize only the changed result entry", () => {
   const storage = new MemoryStorage();
   const cache = createSearchResultCache({ storage });

@@ -38,6 +38,30 @@ export function getResultEngines(result: ResultEngineMetadata) {
   return engines;
 }
 
+export function mergeResultEngines(
+  ...results: readonly ResultEngineMetadata[]
+) {
+  return getResultEngines({
+    engines: results.flatMap((result) => getResultEngines(result)),
+  });
+}
+
+export function rankResultsByEngineConsensus<
+  Result extends ResultEngineMetadata,
+>(results: readonly Result[]) {
+  return results
+    .map((result, index) => ({
+      engineCount: getResultEngines(result).length,
+      index,
+      result,
+    }))
+    .sort(
+      (first, second) =>
+        second.engineCount - first.engineCount || first.index - second.index,
+    )
+    .map(({ result }) => result);
+}
+
 export function formatEngineName(engine: string) {
   return engine
     .split(/[\s._-]+/u)

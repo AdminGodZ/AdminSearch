@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -46,4 +47,23 @@ test("provider failures survive pagination without duplicate warnings", () => {
       { engine: "Startpage", reason: "Suspended" },
     ],
   );
+});
+
+test("successful result pages do not render a partial-provider warning", async () => {
+  const [componentSource, englishMessages, germanMessages] = await Promise.all([
+    readFile(
+      new URL(
+        "../src/features/search/components/search-page-client.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(new URL("../messages/en.json", import.meta.url), "utf8"),
+    readFile(new URL("../messages/de.json", import.meta.url), "utf8"),
+  ]);
+
+  assert.doesNotMatch(componentSource, /partialResults/u);
+  assert.doesNotMatch(englishMessages, /"partialResults/u);
+  assert.doesNotMatch(germanMessages, /"partialResults/u);
+  assert.match(componentSource, /providersUnavailableDescription/u);
 });

@@ -969,9 +969,6 @@ function SearchResultsSection({
   );
   const hasSidebarContent = Boolean(activeData?.infoboxes.length);
   const hasProviderFailures = providerFailures.length > 0;
-  const hasSearchContent = Boolean(
-    hasResults || visibleAnswers.length || activeData?.infoboxes.length,
-  );
   const showLoadingFallback =
     currentQuery &&
     !activeData &&
@@ -1066,29 +1063,6 @@ function SearchResultsSection({
             )}
           >
             <div className="space-y-7 min-w-0">
-              {activeData && hasProviderFailures && hasSearchContent ? (
-                <Card
-                  className={cn(
-                    "rounded-[28px] border-amber-500/20 bg-amber-500/5 shadow-[0_1px_2px_rgba(28,31,38,0.04)]",
-                    resultsSectionClass,
-                  )}
-                >
-                  <CardContent className="flex items-start gap-3 p-6">
-                    <AlertTriangle className="mt-0.5 size-4 text-amber-600 dark:text-amber-400" />
-                    <div className="space-y-1">
-                      <p className="font-medium text-amber-800 dark:text-amber-300">
-                        {t("partialResults")}
-                      </p>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {t("partialResultsDescription", {
-                          providers: providerNameList,
-                        })}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : null}
-
               {visibleAnswers.length ? (
                 <div className={resultsSectionClass}>
                   <SearchAnswers answers={visibleAnswers} />

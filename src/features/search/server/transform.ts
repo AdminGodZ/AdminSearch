@@ -1,6 +1,9 @@
 import { extractAnswerTexts } from "@/features/search/lib/answer-texts";
 import { extractProviderFailures } from "@/features/search/lib/provider-failures";
-import { getResultEngines } from "@/features/search/lib/result-engines";
+import {
+  getResultEngines,
+  rankResultsByEngineConsensus,
+} from "@/features/search/lib/result-engines";
 import { normalizeWebUrl } from "@/features/search/lib/safe-url";
 import { normalizeVideoPreviewUrl } from "@/features/search/lib/video-preview-url";
 import { DEFAULT_RESULTS_PER_PAGE } from "@/features/search/server/searx-client";
@@ -452,13 +455,15 @@ export function transformSearxResponse(
     resultsPerPage?: number;
   },
 ): SearchResponse {
-  const results = Array.isArray(payload.results)
-    ? payload.results
-        .map((result, index) =>
-          normalizeResult(result, index, request.tab, options.labels),
-        )
-        .filter((result): result is SearchResult => result !== null)
-    : [];
+  const results = rankResultsByEngineConsensus(
+    Array.isArray(payload.results)
+      ? payload.results
+          .map((result, index) =>
+            normalizeResult(result, index, request.tab, options.labels),
+          )
+          .filter((result): result is SearchResult => result !== null)
+      : [],
+  );
 
   const numberOfResults =
     typeof payload.number_of_results === "number"

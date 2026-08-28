@@ -1,4 +1,5 @@
 import type { SearchResponse } from "@/features/search/types";
+import { rankResultsByEngineConsensus } from "./result-engines.ts";
 
 type ResultReuseMode = "cache" | "fresh";
 
@@ -76,6 +77,19 @@ function isValidCacheEntry(value: unknown): value is SearchCacheEntry {
     Boolean(entry.data) &&
     typeof entry.data?.page === "number"
   );
+}
+
+function rankCachedResults(data: SearchResponse) {
+  if (!Array.isArray(data.results)) {
+    return data;
+  }
+
+  const rankedResults = rankResultsByEngineConsensus(data.results);
+  const orderChanged = rankedResults.some(
+    (result, index) => result !== data.results[index],
+  );
+
+  return orderChanged ? { ...data, results: rankedResults } : data;
 }
 
 export function createSearchResultCache({
@@ -399,7 +413,7 @@ export function createSearchResultCache({
       return undefined;
     }
 
-    return entry.data;
+    return rankCachedResults(entry.data);
   }
 
   return {

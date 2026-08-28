@@ -134,8 +134,6 @@
     "providersUnavailable": "Suchanbieter haben nicht geantwortet.",
     "providersUnavailableDescription": "AdminSearch konnte diese Suchanfrage nicht abschließen, weil die ausgewählten Anbieter nicht geantwortet haben. Das bedeutet nicht, dass es keine passenden Seiten gibt. Versuche es gleich noch einmal oder wähle andere Suchmaschinen aus.",
     "unavailableProviders": "Nicht verfügbare Anbieter: {providers}",
-    "partialResults": "Die Ergebnisse sind möglicherweise unvollständig.",
-    "partialResultsDescription": "Einige ausgewählte Anbieter haben nicht geantwortet: {providers}.",
     "loadMore": "Weitere Ergebnisse laden",
     "previewHidden": "Vorschau ausgeblendet",
     "noPreview": "Keine Vorschau",
