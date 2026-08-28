@@ -6,9 +6,7 @@ import { useTheme } from "next-themes";
 import { flushSync } from "react-dom";
 
 type ViewTransitionDocument = Document & {
-  startViewTransition?: (
-    update: () => Promise<void> | void,
-  ) => ViewTransition;
+  startViewTransition?: (update: () => Promise<void> | void) => ViewTransition;
 };
 
 type ViewTransition = {

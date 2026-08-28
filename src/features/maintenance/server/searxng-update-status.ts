@@ -82,9 +82,7 @@ export async function getSearxngUpdateStatus() {
   cachedStatus = {
     expiresAt:
       Date.now() +
-      (value.state === "unknown"
-        ? FAILED_CHECK_CACHE_TTL_MS
-        : getCacheTtlMs()),
+      (value.state === "unknown" ? FAILED_CHECK_CACHE_TTL_MS : getCacheTtlMs()),
     value,
   };
 

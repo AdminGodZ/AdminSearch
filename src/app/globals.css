@@ -764,8 +764,7 @@ html.dark body {
   --surface-panel-border: #30363d;
   --surface-chip-border: #484f58;
   --surface-separator: #30363d;
-  --surface-shadow:
-    0 1px 2px rgb(1 4 9 / 0.45), 0 18px 40px rgb(1 4 9 / 0.5);
+  --surface-shadow: 0 1px 2px rgb(1 4 9 / 0.45), 0 18px 40px rgb(1 4 9 / 0.5);
   --surface-shell-shadow:
     0 1px 2px rgb(1 4 9 / 0.45), 0 26px 60px rgb(1 4 9 / 0.58);
   --text-strong: #e6edf3;
@@ -826,8 +825,7 @@ html.dark body {
   --surface-panel-border: #2a2a2a;
   --surface-chip-border: #3b3b3b;
   --surface-separator: #2a2a2a;
-  --surface-shadow:
-    0 1px 2px rgb(0 0 0 / 0.35), 0 18px 40px rgb(0 0 0 / 0.42);
+  --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 18px 40px rgb(0 0 0 / 0.42);
   --surface-shell-shadow:
     0 1px 2px rgb(0 0 0 / 0.35), 0 26px 60px rgb(0 0 0 / 0.5);
   --text-strong: #fcfcfc;
@@ -888,8 +886,7 @@ html.dark body {
   --surface-panel-border: #2e2e2e;
   --surface-chip-border: #3f3f3f;
   --surface-separator: #2e2e2e;
-  --surface-shadow:
-    0 1px 2px rgb(0 0 0 / 0.5), 0 18px 40px rgb(0 0 0 / 0.55);
+  --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 18px 40px rgb(0 0 0 / 0.55);
   --surface-shell-shadow:
     0 1px 2px rgb(0 0 0 / 0.5), 0 26px 60px rgb(0 0 0 / 0.65);
   --text-strong: #ededed;
@@ -950,8 +947,7 @@ html.dark body {
   --surface-panel-border: #2c2d33;
   --surface-chip-border: #41424b;
   --surface-separator: #2c2d33;
-  --surface-shadow:
-    0 1px 2px rgb(0 0 0 / 0.38), 0 18px 40px rgb(0 0 0 / 0.46);
+  --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.38), 0 18px 40px rgb(0 0 0 / 0.46);
   --surface-shell-shadow:
     0 1px 2px rgb(0 0 0 / 0.38), 0 26px 60px rgb(0 0 0 / 0.54);
   --text-strong: #f4f5f8;
@@ -1012,8 +1008,7 @@ html.dark body {
   --surface-panel-border: #373737;
   --surface-chip-border: #4c4c4b;
   --surface-separator: #373737;
-  --surface-shadow:
-    0 1px 2px rgb(0 0 0 / 0.36), 0 18px 40px rgb(0 0 0 / 0.44);
+  --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.36), 0 18px 40px rgb(0 0 0 / 0.44);
   --surface-shell-shadow:
     0 1px 2px rgb(0 0 0 / 0.36), 0 26px 60px rgb(0 0 0 / 0.52);
   --text-strong: #e8e7e4;
@@ -1074,8 +1069,7 @@ html.dark body {
   --surface-panel-border: #382f33;
   --surface-chip-border: #514248;
   --surface-separator: #382f33;
-  --surface-shadow:
-    0 1px 2px rgb(0 0 0 / 0.4), 0 18px 40px rgb(0 0 0 / 0.48);
+  --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 40px rgb(0 0 0 / 0.48);
   --surface-shell-shadow:
     0 1px 2px rgb(0 0 0 / 0.4), 0 26px 60px rgb(0 0 0 / 0.58);
   --text-strong: #f5f2f3;
@@ -1136,8 +1130,7 @@ html.dark body {
   --surface-panel-border: #48484a;
   --surface-chip-border: #545458;
   --surface-separator: #48484a;
-  --surface-shadow:
-    0 1px 2px rgb(0 0 0 / 0.38), 0 18px 40px rgb(0 0 0 / 0.46);
+  --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.38), 0 18px 40px rgb(0 0 0 / 0.46);
   --surface-shell-shadow:
     0 1px 2px rgb(0 0 0 / 0.38), 0 26px 60px rgb(0 0 0 / 0.54);
   --text-strong: #f5f5f7;
@@ -1260,8 +1253,7 @@ html.dark body {
   --surface-panel-border: #49454f;
   --surface-chip-border: #5f5963;
   --surface-separator: #49454f;
-  --surface-shadow:
-    0 1px 2px rgb(0 0 0 / 0.38), 0 18px 40px rgb(0 0 0 / 0.46);
+  --surface-shadow: 0 1px 2px rgb(0 0 0 / 0.38), 0 18px 40px rgb(0 0 0 / 0.46);
   --surface-shell-shadow:
     0 1px 2px rgb(0 0 0 / 0.38), 0 26px 60px rgb(0 0 0 / 0.54);
   --text-strong: #e6e1e5;
