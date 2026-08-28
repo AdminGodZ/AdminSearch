@@ -37,6 +37,7 @@ function createResponse(overrides = {}) {
     suggestions: [],
     answers: [],
     infoboxes: [],
+    providerFailures: [],
     hasMore: true,
     nextPageCursor: "next-cursor",
     ...overrides,
@@ -123,6 +124,25 @@ test("incremental updates serialize only the changed result entry", () => {
 
   assert.equal(entryWrites.length, 1);
   assert.match(entryWrites[0][1], /first-key/u);
+});
+
+test("degraded provider responses are not cached and evict an older entry", () => {
+  const storage = new MemoryStorage();
+  const cache = createSearchResultCache({ storage });
+
+  cache.write("cache", "privacy-key", createResponse());
+  assert.ok(cache.read("cache", "privacy-key", 1));
+
+  cache.write(
+    "cache",
+    "privacy-key",
+    createResponse({
+      providerFailures: [{ engine: "brave", reason: "Too many requests" }],
+    }),
+  );
+
+  assert.equal(cache.read("cache", "privacy-key", 1), undefined);
+  assert.equal(getStoredIndex(storage), undefined);
 });
 
 test("expired and oldest entries are removed from bounded storage", () => {

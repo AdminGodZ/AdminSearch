@@ -75,11 +75,20 @@ RATE_LIMIT_REDIS_URL=
 SEARCH_CONTINUATION_REDIS_URL=
 VALKEY_IMAGE=docker.io/valkey/valkey:latest
 SEARXNG_SECRET=
+SEARXNG_OUTGOING_PROXY_URLS=
 ```
 
-See `.env.example` for all available settings. SearXNG always uses and pulls
-`docker.io/searxng/searxng:latest` whenever the Compose stack starts; the
-SearXNG production Dockerfile uses the same unpinned image.
+See `.env.example` for all available settings. The custom SearXNG image is
+built from `docker.io/searxng/searxng:latest`, including whenever the Compose
+stack starts; the Railway Dockerfile uses the same unpinned base image.
+
+`SEARXNG_OUTGOING_PROXY_URLS` is optional. Set it to a newline-separated list
+of trusted `http://`, `https://`, `socks5://`, or `socks5h://` proxy URLs.
+SearXNG distributes requests across the configured pool and uses another proxy
+when retrying an HTTP failure. Proxy credentials remain in runtime-only
+configuration and are never written to source control or application logs. The
+proxy operator can observe outbound search traffic, so use a provider you
+trust.
 
 `SEARCH_CONTINUATION_REDIS_URL` stores opaque pagination continuations in a
 shared Redis/Valkey instance. When it is empty, AdminSearch reuses
@@ -101,7 +110,8 @@ port should be reachable from outside the server.
 Update the service images with:
 
 ```bash
-docker compose pull
+docker compose pull valkey caddy
+docker compose build --pull searxng-core nextjs
 docker compose up -d
 ```
 
@@ -133,7 +143,28 @@ Configure `searxng-core`:
 SEARXNG_SECRET=<generated-random-secret>
 SEARXNG_PORT=8080
 SEARXNG_BIND_ADDRESS=::
+SEARXNG_OUTGOING_PROXY_URLS=<optional-multiline-secret>
+SEARXNG_OUTGOING_RETRIES=1
+SEARXNG_OUTGOING_EXTRA_PROXY_TIMEOUT=10
 ```
+
+Add one proxy URL per line to the Railway multiline variable. Do not commit
+proxy credentials to the repository. If the variable is empty, SearXNG uses
+Railway's normal outbound network without a proxy.
+
+On Railway Pro, enable Static Outbound IPs for `searxng-core` and redeploy the
+service. Railway assigns multiple permanent IPv4 addresses and balances
+outbound connections across them:
+
+```bash
+railway outbound-network static-ip enable --service searxng-core
+railway redeploy --service searxng-core --yes
+```
+
+The Railway IP pool is small and its addresses may be shared with other
+customers, so it reduces dependence on one egress IP but cannot guarantee that
+search engines will not present CAPTCHAs. Use the optional proxy pool when more
+egress diversity is required.
 
 Only generate a public domain for `adminsearch`. Keep `searxng-core` and Redis
 private. Caddy is only used by the self-hosted Compose stack.

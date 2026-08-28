@@ -331,6 +331,14 @@ export function createSearchResultCache({
     }
 
     loadIndex();
+
+    if (data.providerFailures?.length) {
+      memoryCache.delete(key);
+      pendingKeys.add(key);
+      scheduleFlush();
+      return;
+    }
+
     memoryCache.set(key, {
       data,
       cachedAt: now(),

@@ -1,4 +1,5 @@
 import { extractAnswerTexts } from "@/features/search/lib/answer-texts";
+import { extractProviderFailures } from "@/features/search/lib/provider-failures";
 import { getResultEngines } from "@/features/search/lib/result-engines";
 import { normalizeWebUrl } from "@/features/search/lib/safe-url";
 import { normalizeVideoPreviewUrl } from "@/features/search/lib/video-preview-url";
@@ -480,6 +481,7 @@ export function transformSearxResponse(
     suggestions: extractSuggestions(payload.suggestions),
     answers: extractAnswerTexts(payload.answers),
     infoboxes: extractInfoboxes(payload.infoboxes, options.labels),
+    providerFailures: extractProviderFailures(payload.unresponsive_engines),
     hasMore,
     nextPageCursor: options?.nextPageCursor,
   };

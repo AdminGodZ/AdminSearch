@@ -67,6 +67,11 @@ export type SearchInfoboxRelatedTopic = {
   suggestions: string[];
 };
 
+export type SearchProviderFailure = {
+  engine: string;
+  reason: string;
+};
+
 export type SearchResponse = {
   query: string;
   tab: SearchTab;
@@ -77,6 +82,7 @@ export type SearchResponse = {
   suggestions: string[];
   answers: string[];
   infoboxes: SearchInfobox[];
+  providerFailures: SearchProviderFailure[];
   hasMore: boolean;
   nextPageCursor?: string;
 };
@@ -102,4 +108,5 @@ export type SearxResponse = {
   suggestions?: unknown[];
   answers?: unknown[];
   infoboxes?: unknown[];
+  unresponsive_engines?: unknown[];
 };

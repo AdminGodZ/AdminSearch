@@ -30,6 +30,7 @@ export type ConsumedSearxResultPage = {
   numberOfResults: number;
   results: SearxRawResult[];
   state: SearxPaginationState;
+  unresponsiveEngines: unknown[];
 };
 
 export function createSearxPaginationState(): SearxPaginationState {
@@ -154,6 +155,7 @@ export async function consumeSearxResultPage({
   const seenResultHashes = new Set(state.seenResultHashes);
   let firstPayload: SearxResponse | undefined;
   let fetchedPageCount = 0;
+  const unresponsiveEngines: unknown[] = [];
 
   while (
     state.bufferedResults.length < resultsPerPage &&
@@ -169,6 +171,10 @@ export async function consumeSearxResultPage({
     fetchedPageCount += 1;
     firstPayload ??= payload;
     state.nextUpstreamPage += 1;
+
+    if (Array.isArray(payload.unresponsive_engines)) {
+      unresponsiveEngines.push(...payload.unresponsive_engines);
+    }
 
     if (
       typeof payload.number_of_results === "number" &&
@@ -232,5 +238,6 @@ export async function consumeSearxResultPage({
     numberOfResults: state.totalAvailable ?? state.seenResultCount,
     results,
     state,
+    unresponsiveEngines,
   };
 }

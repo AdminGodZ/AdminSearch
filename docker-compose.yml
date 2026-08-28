@@ -7,8 +7,11 @@ x-runtime-hardening: &runtime-hardening
 services:
   searxng-core:
     <<: *runtime-hardening
-    image: docker.io/searxng/searxng:latest
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: searxng/Dockerfile
+      pull: true
+    pull_policy: build
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -25,6 +28,9 @@ services:
       SEARXNG_PORT: 8080
       SEARXNG_BIND_ADDRESS: 0.0.0.0
       SEARXNG_SECRET: ${SEARXNG_SECRET:?Set SEARXNG_SECRET to a generated random value}
+      SEARXNG_OUTGOING_PROXY_URLS: ${SEARXNG_OUTGOING_PROXY_URLS:-}
+      SEARXNG_OUTGOING_RETRIES: ${SEARXNG_OUTGOING_RETRIES:-1}
+      SEARXNG_OUTGOING_EXTRA_PROXY_TIMEOUT: ${SEARXNG_OUTGOING_EXTRA_PROXY_TIMEOUT:-10}
     volumes:
       - ./searxng/core-config:/etc/searxng
       - searxng-cache:/var/cache/searxng

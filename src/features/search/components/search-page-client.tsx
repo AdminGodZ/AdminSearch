@@ -39,6 +39,7 @@ import {
   createSearchRuntimeKey,
 } from "@/features/search/lib/request-key";
 import { mergeSearchResponses } from "@/features/search/lib/response";
+import { formatEngineName } from "@/features/search/lib/result-engines";
 import {
   readSearchCache,
   writeSearchCache,
@@ -940,6 +941,25 @@ function SearchResultsSection({
     state,
   } = searchResults;
   const hasResults = Boolean(activeData?.results.length);
+  const providerFailures = activeData?.providerFailures ?? [];
+  const providerNames = useMemo(() => {
+    const names: string[] = [];
+    const seen = new Set<string>();
+
+    for (const failure of activeData?.providerFailures ?? []) {
+      const key = failure.engine.toLowerCase();
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      names.push(formatEngineName(failure.engine));
+    }
+
+    return names;
+  }, [activeData?.providerFailures]);
+  const providerNameList = providerNames.join(", ");
   const visibleAnswers = useMemo(
     () =>
       [...new Set([calculatorAnswer, ...(activeData?.answers ?? [])])].filter(
@@ -948,6 +968,10 @@ function SearchResultsSection({
     [activeData?.answers, calculatorAnswer],
   );
   const hasSidebarContent = Boolean(activeData?.infoboxes.length);
+  const hasProviderFailures = providerFailures.length > 0;
+  const hasSearchContent = Boolean(
+    hasResults || visibleAnswers.length || activeData?.infoboxes.length,
+  );
   const showLoadingFallback =
     currentQuery &&
     !activeData &&
@@ -989,22 +1013,34 @@ function SearchResultsSection({
                 resultsSectionClass,
               )}
             >
-              {activeData.requestDurationMs
-                ? t("showingWithDuration", {
-                    count: activeData.results.length,
-                    type: resultsLabel,
-                    duration: format.number(
-                      activeData.requestDurationMs / 1000,
-                      {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      },
-                    ),
-                  })
-                : t("showing", {
-                    count: activeData.results.length,
-                    type: resultsLabel,
-                  })}
+              {hasProviderFailures && !hasResults
+                ? activeData.requestDurationMs
+                  ? t("providersUnavailableStatusWithDuration", {
+                      duration: format.number(
+                        activeData.requestDurationMs / 1000,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        },
+                      ),
+                    })
+                  : t("providersUnavailableStatus")
+                : activeData.requestDurationMs
+                  ? t("showingWithDuration", {
+                      count: activeData.results.length,
+                      type: resultsLabel,
+                      duration: format.number(
+                        activeData.requestDurationMs / 1000,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        },
+                      ),
+                    })
+                  : t("showing", {
+                      count: activeData.results.length,
+                      type: resultsLabel,
+                    })}
             </p>
           ) : null}
 
@@ -1030,6 +1066,29 @@ function SearchResultsSection({
             )}
           >
             <div className="space-y-7 min-w-0">
+              {activeData && hasProviderFailures && hasSearchContent ? (
+                <Card
+                  className={cn(
+                    "rounded-[28px] border-amber-500/20 bg-amber-500/5 shadow-[0_1px_2px_rgba(28,31,38,0.04)]",
+                    resultsSectionClass,
+                  )}
+                >
+                  <CardContent className="flex items-start gap-3 p-6">
+                    <AlertTriangle className="mt-0.5 size-4 text-amber-600 dark:text-amber-400" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-amber-800 dark:text-amber-300">
+                        {t("partialResults")}
+                      </p>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {t("partialResultsDescription", {
+                          providers: providerNameList,
+                        })}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
               {visibleAnswers.length ? (
                 <div className={resultsSectionClass}>
                   <SearchAnswers answers={visibleAnswers} />
@@ -1109,13 +1168,36 @@ function SearchResultsSection({
               !visibleAnswers.length &&
               !activeData.infoboxes.length ? (
                 <Card
-                  className={cn(emptyResultsCardClassName, resultsSectionClass)}
+                  className={cn(
+                    hasProviderFailures
+                      ? "rounded-[28px] border-amber-500/20 bg-amber-500/5 shadow-none"
+                      : emptyResultsCardClassName,
+                    resultsSectionClass,
+                  )}
                 >
-                  <CardContent className="space-y-3 p-6">
-                    <p className="font-medium">{t("noResults")}</p>
-                    <p className="text-sm leading-7 text-[var(--text-body)]">
-                      {t("noResultsDescription")}
-                    </p>
+                  <CardContent className="flex items-start gap-3 p-6">
+                    {hasProviderFailures ? (
+                      <AlertTriangle className="mt-1 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                    ) : null}
+                    <div className="space-y-3">
+                      <p className="font-medium">
+                        {hasProviderFailures
+                          ? t("providersUnavailable")
+                          : t("noResults")}
+                      </p>
+                      <p className="text-sm leading-7 text-[var(--text-body)]">
+                        {hasProviderFailures
+                          ? t("providersUnavailableDescription")
+                          : t("noResultsDescription")}
+                      </p>
+                      {hasProviderFailures ? (
+                        <p className="text-xs leading-6 text-[var(--text-soft-alt)]">
+                          {t("unavailableProviders", {
+                            providers: providerNameList,
+                          })}
+                        </p>
+                      ) : null}
+                    </div>
                   </CardContent>
                 </Card>
               ) : null}

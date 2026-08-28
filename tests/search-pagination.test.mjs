@@ -122,6 +122,28 @@ test("consuming a page does not mutate the cursor state used by retries", async 
   assert.deepEqual(retry.state, firstAttempt.state);
 });
 
+test("unresponsive engine metadata is retained when an upstream page is empty", async () => {
+  const page = await consumeSearxResultPage({
+    fetchPage: async () => ({
+      results: [],
+      unresponsive_engines: [
+        ["duckduckgo", "CAPTCHA"],
+        ["brave", "Too many requests"],
+      ],
+    }),
+    maxUpstreamPages: 12,
+    resultsPerPage: 20,
+    state: createSearxPaginationState(),
+  });
+
+  assert.deepEqual(page.results, []);
+  assert.deepEqual(page.unresponsiveEngines, [
+    ["duckduckgo", "CAPTCHA"],
+    ["brave", "Too many requests"],
+  ]);
+  assert.equal(page.hasMore, false);
+});
+
 test("duplicate-only upstream pages do not hide unique results on later pages", async () => {
   const fetchedPages = [];
   const pages = new Map([

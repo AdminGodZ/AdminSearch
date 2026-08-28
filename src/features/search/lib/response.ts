@@ -1,4 +1,5 @@
 import type { SearchResponse } from "@/features/search/types";
+import { mergeProviderFailures } from "./provider-failures.ts";
 
 export function mergeSearchResponses(
   current: SearchResponse,
@@ -26,6 +27,10 @@ export function mergeSearchResponses(
     nextPageCursor: next.nextPageCursor,
     totalResults: next.totalResults ?? current.totalResults,
     results: mergedResults,
+    providerFailures: mergeProviderFailures(
+      current.providerFailures,
+      next.providerFailures,
+    ),
     hasMore: next.hasMore,
   } satisfies SearchResponse;
 }

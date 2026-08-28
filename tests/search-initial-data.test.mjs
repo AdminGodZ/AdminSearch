@@ -40,6 +40,7 @@ function createResponse(overrides = {}) {
     suggestions: ["privacy tools"],
     answers: ["answer"],
     infoboxes: [],
+    providerFailures: [],
     hasMore: true,
     nextPageCursor: "first-cursor",
     ...overrides,
@@ -95,6 +96,10 @@ test("server-seeded page aggregation matches client pagination semantics", () =>
     answers: [],
     hasMore: false,
     nextPageCursor: undefined,
+    providerFailures: [
+      { engine: "duckduckgo", reason: "CAPTCHA" },
+      { engine: "brave", reason: "Too many requests" },
+    ],
   });
 
   const merged = mergeSearchResponses(first, second);
@@ -113,4 +118,5 @@ test("server-seeded page aggregation matches client pagination semantics", () =>
   assert.equal(merged.requestDurationMs, 120);
   assert.deepEqual(merged.suggestions, ["privacy tools"]);
   assert.deepEqual(merged.answers, ["answer"]);
+  assert.deepEqual(merged.providerFailures, second.providerFailures);
 });
