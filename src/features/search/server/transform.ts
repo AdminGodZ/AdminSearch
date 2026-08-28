@@ -1,4 +1,5 @@
 import { extractAnswerTexts } from "@/features/search/lib/answer-texts";
+import { getResultEngines } from "@/features/search/lib/result-engines";
 import { normalizeWebUrl } from "@/features/search/lib/safe-url";
 import { normalizeVideoPreviewUrl } from "@/features/search/lib/video-preview-url";
 import { DEFAULT_RESULTS_PER_PAGE } from "@/features/search/server/searx-client";
@@ -114,7 +115,10 @@ function normalizeResult(
   const fileSize = readString(result, ["filesize", "file_size"]);
   const metadata = readString(result, ["metadata"]);
   const views = readString(result, ["views"]);
-  const engines = readStringArray(result, ["engines"]);
+  const engines = getResultEngines({
+    engine,
+    engines: readStringArray(result, ["engines"]),
+  });
 
   return {
     id: `${tab}-${index}-${encodeURIComponent(url)}`,
@@ -137,7 +141,7 @@ function normalizeResult(
     metadata,
     views,
     engine,
-    engines: engines ?? (engine ? [engine] : undefined),
+    engines: engines.length > 0 ? engines : undefined,
   };
 }
 

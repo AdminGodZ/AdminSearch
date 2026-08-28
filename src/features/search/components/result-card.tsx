@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
+import { formatResultEngineNames } from "@/features/search/lib/result-engines";
 import type { SearchResult } from "@/features/search/types";
 import type { UrlFormattingMode } from "@/features/settings/lib/preferences";
 import { cn } from "@/lib/utils";
@@ -93,10 +94,6 @@ function getPlatformLabel(host: string) {
   return fallbackSegment ? toTitleCase(fallbackSegment) : host;
 }
 
-function formatEngineName(engine: string) {
-  return engine.charAt(0).toUpperCase() + engine.slice(1);
-}
-
 function getPrimaryLabel(result: SearchResult, host: string) {
   const source = result.source?.trim();
   const platformLabel = getPlatformLabel(host);
@@ -143,6 +140,7 @@ export const ResultCard = memo(function ResultCard({
   const meta = getResultMeta(result, faviconResolver);
   const primaryLabel = getPrimaryLabel(result, meta.host);
   const formattedUrl = formatResultUrl(result, meta, urlFormatting);
+  const engineNames = formatResultEngineNames(result);
 
   return (
     <article className="max-w-4xl space-y-1 [contain-intrinsic-size:auto_160px] [content-visibility:auto]">
@@ -198,9 +196,9 @@ export const ResultCard = memo(function ResultCard({
         </p>
       ) : null}
 
-      {result.engine ? (
+      {engineNames ? (
         <p className="text-[13px] leading-5 text-[var(--text-engine)]">
-          - {formatEngineName(result.engine)}
+          - {engineNames}
         </p>
       ) : null}
     </article>

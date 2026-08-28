@@ -4,6 +4,7 @@
 import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { SiteFavicon } from "@/features/search/components/site-favicon";
+import { formatResultEngineNames } from "@/features/search/lib/result-engines";
 import type { SearchResult } from "@/features/search/types";
 import type { UrlFormattingMode } from "@/features/settings/lib/preferences";
 import { cn } from "@/lib/utils";
@@ -42,10 +43,6 @@ function getResultMeta(result: SearchResult, faviconResolver: string) {
   } catch {
     return fallback;
   }
-}
-
-function formatEngineName(engine: string) {
-  return engine.charAt(0).toUpperCase() + engine.slice(1);
 }
 
 function getPlatformName(host: string) {
@@ -105,6 +102,7 @@ export const VideoResultCard = memo(function VideoResultCard({
   const t = useTranslations("Search");
   const meta = getResultMeta(result, faviconResolver);
   const formattedUrl = formatResultUrl(result, meta, urlFormatting);
+  const engineNames = formatResultEngineNames(result);
   const videoMetaParts = [
     getPlatformName(meta.host),
     result.author,
@@ -208,9 +206,9 @@ export const VideoResultCard = memo(function VideoResultCard({
               </p>
             ) : null}
 
-            {result.engine ? (
+            {engineNames ? (
               <p className="text-[13px] leading-5 text-[var(--text-engine)]">
-                - {formatEngineName(result.engine)}
+                - {engineNames}
               </p>
             ) : null}
           </div>

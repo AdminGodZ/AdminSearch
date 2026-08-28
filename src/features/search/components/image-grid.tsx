@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { memo, useCallback, useRef, useState } from "react";
 
+import { formatResultEngineNames } from "@/features/search/lib/result-engines";
 import type { SearchResult } from "@/features/search/types";
 import { cn } from "@/lib/utils";
 
@@ -68,14 +69,6 @@ function getSourceHost(url: string) {
   }
 }
 
-function formatEngineName(engine: string) {
-  return engine
-    .split(/[._-]/u)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
 function ImagePreviewDialog({
   onCloseAutoFocus,
   openInNewTab,
@@ -87,10 +80,7 @@ function ImagePreviewDialog({
 }) {
   const t = useTranslations("Search");
   const sourceHost = getSourceHost(result.url);
-  const engineNames = [...new Set(result.engines ?? [result.engine])]
-    .filter((engine): engine is string => Boolean(engine?.trim()))
-    .map(formatEngineName)
-    .join(", ");
+  const engineNames = formatResultEngineNames(result);
   const metadataRows = [
     { label: t("imageSource"), value: result.imageSource },
     { label: t("imageAuthor"), value: result.author },
