@@ -1,5 +1,5 @@
 # Build trigger only: this tracks the digest behind :latest without pinning it.
-# SearXNG latest digest: sha256:23482d8ecf7ddf66029479468ea04c1bb11d2b65785a17a7e629e2ffd13296ca
+# SearXNG latest digest: sha256:9dc6d0472930d981f5955f0379e107257383be2d81897b25df89cf37d789f152
 FROM docker.io/searxng/searxng:latest
 
 ENV SEARXNG_PORT=8080
