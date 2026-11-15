@@ -102,29 +102,29 @@ npm run dev                       # http://localhost:3000
 <summary>Scripts</summary>
 <br>
 
-| Script | |
-| :-- | :-- |
-| `npm run dev` | Development server |
-| `npm run typecheck` | TypeScript check |
-| `npm run build` | Typecheck and production build |
-| `npm run start` | Serve the production build |
-| `npm test` | Node test suite |
-| `npm run lint` | Biome checks |
-| `npm run format` | Biome formatting |
+| Script              |                                |
+| :------------------ | :----------------------------- |
+| `npm run dev`       | Development server             |
+| `npm run typecheck` | TypeScript check               |
+| `npm run build`     | Typecheck and production build |
+| `npm run start`     | Serve the production build     |
+| `npm test`          | Node test suite                |
+| `npm run lint`      | Biome checks                   |
+| `npm run format`    | Biome formatting               |
 
 </details>
 
 ## Configuration
 
-| Variable | Default | |
-| :-- | :-- | :-- |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Public URL, embedded at build time |
-| `SEARXNG_INTERNAL_URL` | `http://127.0.0.1:8080` | Private SearXNG endpoint |
-| `SEARXNG_SECRET` | — | Required. Generate with `openssl rand -hex 32` |
-| `RATE_LIMIT_REDIS_URL` | — | Redis/Valkey for rate limiting |
-| `SEARCH_CONTINUATION_REDIS_URL` | — | Redis/Valkey for pagination continuations |
-| `SEARXNG_OUTGOING_PROXY_URLS` | — | Optional outgoing proxy pool, one URL per line |
-| `VALKEY_IMAGE` | `docker.io/valkey/valkey:latest` | Valkey image for Compose |
+| Variable                        | Default                          |                                                |
+| :------------------------------ | :------------------------------- | :--------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`           | `http://localhost:3000`          | Public URL, embedded at build time             |
+| `SEARXNG_INTERNAL_URL`          | `http://127.0.0.1:8080`          | Private SearXNG endpoint                       |
+| `SEARXNG_SECRET`                | —                                | Required. Generate with `openssl rand -hex 32` |
+| `RATE_LIMIT_REDIS_URL`          | —                                | Redis/Valkey for rate limiting                 |
+| `SEARCH_CONTINUATION_REDIS_URL` | —                                | Redis/Valkey for pagination continuations      |
+| `SEARXNG_OUTGOING_PROXY_URLS`   | —                                | Optional outgoing proxy pool, one URL per line |
+| `VALKEY_IMAGE`                  | `docker.io/valkey/valkey:latest` | Valkey image for Compose                       |
 
 See [`.env.example`](.env.example) for every setting, including rate-limit
 windows, continuation lifetimes, DNS and Caddy binding.
@@ -180,11 +180,11 @@ docker compose up -d
 
 Create three services in one Railway project:
 
-| Service | Source |
-| :-- | :-- |
-| `adminsearch` | This repository, root `Dockerfile` |
+| Service        | Source                                 |
+| :------------- | :------------------------------------- |
+| `adminsearch`  | This repository, root `Dockerfile`     |
 | `searxng-core` | This repository, `/searxng/Dockerfile` |
-| Redis | Railway's managed Redis |
+| Redis          | Railway's managed Redis                |
 
 Configure `adminsearch`:
 
