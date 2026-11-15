@@ -1,111 +1,172 @@
-<div align="center">
-  <h1>AdminSearch</h1>
-  <p>
-    A self-hosted search frontend built with Next.js and backed by a private
-    SearXNG instance.
-  </p>
-  <p>
-    <img src="./public/adminsearch-home-light.png" alt="AdminSearch home page in light mode" width="49%" />&thinsp;<img src="./public/adminsearch-home-dark.png" alt="AdminSearch home page in dark mode" width="49%" />
-  </p>
-</div>
+<p align="center">
+  <img src="assets/logo/adminsearch-banner.svg" alt="AdminSearch — self-hosted private search" width="100%">
+</p>
 
-## Features
+<p align="center">
+  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-3a3a3a?style=for-the-badge&labelColor=000000&logo=nextdotjs&logoColor=white">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-3a3a3a?style=for-the-badge&labelColor=000000&logo=react&logoColor=white">
+  <img alt="TypeScript 7" src="https://img.shields.io/badge/TypeScript-7-3a3a3a?style=for-the-badge&labelColor=000000&logo=typescript&logoColor=white">
+  <img alt="Backend: SearXNG" src="https://img.shields.io/badge/Backend-SearXNG-3a3a3a?style=for-the-badge&labelColor=000000&logo=searxng&logoColor=white">
+  <img alt="Deploy: Docker" src="https://img.shields.io/badge/Deploy-Docker-3a3a3a?style=for-the-badge&labelColor=000000&logo=docker&logoColor=white">
+</p>
 
-- Web, image, video, and news search
-- Configurable engines, language, privacy, and result behavior
-- English and German interface localization
-- Server-side SearXNG proxying
-- Redis/Valkey-backed rate limiting
-- Light, dark, and system appearance modes with
-  [tracked named themes](./THEMES.md)
-- Docker Compose setup for self-hosting
-- Separate Docker images for Railway and similar platforms
+<p align="center">
+  <b>Search like you own the place.</b><br>
+  <sub>A self-hosted search frontend built with Next.js and backed by your own private SearXNG instance. No accounts, no tracking, no analytics.</sub>
+</p>
 
-## Stack
+<p align="center">
+  <a href="#quick-start">Quick start</a> &nbsp;·&nbsp;
+  <a href="#inside">Inside</a> &nbsp;·&nbsp;
+  <a href="#configuration">Configuration</a> &nbsp;·&nbsp;
+  <a href="#self-hosting">Self-hosting</a> &nbsp;·&nbsp;
+  <a href="#railway">Railway</a> &nbsp;·&nbsp;
+  <a href="THEMES.md">Themes</a>
+</p>
 
-- <img src="https://cdn.simpleicons.org/nextdotjs/white" alt="" width="18" /> Next.js 16
-- next-intl 4
-- <img src="https://cdn.simpleicons.org/react/61DAFB" alt="" width="18" /> React 19
-- <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="" width="18" /> TypeScript 7
-- <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" alt="" width="18" /> Tailwind CSS
-- <img src="https://cdn.simpleicons.org/shadcnui/white" alt="" width="18" /> shadcn/ui
-- <img src="https://cdn.simpleicons.org/searxng/3050FF" alt="" width="18" /> SearXNG
-- <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/valkey.svg" alt="" width="18" /> Valkey
-- <img src="https://cdn.simpleicons.org/caddy/1F88C0" alt="" width="18" /> Caddy
+<br>
+
+<p align="center">
+  <img src="./public/adminsearch-home-light.png" alt="AdminSearch home page in light mode" width="49%" />&thinsp;<img src="./public/adminsearch-home-dark.png" alt="AdminSearch home page in dark mode" width="49%" />
+</p>
+
+<br>
+
+## Quick start
+
+```bash
+git clone https://github.com/AdminGodZ/AdminSearch.git && cd AdminSearch
+cp .env.example .env
+# set NEXT_PUBLIC_APP_URL, and SEARXNG_SECRET to the output of: openssl rand -hex 32
+docker compose up -d --build
+```
+
+That starts AdminSearch, SearXNG, Valkey and Caddy. Open the URL you set in
+`NEXT_PUBLIC_APP_URL`.
+
+> [!TIP]
+> Caddy binds to `127.0.0.1:80` by default. Set `PUBLIC_BIND_ADDRESS=0.0.0.0`
+> only when the port should be reachable from outside the server.
+
+## Inside
+
+<table>
+  <tr>
+    <th align="left" width="33%">Search</th>
+    <th align="left" width="33%">Privacy</th>
+    <th align="left" width="33%">Interface</th>
+  </tr>
+  <tr valign="top">
+    <td>Web, image, video and news results with configurable engines, language and result behavior, served from your own SearXNG instance.</td>
+    <td>Every query is proxied server-side. No user accounts, tracking profiles or client-side analytics, plus an optional outgoing proxy pool for SearXNG.</td>
+    <td>English and German localization. Light, dark and system appearance with <a href="THEMES.md">named color themes</a>.</td>
+  </tr>
+  <tr>
+    <th align="left">Self-hosting</th>
+    <th align="left">Rate limiting</th>
+    <th align="left">Platforms</th>
+  </tr>
+  <tr valign="top">
+    <td>One Docker Compose stack: AdminSearch, SearXNG, Valkey and Caddy.</td>
+    <td>Redis/Valkey-backed limits for search and autocomplete, with shared pagination continuations.</td>
+    <td>Separate Docker images for Railway and similar platforms.</td>
+  </tr>
+</table>
+
+<p align="center">
+  <sub>
+    <img src="https://cdn.simpleicons.org/nextdotjs/black/white" alt="" width="14" align="center" />&nbsp;Next.js 16 &nbsp;·&nbsp;
+    next-intl 4 &nbsp;·&nbsp;
+    <img src="https://cdn.simpleicons.org/react/61DAFB" alt="" width="14" align="center" />&nbsp;React 19 &nbsp;·&nbsp;
+    <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="" width="14" align="center" />&nbsp;TypeScript 7 &nbsp;·&nbsp;
+    <img src="https://cdn.simpleicons.org/tailwindcss/06B6D4" alt="" width="14" align="center" />&nbsp;Tailwind CSS &nbsp;·&nbsp;
+    <img src="https://cdn.simpleicons.org/shadcnui/black/white" alt="" width="14" align="center" />&nbsp;shadcn/ui &nbsp;·&nbsp;
+    <img src="https://cdn.simpleicons.org/searxng/3050FF" alt="" width="14" align="center" />&nbsp;SearXNG &nbsp;·&nbsp;
+    <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/valkey.svg" alt="" width="14" align="center" />&nbsp;Valkey &nbsp;·&nbsp;
+    <img src="https://cdn.simpleicons.org/caddy/1F88C0" alt="" width="14" align="center" />&nbsp;Caddy
+  </sub>
+</p>
 
 ## Local development
 
-Requirements:
-
-- Node.js 22 and npm
-- Docker and Docker Compose
-
-Install the dependencies and create the environment file:
+Requires Node.js 22 with npm, and Docker with Docker Compose.
 
 ```bash
 npm install
-cp .env.example .env
-```
-
-Generate a secret with `openssl rand -hex 32` and assign it to
-`SEARXNG_SECRET` in `.env`.
-
-Start SearXNG and Valkey:
-
-```bash
+cp .env.example .env              # set SEARXNG_SECRET (openssl rand -hex 32)
 docker compose up -d searxng-core valkey
+npm run dev                       # http://localhost:3000
 ```
 
-Start AdminSearch:
+<details>
+<summary>Scripts</summary>
+<br>
 
-```bash
-npm run dev
-```
+| Script | |
+| :-- | :-- |
+| `npm run dev` | Development server |
+| `npm run typecheck` | TypeScript check |
+| `npm run build` | Typecheck and production build |
+| `npm run start` | Serve the production build |
+| `npm test` | Node test suite |
+| `npm run lint` | Biome checks |
+| `npm run format` | Biome formatting |
 
-Open `http://localhost:3000`.
+</details>
 
 ## Configuration
 
-The main environment variables are:
+| Variable | Default | |
+| :-- | :-- | :-- |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Public URL, embedded at build time |
+| `SEARXNG_INTERNAL_URL` | `http://127.0.0.1:8080` | Private SearXNG endpoint |
+| `SEARXNG_SECRET` | — | Required. Generate with `openssl rand -hex 32` |
+| `RATE_LIMIT_REDIS_URL` | — | Redis/Valkey for rate limiting |
+| `SEARCH_CONTINUATION_REDIS_URL` | — | Redis/Valkey for pagination continuations |
+| `SEARXNG_OUTGOING_PROXY_URLS` | — | Optional outgoing proxy pool, one URL per line |
+| `VALKEY_IMAGE` | `docker.io/valkey/valkey:latest` | Valkey image for Compose |
 
-```text
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-SEARXNG_INTERNAL_URL=http://127.0.0.1:8080
-RATE_LIMIT_REDIS_URL=
-SEARCH_CONTINUATION_REDIS_URL=
-VALKEY_IMAGE=docker.io/valkey/valkey:latest
-SEARXNG_SECRET=
-SEARXNG_OUTGOING_PROXY_URLS=
-```
+See [`.env.example`](.env.example) for every setting, including rate-limit
+windows, continuation lifetimes, DNS and Caddy binding.
 
-See `.env.example` for all available settings. The custom SearXNG image is
-built from `docker.io/searxng/searxng:latest`, including whenever the Compose
-stack starts; the Railway Dockerfile uses the same unpinned base image.
+<details>
+<summary>Outgoing proxy pool</summary>
+<br>
 
-`SEARXNG_OUTGOING_PROXY_URLS` is optional. Set it to a newline-separated list
-of trusted `http://`, `https://`, `socks5://`, or `socks5h://` proxy URLs.
-SearXNG distributes requests across the configured pool and uses another proxy
-when retrying an HTTP failure. Proxy credentials remain in runtime-only
-configuration and are never written to source control or application logs. The
-proxy operator can observe outbound search traffic, so use a provider you
-trust.
+`SEARXNG_OUTGOING_PROXY_URLS` takes a newline-separated list of trusted
+`http://`, `https://`, `socks5://` or `socks5h://` proxy URLs. SearXNG
+distributes requests across the pool and uses another proxy when retrying an
+HTTP failure. Proxy credentials stay in runtime-only configuration and are
+never written to source control or application logs.
+
+> [!WARNING]
+> The proxy operator can observe outbound search traffic. Use a provider you
+> trust.
+
+</details>
+
+<details>
+<summary>Pagination continuations</summary>
+<br>
 
 `SEARCH_CONTINUATION_REDIS_URL` stores opaque pagination continuations in a
 shared Redis/Valkey instance. When it is empty, AdminSearch reuses
-`RATE_LIMIT_REDIS_URL`; when neither value is configured, a bounded
-process-local store keeps single-instance development working.
+`RATE_LIMIT_REDIS_URL`; when neither is configured, a bounded process-local
+store keeps single-instance development working.
+
+</details>
+
+The custom SearXNG image is built from `docker.io/searxng/searxng:latest`,
+including whenever the Compose stack starts; the Railway Dockerfile uses the
+same unpinned base image.
 
 ## Self-hosting
 
-Set `NEXT_PUBLIC_APP_URL` and `SEARXNG_SECRET` in `.env`, then run:
+Set `NEXT_PUBLIC_APP_URL` and `SEARXNG_SECRET` in `.env`, then:
 
 ```bash
 docker compose up -d --build
 ```
-
-The stack includes AdminSearch, SearXNG, Valkey, and Caddy. Caddy binds to
-`127.0.0.1:80` by default. Set `PUBLIC_BIND_ADDRESS=0.0.0.0` only when the host
-port should be reachable from outside the server.
 
 Update the service images with:
 
@@ -119,9 +180,11 @@ docker compose up -d
 
 Create three services in one Railway project:
 
-- `adminsearch`: this repository using the root `Dockerfile`
-- `searxng-core`: this repository using `/searxng/Dockerfile`
-- Redis: Railway's managed Redis service
+| Service | Source |
+| :-- | :-- |
+| `adminsearch` | This repository, root `Dockerfile` |
+| `searxng-core` | This repository, `/searxng/Dockerfile` |
+| Redis | Railway's managed Redis |
 
 Configure `adminsearch`:
 
@@ -133,9 +196,10 @@ RATE_LIMIT_TRUST_PROXY_HEADERS=true
 RATE_LIMIT_TRUSTED_PROXY_HOPS=1
 ```
 
-Set `NEXT_PUBLIC_APP_URL` before the image is built because Next.js embeds it
-during the production build. Replace `Redis` in the reference if the managed
-service has a different name.
+> [!IMPORTANT]
+> Set `NEXT_PUBLIC_APP_URL` before the image is built, because Next.js embeds
+> it during the production build. Replace `Redis` in the reference if the
+> managed service has a different name.
 
 Configure `searxng-core`:
 
@@ -148,40 +212,44 @@ SEARXNG_OUTGOING_RETRIES=1
 SEARXNG_OUTGOING_EXTRA_PROXY_TIMEOUT=10
 ```
 
-Add one proxy URL per line to the Railway multiline variable. Do not commit
-proxy credentials to the repository. If the variable is empty, SearXNG uses
-Railway's normal outbound network without a proxy.
+Add one proxy URL per line to the Railway multiline variable and never commit
+proxy credentials. If the variable is empty, SearXNG uses Railway's normal
+outbound network.
 
-On Railway Pro, enable Static Outbound IPs for `searxng-core` and redeploy the
-service. Railway assigns multiple permanent IPv4 addresses and balances
-outbound connections across them:
+Only generate a public domain for `adminsearch`. Keep `searxng-core` and Redis
+private. Caddy is only used by the self-hosted Compose stack.
+
+<details>
+<summary>Static outbound IPs</summary>
+<br>
+
+On Railway Pro, enable Static Outbound IPs for `searxng-core` and redeploy.
+Railway assigns multiple permanent IPv4 addresses and balances outbound
+connections across them:
 
 ```bash
 railway outbound-network static-ip enable --service searxng-core
 railway redeploy --service searxng-core --yes
 ```
 
-The Railway IP pool is small and its addresses may be shared with other
-customers, so it reduces dependence on one egress IP but cannot guarantee that
-search engines will not present CAPTCHAs. Use the optional proxy pool when more
-egress diversity is required.
+The pool is small and its addresses may be shared with other customers, so it
+reduces dependence on one egress IP but cannot guarantee that search engines
+won't present CAPTCHAs. Use the outgoing proxy pool when more egress diversity
+is required.
 
-Only generate a public domain for `adminsearch`. Keep `searxng-core` and Redis
-private. Caddy is only used by the self-hosted Compose stack.
-
-## Scripts
-
-```bash
-npm run dev
-npm run typecheck
-npm run build
-npm run start
-npm run lint
-npm run format
-```
+</details>
 
 ## Privacy
 
 Browser search requests go through AdminSearch to the configured private
 SearXNG backend. AdminSearch does not require user accounts, tracking profiles,
 or client-side analytics.
+
+<br>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/adminsearch-mark-white.svg">
+    <img alt="AdminSearch eye" src="assets/logo/adminsearch-mark-black.svg" width="44">
+  </picture>
+</p>
