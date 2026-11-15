@@ -40,11 +40,11 @@ export default async function Home() {
         >
           <section className="flex flex-1 flex-col items-center justify-start pt-18 pb-8">
             <div className="flex w-full max-w-4xl flex-col items-center">
-              <div className="relative size-40 select-none sm:size-44">
+              <div className="relative size-36 select-none sm:size-40">
                 <ThemeLogo
-                  className="object-contain translate-y-4 sm:translate-y-5"
+                  className="object-contain"
                   initialTheme={preferences.settings.theme}
-                  sizes="176px"
+                  sizes="160px"
                   priority
                 />
               </div>
