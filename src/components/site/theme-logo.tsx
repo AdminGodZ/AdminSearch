@@ -36,11 +36,11 @@ export function ThemeLogo({
   };
   const { props: lightLogoProps } = getImageProps({
     ...imageProps,
-    src: "/logo_dark.png",
+    src: "/adminsearch-mark-black.png",
   });
   const { props: darkLogoProps } = getImageProps({
     ...imageProps,
-    src: "/logo_white.png",
+    src: "/adminsearch-mark-white.png",
   });
   const displayedLogoProps =
     activeTheme === "dark" ? darkLogoProps : lightLogoProps;
